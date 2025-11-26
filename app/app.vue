@@ -18,13 +18,10 @@ import { useUserStore } from "@/stores/user";
 import { markDataMigrated } from "@/plugins/store-initializer";
 import { useTarkovStore, initializeTarkovSync } from "@/stores/tarkov";
 import { initializeProgressSync } from "@/stores/progress";
-import { useMetadataStore } from "@/stores/metadata";
 const { $supabase } = useNuxtApp();
 const userStore = useUserStore();
 const { locale } = useI18n({ useScope: "global" });
-// Initialize metadata store to fetch game data
-const metadataStore = useMetadataStore();
-metadataStore.initialize();
+// Note: metadataStore is initialized via metadata.client.ts plugin
 onMounted(async () => {
   const localeOverride = (userStore.$state as any).localeOverride;
   if (localeOverride) {
