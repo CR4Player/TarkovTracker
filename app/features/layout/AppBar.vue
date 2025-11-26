@@ -133,9 +133,11 @@ const pvpClasses = computed(() =>
     ? "bg-pvp-800 hover:bg-pvp-700 text-pvp-100 shadow-[0_0_0_4px_rgba(0,0,0,0.45)] ring-2 ring-white/60 ring-inset outline outline-2 outline-white/40"
     : "bg-pvp-950/80 text-pvp-400 hover:bg-pvp-900/90"
 );
-function switchMode(mode: GameMode) {
+async function switchMode(mode: GameMode) {
   if (mode !== currentGameMode.value) {
-    tarkovStore.switchGameMode(mode);
+    await tarkovStore.switchGameMode(mode);
+    metadataStore.updateLanguageAndGameMode();
+    await metadataStore.fetchAllData();
   }
 }
 // Async component with error handling
