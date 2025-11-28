@@ -269,6 +269,7 @@
           no_members: "No members in this team yet! Invite them using the link above.",
           membercard: {
             this_is_you: "(This is you)",
+            owner: "Owner",
             taskscomplete: "{completed}/{total} tasks completed",
             kick_success: "Teammate kicked successfully.",
             kick_error: "Error kicking teammate.",
@@ -304,6 +305,12 @@
           url_hidden: "Hidden for Streamer mode.",
           team_invite_url_label: "Team Invite URL",
           display_name_label: "Team Display Name",
+          show_link: "Show",
+          hide_link: "Hide",
+          copy_link: "Copy",
+          link_hidden_message: "Click 'Show' to reveal your team invite link",
+          user_not_authenticated: "User not authenticated.",
+          leave_team_error_unexpected: "Unexpected error leaving team.",
         },
         teaminvite: {
           description: "You have received an invite to a TarkovTracker team",

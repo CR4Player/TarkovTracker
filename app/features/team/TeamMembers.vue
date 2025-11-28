@@ -4,10 +4,10 @@
       {{ $t("page.team.card.manageteam.title") }}
     </template>
     <template #content>
-      <template v-if="teamMembers.length > 0">
+      <template v-if="allMembers.length > 0">
         <div class="p-4">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div v-for="teammate in teamMembers" :key="teammate">
+            <div v-for="teammate in allMembers" :key="teammate">
               <teammember-card
                 :teammember="teammate"
                 :is-team-owner-view="isCurrentUserTeamOwner"
@@ -16,7 +16,7 @@
           </div>
         </div>
       </template>
-      <template v-else-if="teamMembers.length === 0">
+      <template v-else-if="allMembers.length === 0">
         <div class="p-4 text-center">
           {{ $t("page.team.card.manageteam.no_members") }}
         </div>
@@ -51,5 +51,26 @@
     const currentTeamOwner = teamStore.owner;
     const currentSupabaseUID = $supabase.user.id;
     return currentTeamOwner === currentSupabaseUID;
+  });
+
+  // Ensure current user is always included in the members list
+  const allMembers = computed(() => {
+    const currentUID = $supabase.user.id;
+    if (!currentUID) return teamMembers.value;
+
+    // Check if current user is already in the members list
+    const hasCurrentUser = teamMembers.value.includes(currentUID);
+
+    if (hasCurrentUser) {
+      // Sort so current user (owner) appears first
+      return [...teamMembers.value].sort((a, b) => {
+        if (a === currentUID) return -1;
+        if (b === currentUID) return 1;
+        return 0;
+      });
+    } else {
+      // Add current user to the beginning of the list
+      return [currentUID, ...teamMembers.value];
+    }
   });
 </script>

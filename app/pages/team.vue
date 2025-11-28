@@ -1,15 +1,18 @@
 <template>
-  <div class="container mx-auto space-y-4 px-4 py-6">
-    <div v-if="route?.query?.team && route?.query?.code" class="mx-auto max-w-5xl">
+  <div class="container mx-auto space-y-6 px-4 py-6">
+    <div v-if="route?.query?.team && route?.query?.code" class="mx-auto max-w-6xl">
       <TeamInvite />
     </div>
     <div class="relative mx-auto max-w-6xl">
-      <div class="grid gap-4">
-        <TeamMembers v-if="systemStore.$state.team" class="col-span-full" />
-        <div class="grid gap-4 md:grid-cols-2">
+      <div class="space-y-6">
+        <!-- Team Management Section -->
+        <div class="grid gap-4 lg:grid-cols-2">
           <MyTeam />
           <TeamOptions />
         </div>
+
+        <!-- Team Members Section -->
+        <TeamMembers v-if="systemStore.$state.team" />
       </div>
     </div>
   </div>

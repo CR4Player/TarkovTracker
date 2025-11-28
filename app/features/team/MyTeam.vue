@@ -7,24 +7,56 @@
       <div v-if="!localUserTeam" class="py-4 text-center">
         {{ $t("page.team.card.myteam.no_team") }}
       </div>
-      <div v-else class="p-4">
-        <team-input-row
-          v-model="visibleUrl"
-          :label="$t('page.team.card.myteam.team_invite_url_label')"
-          icon="mdi-content-copy"
-          readonly
-          @action="copyUrl"
-        />
+      <div v-else class="space-y-4 p-4">
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium">
+            {{ $t("page.team.card.myteam.team_invite_url_label") }}
+          </label>
+          <div class="flex items-center gap-2">
+            <UButton
+              :icon="linkVisible ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+              variant="ghost"
+              size="xs"
+              @click="linkVisible = !linkVisible"
+            >
+              {{
+                linkVisible
+                  ? $t("page.team.card.myteam.hide_link")
+                  : $t("page.team.card.myteam.show_link")
+              }}
+            </UButton>
+            <UButton
+              v-if="linkVisible"
+              icon="i-mdi-content-copy"
+              variant="ghost"
+              size="xs"
+              @click="copyUrl"
+            >
+              {{ $t("page.team.card.myteam.copy_link") }}
+            </UButton>
+          </div>
+        </div>
+        <div v-if="linkVisible" class="rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
+          <div class="font-mono text-sm break-all">
+            {{ teamUrl }}
+          </div>
+        </div>
+        <div v-else class="rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
+          <div class="text-sm text-gray-500 italic dark:text-gray-400">
+            {{ $t("page.team.card.myteam.link_hidden_message") }}
+          </div>
+        </div>
       </div>
     </template>
     <template #footer>
-      <div class="flex items-end justify-start p-4">
+      <div
+        class="flex items-center justify-start gap-2 border-t border-gray-200 p-4 dark:border-gray-700"
+      >
         <UButton
           v-if="!localUserTeam"
           :disabled="loading.createTeam || !isLoggedIn"
           :loading="loading.createTeam"
-          variant="outline"
-          class="mx-1"
+          color="primary"
           icon="i-mdi-account-group"
           @click="handleCreateTeam"
         >
@@ -34,8 +66,8 @@
           v-else
           :disabled="loading.leaveTeam || !isLoggedIn"
           :loading="loading.leaveTeam"
+          color="error"
           variant="outline"
-          class="mx-1"
           icon="i-mdi-account-off"
           @click="handleLeaveTeam"
         >
@@ -56,20 +88,18 @@
   // Team functions moved to Cloudflare Workers - TODO: Implement replacement
   import { useTeamStoreWithSupabase } from "@/stores/useTeamStore";
   import { useSystemStoreWithSupabase } from "@/stores/useSystemStore";
-  import { usePreferencesStore } from "@/stores/preferences";
   import { useTarkovStore } from "@/stores/tarkov";
   import GenericCard from "@/components/ui/GenericCard.vue";
-  import TeamInputRow from "./TeamInputRow.vue";
   import { useEdgeFunctions } from "@/composables/api/useEdgeFunctions";
   const { t } = useI18n({ useScope: "global" });
   const { teamStore } = useTeamStoreWithSupabase();
   const { systemStore } = useSystemStoreWithSupabase();
-  const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
   const { $supabase } = useNuxtApp();
   const toast = useToast();
   const { createTeam, leaveTeam } = useEdgeFunctions();
   const isLoggedIn = computed(() => $supabase.user.loggedIn);
+  const linkVisible = ref(false);
   const generateRandomName = (length = 6) =>
     Array.from({ length }, () =>
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".charAt(
@@ -78,7 +108,8 @@
     ).join("");
   const localUserTeam = computed(() => systemStore.$state?.team || null);
   const isTeamOwner = computed(() => {
-    const owner = (teamStore.$state as any).owner_id ?? (teamStore.$state as any).owner;
+    const state = teamStore.$state as { owner_id?: string; owner?: string };
+    const owner = state.owner_id ?? state.owner;
     return owner === $supabase.user.id && systemStore.$state?.team != null;
   });
   const loading = ref({ createTeam: false, leaveTeam: false });
@@ -99,10 +130,16 @@
 
   const buildTeamPassword = () => generateRandomName(12);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interface TeamFunctionPayload {
+    name?: string;
+    password?: string;
+    maxMembers?: number;
+    teamId?: string;
+  }
+
   const callTeamFunction = async (
     functionName: string,
-    payload: Record<string, any> = {}
+    payload: TeamFunctionPayload = {}
   ): Promise<CreateTeamResponse | LeaveTeamResponse> => {
     validateAuth();
     switch (functionName) {
@@ -181,15 +218,19 @@
       );
       await waitForStoreUpdate(
         () => teamStore.$state,
-        (state) =>
-          Boolean(
-            state &&
-              typeof state === "object" &&
-              ((("owner" in state) && (state as any).owner === $supabase.user.id) ||
-                (("owner_id" in state) && (state as any).owner_id === $supabase.user.id)) &&
-              (("password" in state && (state as any).password) ||
-                ("join_code" in state && (state as any).join_code))
-          )
+        (state) => {
+          if (!state || typeof state !== "object") return false;
+          const teamState = state as {
+            owner?: string;
+            owner_id?: string;
+            password?: string;
+            join_code?: string;
+          };
+          const hasOwner =
+            teamState.owner === $supabase.user.id || teamState.owner_id === $supabase.user.id;
+          const hasPassword = Boolean(teamState.password || teamState.join_code);
+          return hasOwner && hasPassword;
+        }
       );
       await nextTick();
       if (localUserTeam.value) {
@@ -288,9 +329,6 @@
       return `${baseUrl}${currentPath}?${params}`;
     }
   });
-  const visibleUrl = computed(() =>
-    preferencesStore.getStreamerMode ? t("page.team.card.myteam.url_hidden") : teamUrl.value
-  );
   watch(
     () => tarkovStore.getDisplayName,
     (newDisplayName) => {
