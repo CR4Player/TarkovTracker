@@ -24,6 +24,16 @@
       </UButton>
     </div>
     <div class="space-y-3">
+      <UAlert
+        v-if="!supportsRawTokens"
+        color="warning"
+        variant="soft"
+        :title="t('page.settings.card.apitokens.token_value_unavailable', 'Token values are hidden')"
+        :description="t(
+          'page.settings.card.apitokens.token_value_unavailable_desc',
+          'Token viewing requires the latest database migration. Tokens will still work, but create a new token after updating the database to view and copy it here.'
+        )"
+      />
       <div v-if="loading" class="space-y-2">
         <div class="h-12 animate-pulse rounded-lg bg-white/5"></div>
         <div class="h-12 animate-pulse rounded-lg bg-white/5"></div>
@@ -40,10 +50,10 @@
           v-for="token in tokens"
           :key="token.id"
           class="bg-surface-900 border border-white/10"
-          :ui="{ body: 'space-y-2' }"
+          :ui="{ body: 'space-y-3' }"
         >
           <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="space-y-2">
+            <div class="w-full space-y-2">
               <div class="flex items-center gap-2">
                 <UIcon name="i-mdi-key-variant" class="text-primary-400 h-5 w-5" />
                 <span class="text-surface-50 font-medium">
@@ -63,6 +73,49 @@
                 >
                   {{ permissionLabel(perm) }}
                 </UBadge>
+              </div>
+              <div
+                class="bg-surface-950/50 flex items-center gap-2 rounded border border-white/5 p-2"
+                :class="{ 'opacity-70': !token.tokenValue }"
+              >
+                <code class="text-surface-300 flex-1 font-mono text-xs">
+                  <template v-if="token.tokenValue">
+                    {{ visibleTokens.has(token.id) ? token.tokenValue : maskToken(token.tokenValue) }}
+                  </template>
+                  <template v-else>
+                    {{
+                      supportsRawTokens
+                        ? t(
+                            'page.settings.card.apitokens.token_value_missing',
+                            'Token value not stored. Create a new token to view and copy it.'
+                          )
+                        : t(
+                            'page.settings.card.apitokens.token_value_hidden',
+                            'Token values are temporarily hidden until the database migration runs.'
+                          )
+                    }}
+                  </template>
+                </code>
+                <div class="flex items-center gap-1">
+                  <UButton
+                    :icon="visibleTokens.has(token.id) ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    :padded="false"
+                    :disabled="!token.tokenValue"
+                    @click="toggleTokenVisibility(token.id)"
+                  />
+                  <UButton
+                    icon="i-mdi-content-copy"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    :padded="false"
+                    :disabled="!token.tokenValue"
+                    @click="copyTokenValue(token.tokenValue)"
+                  />
+                </div>
               </div>
               <div class="text-surface-400 flex flex-wrap gap-3 text-xs">
                 <span>
@@ -105,28 +158,22 @@
         </UCard>
       </div>
     </div>
-    <UModal v-model="showCreateDialog">
-      <UCard class="bg-surface-900 border border-white/10" :ui="{ body: 'space-y-4' }">
-        <template #header>
-          <div class="flex items-center gap-2 px-4 py-3">
-            <UIcon name="i-mdi-key-plus" class="text-primary-400 h-5 w-5" />
-            <h3 class="text-lg font-semibold">
-              {{ t('page.settings.card.apitokens.new_token_expand') }}
-            </h3>
-          </div>
-        </template>
-        <div class="space-y-4 px-4 pb-2">
+    <UModal v-model:open="showCreateDialog">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-mdi-key-plus" class="text-primary-400 h-5 w-5" />
+          <h3 class="text-lg font-semibold">
+            {{ t('page.settings.card.apitokens.new_token_expand') }}
+          </h3>
+        </div>
+      </template>
+      <template #body>
+        <div class="space-y-4">
           <div class="space-y-2">
             <p class="text-surface-200 text-sm font-semibold">
               {{ t('page.settings.card.apitokens.form.gamemode_title') }}
             </p>
-            <URadio
-              v-for="mode in gameModes"
-              :key="mode.value"
-              v-model="selectedGameMode"
-              :label="mode.label"
-              :value="mode.value"
-            />
+            <URadioGroup v-model="selectedGameMode" :options="gameModes" />
           </div>
           <div class="space-y-2">
             <p class="text-surface-200 text-sm font-semibold">
@@ -163,35 +210,35 @@
             :title="t('page.settings.card.apitokens.form.warning')"
           />
         </div>
-        <template #footer>
-          <div class="flex justify-end gap-2 px-4 pb-4">
-            <UButton color="neutral" variant="ghost" @click="closeCreateDialog">
-              {{ t('page.settings.card.apitokens.form.cancel') }}
-            </UButton>
-            <UButton
-              color="primary"
-              variant="solid"
-              :disabled="!canSubmit"
-              :loading="creating"
-              @click="createToken"
-            >
-              {{ t('page.settings.card.apitokens.submit_new_token') }}
-            </UButton>
-          </div>
-        </template>
-      </UCard>
+      </template>
+      <template #footer="{ close }">
+        <div class="flex justify-end gap-2">
+          <UButton color="neutral" variant="ghost" @click="close">
+            {{ t('page.settings.card.apitokens.form.cancel') }}
+          </UButton>
+          <UButton
+            color="primary"
+            variant="solid"
+            :disabled="!canSubmit"
+            :loading="creating"
+            @click="createToken"
+          >
+            {{ t('page.settings.card.apitokens.submit_new_token') }}
+          </UButton>
+        </div>
+      </template>
     </UModal>
-    <UModal v-model="showTokenCreatedDialog">
-      <UCard class="bg-surface-900 border border-white/10" :ui="{ body: 'space-y-4' }">
-        <template #header>
-          <div class="flex items-center gap-2 px-4 py-3">
-            <UIcon name="i-mdi-check-circle" class="h-5 w-5 text-green-400" />
-            <h3 class="text-lg font-semibold">
-              {{ t('page.settings.card.apitokens.token_created') }}
-            </h3>
-          </div>
-        </template>
-        <div class="space-y-3 px-4 pb-4">
+    <UModal v-model:open="showTokenCreatedDialog">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-mdi-check-circle" class="h-5 w-5 text-green-400" />
+          <h3 class="text-lg font-semibold">
+            {{ t('page.settings.card.apitokens.token_created') }}
+          </h3>
+        </div>
+      </template>
+      <template #body>
+        <div class="space-y-3">
           <p class="text-surface-300 text-sm">
             {{ t('page.settings.card.apitokens.token_created_description') }}
           </p>
@@ -207,14 +254,14 @@
             </template>
           </UInput>
         </div>
-        <template #footer>
-          <div class="flex justify-end gap-2 px-4 pb-4">
-            <UButton color="primary" variant="solid" @click="showTokenCreatedDialog = false">
-              {{ t('page.settings.card.apitokens.token_created_close') }}
-            </UButton>
-          </div>
-        </template>
-      </UCard>
+      </template>
+      <template #footer="{ close }">
+        <div class="flex justify-end gap-2">
+          <UButton color="primary" variant="solid" @click="close">
+            {{ t('page.settings.card.apitokens.token_created_close') }}
+          </UButton>
+        </div>
+      </template>
     </UModal>
   </div>
 </template>
@@ -249,6 +296,8 @@
   const selectedPermissions = ref<TokenPermission[]>(['GP']);
   const note = ref('');
   const generatedToken = ref('');
+  const visibleTokens = ref<Set<string>>(new Set());
+  const supportsRawTokens = ref(true);
   const userLoggedIn = computed(() => $supabase.user.loggedIn);
   const permissionOptions = computed(() =>
     Object.entries(API_PERMISSIONS).map(([key, value]) => ({
@@ -281,6 +330,11 @@
       ) || null
     );
   };
+  const buildSelectQuery = () => {
+    const baseColumns =
+      'token_id, note, permissions, game_mode, created_at, last_used_at, usage_count, is_active';
+    return supportsRawTokens.value ? `${baseColumns}, token_value` : baseColumns;
+  };
   const loadTokens = async () => {
     const table = tableClient();
     if (!userLoggedIn.value || !$supabase.user.id || !table) {
@@ -290,12 +344,18 @@
     loading.value = true;
     try {
       const { data, error } = await table
-        .select(
-          'token_id, note, permissions, game_mode, created_at, last_used_at, usage_count, is_active'
-        )
+        .select(buildSelectQuery())
         .eq('user_id', $supabase.user.id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        // If the column does not exist on the remote database, fall back gracefully
+        if ((error as { code?: string })?.code === '42703' && supportsRawTokens.value) {
+          supportsRawTokens.value = false;
+          await loadTokens();
+          return;
+        }
+        throw error;
+      }
       tokens.value =
         (data as RawTokenRow[])?.map((row: RawTokenRow) => ({
           id: row.token_id,
@@ -306,6 +366,7 @@
           lastUsedAt: row.last_used_at,
           usageCount: row.usage_count ?? 0,
           isActive: row.is_active ?? true,
+          tokenValue: supportsRawTokens.value ? row.token_value ?? null : null,
         })) || [];
     } catch (error) {
       console.error('[ApiTokens] Failed to load tokens', error);
@@ -328,9 +389,6 @@
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
   };
-  const closeCreateDialog = () => {
-    showCreateDialog.value = false;
-  };
   const resetForm = () => {
     selectedGameMode.value = GAME_MODES.PVP;
     selectedPermissions.value = ['GP'];
@@ -349,20 +407,68 @@
     const table = tableClient();
     if (!canSubmit.value || !$supabase.user.id || !table) return;
     creating.value = true;
+
+    const createTokenDirect = async (rawToken: string) => {
+      const hashedToken = await hashToken(rawToken);
+      const insertPayload: Record<string, unknown> = {
+        user_id: $supabase.user.id,
+        token_hash: hashedToken,
+        permissions: selectedPermissions.value,
+        game_mode: selectedGameMode.value,
+        note: note.value || null,
+      };
+      if (supportsRawTokens.value) {
+        insertPayload.token_value = rawToken;
+      }
+      const attemptInsert = async () =>
+        table.insert(insertPayload).select('token_id').single() as Promise<{
+          data: { token_id: string } | null;
+          error: { code?: string } | null;
+        }>;
+
+      let insertResult = await attemptInsert();
+      if (insertResult.error?.code === '42703' && supportsRawTokens.value) {
+        supportsRawTokens.value = false;
+        delete insertPayload.token_value;
+        insertResult = await attemptInsert();
+      }
+      if (insertResult.error) throw insertResult.error;
+      return insertResult.data?.token_id || null;
+    };
+
     try {
       const rawToken = generateToken();
-      const hashedToken = await hashToken(rawToken);
-      const { error } = await table
-        .insert({
-          user_id: $supabase.user.id,
-          token_hash: hashedToken,
+
+      // Prefer gateway (Cloudflare Worker) for rate limiting & auth hardening
+      try {
+        const response = await edgeFunctions.createToken({
           permissions: selectedPermissions.value,
-          game_mode: selectedGameMode.value,
+          gameMode: selectedGameMode.value,
           note: note.value || null,
-        })
-        .select('token_id')
-        .single();
-      if (error) throw error;
+          tokenValue: supportsRawTokens.value ? rawToken : undefined,
+        });
+        const tokenId = (response as { tokenId?: string })?.tokenId || null;
+        const tokenValue = (response as { tokenValue?: string })?.tokenValue || rawToken;
+
+        generatedToken.value = tokenValue;
+        toast.add({
+          title: t('page.settings.card.apitokens.create_token_success'),
+          color: 'success',
+        });
+        showCreateDialog.value = false;
+        showTokenCreatedDialog.value = true;
+        await loadTokens();
+        if (tokenId && !supportsRawTokens.value) {
+          const created = tokens.value.find((token) => token.id === tokenId);
+          if (created) created.tokenValue = tokenValue;
+        }
+        resetForm();
+        return;
+      } catch (gatewayError) {
+        console.warn('[ApiTokens] Gateway create failed, falling back to direct insert', gatewayError);
+      }
+
+      const newTokenId = await createTokenDirect(rawToken);
       generatedToken.value = rawToken;
       toast.add({
         title: t('page.settings.card.apitokens.create_token_success'),
@@ -371,6 +477,10 @@
       showCreateDialog.value = false;
       showTokenCreatedDialog.value = true;
       await loadTokens();
+      if (newTokenId && !supportsRawTokens.value) {
+        const created = tokens.value.find((token) => token.id === newTokenId);
+        if (created) created.tokenValue = rawToken;
+      }
       resetForm();
     } catch (error) {
       console.error('[ApiTokens] Failed to create token', error);
@@ -393,6 +503,34 @@
     } catch (error) {
       console.error('[ApiTokens] Failed to copy token', error);
     }
+  };
+  const toggleTokenVisibility = (tokenId: string) => {
+    if (visibleTokens.value.has(tokenId)) {
+      visibleTokens.value.delete(tokenId);
+    } else {
+      visibleTokens.value.add(tokenId);
+    }
+  };
+  const copyTokenValue = async (tokenValue?: string | null) => {
+    if (!tokenValue) return;
+    try {
+      await navigator.clipboard.writeText(tokenValue);
+      toast.add({
+        title: t('page.settings.card.apitokens.token_copied'),
+        color: 'success',
+      });
+    } catch (error) {
+      console.error('[ApiTokens] Failed to copy token', error);
+      toast.add({
+        title: t('page.settings.card.apitokens.copy_failed', 'Failed to copy token'),
+        color: 'error',
+      });
+    }
+  };
+  const maskToken = (token?: string | null) => {
+    if (!token) return '';
+    if (token.length <= 12) return token;
+    return `${token.substring(0, 8)}...${token.substring(token.length - 4)}`;
   };
   const revokeToken = async (tokenId: string) => {
     if (!tokenId) return;

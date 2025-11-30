@@ -9,6 +9,7 @@ export interface TokenRow {
   lastUsedAt: string | null;
   usageCount: number | null;
   isActive: boolean;
+  tokenValue?: string | null;
 }
 export interface RawTokenRow {
   token_id: string;
@@ -19,6 +20,7 @@ export interface RawTokenRow {
   last_used_at: string | null;
   usage_count: number | null;
   is_active: boolean | null;
+  token_value?: string | null;
 }
 export interface UpdateProgressPayload {
   level?: number;

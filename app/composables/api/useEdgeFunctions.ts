@@ -13,12 +13,15 @@ type GameMode = 'pvp' | 'pve';
 export const useEdgeFunctions = () => {
   const { $supabase } = useNuxtApp();
   const runtimeConfig = useRuntimeConfig();
-  const rawGatewayUrl = String(
+  const rawTeamGatewayUrl = String(
     runtimeConfig?.public?.teamGatewayUrl ||
       runtimeConfig?.public?.team_gateway_url || // safety for snake_case envs
       ''
   );
-  const gatewayUrl = rawGatewayUrl.replace(/\/+$/, ''); // trim trailing slashes to avoid //team paths
+  const rawTokenGatewayUrl = String(runtimeConfig?.public?.tokenGatewayUrl || rawTeamGatewayUrl);
+
+  const gatewayUrl = rawTeamGatewayUrl.replace(/\/+$/, ''); // team routes
+  const tokenGatewayUrl = rawTokenGatewayUrl.replace(/\/+$/, ''); // token routes
   const getAuthToken = async () => {
     const { data, error } = await $supabase.client.auth.getSession();
     if (error) throw error;
@@ -43,10 +46,29 @@ export const useEdgeFunctions = () => {
     });
     return response;
   };
-  const callSupabaseFunction = async <T>(fnName: string, body: Record<string, unknown>) => {
+  const callTokenGateway = async <T>(action: 'revoke' | 'create', body: Record<string, unknown>) => {
+    if (!tokenGatewayUrl) {
+      throw new Error('Token gateway URL not configured');
+    }
+    const token = await getAuthToken();
+    const response = await $fetch<T>(`${tokenGatewayUrl}/token/${action}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+    return response;
+  };
+  const callSupabaseFunction = async <T>(
+    fnName: string,
+    body: Record<string, unknown>,
+    method: 'POST' | 'GET' | 'DELETE' | 'PUT' = 'POST'
+  ) => {
     const { data, error } = await $supabase.client.functions.invoke<T>(fnName, {
       body,
-      method: 'POST',
+      method,
     });
     if (error) {
       throw error;
@@ -120,20 +142,50 @@ export const useEdgeFunctions = () => {
   const kickTeamMember = async (teamId: string, memberId: string): Promise<KickMemberResponse> => {
     return await preferGateway<KickMemberResponse>('kick', { teamId, memberId });
   };
+  const preferTokenGateway = async <T>(action: 'revoke' | 'create', body: Record<string, unknown>) => {
+    if (tokenGatewayUrl) {
+      try {
+        return await callTokenGateway<T>(action, body);
+      } catch (error) {
+        console.warn(`[EdgeFunctions] Token gateway failed, falling back to Supabase:`, error);
+      }
+    }
+    const fnName = action === 'revoke' ? 'token-revoke' : 'token-create';
+    const method = action === 'revoke' ? 'DELETE' : 'POST';
+    return await callSupabaseFunction<T>(fnName, body, method);
+  };
+  const createToken = async (payload: {
+    permissions: string[];
+    gameMode: GameMode;
+    note?: string | null;
+    tokenValue?: string;
+  }) => {
+    return await preferTokenGateway<{ success?: boolean; tokenId?: string; tokenValue?: string }>(
+      'create',
+      payload
+    );
+  };
   /**
    * Revoke an API token
    * @param tokenId The ID of the token to revoke
    */
   const revokeToken = async (tokenId: string) => {
-    const { data, error } = await $supabase.client.functions.invoke('token-revoke', {
-      body: { tokenId },
-      method: 'DELETE',
-    });
-    if (error) {
-      console.error('Token revocation failed:', error);
-      throw error;
+    try {
+      return await preferTokenGateway<{ success?: boolean }>('revoke', { tokenId });
+    } catch (error) {
+      // Final safety net: direct delete via Supabase table with RLS
+      try {
+        const { error: deleteError } = await $supabase.client
+          .from('api_tokens')
+          .delete()
+          .eq('token_id', tokenId);
+        if (deleteError) throw deleteError;
+        return { success: true } as unknown;
+      } catch (innerError) {
+        console.error('Token revocation failed after all fallbacks:', innerError || error);
+        throw innerError || error;
+      }
     }
-    return data;
   };
   return {
     // Progress management
@@ -144,6 +196,7 @@ export const useEdgeFunctions = () => {
     leaveTeam,
     kickTeamMember,
     // API token management
+    createToken,
     revokeToken,
   };
 };

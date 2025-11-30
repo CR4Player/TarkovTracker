@@ -1,103 +1,81 @@
 <template>
   <div class="container mx-auto space-y-4 px-4 py-6">
-    <div class="grid gap-4 md:grid-cols-2">
-      <!-- Section 1: General Settings -->
-      <GenericCard
-        icon="mdi-cog"
-        icon-color="primary"
-        highlight-color="blue"
-        :fill-height="false"
-        class="h-full"
-      >
-        <template #title>
-          <span class="text-lg font-semibold">
-            {{ $t('settings.general.title', 'General Settings') }}
-          </span>
-        </template>
-        <template #title-right>
-          <UAlert
-            v-if="!user.loggedIn"
-            icon="i-mdi-lock"
-            color="warning"
-            variant="soft"
-            class="inline-flex items-center p-1 text-sm"
-          >
-            <template #description>
-              <span class="text-sm">
-                {{ $t('settings.general.login_required', 'Log in to enable these settings.') }}
+    <!-- Section 1: Game Settings (merged Privacy Mode + Game Edition) -->
+    <GenericCard
+      icon="mdi-gamepad-variant"
+      icon-color="accent-400"
+      highlight-color="accent"
+      :fill-height="false"
+      :title="$t('settings.game_settings.title', 'Game Settings')"
+      title-classes="text-lg font-semibold"
+    >
+      <template #title-right>
+        <UAlert
+          v-if="!user.loggedIn"
+          icon="i-mdi-lock"
+          color="warning"
+          variant="soft"
+          class="inline-flex items-center p-1 text-sm"
+        >
+          <template #description>
+            <span class="text-sm">
+              {{ $t('settings.general.login_required', 'Log in to enable cloud sync.') }}
+            </span>
+          </template>
+        </UAlert>
+      </template>
+      <template #content>
+        <div class="grid gap-6 px-4 py-4 md:grid-cols-2">
+          <!-- Privacy Mode -->
+          <div class="space-y-2">
+            <p class="text-surface-200 text-sm font-semibold">
+              {{ $t('settings.general.privacy_mode', 'Privacy Mode') }}
+            </p>
+            <div class="flex items-center gap-3">
+              <UCheckbox
+                v-model="streamerMode"
+                :disabled="
+                  !user.loggedIn ||
+                  Boolean(preferencesStore.saving && preferencesStore.saving.streamerMode)
+                "
+                label=""
+              />
+              <UIcon
+                v-if="preferencesStore.saving && preferencesStore.saving.streamerMode"
+                name="i-heroicons-arrow-path"
+                class="text-primary-500 h-4 w-4 animate-spin"
+              />
+              <span class="text-surface-400 text-xs">
+                {{
+                  $t(
+                    'settings.general.privacy_mode_hint',
+                    "Hides sensitive information while you're streaming."
+                  )
+                }}
               </span>
-            </template>
-          </UAlert>
-        </template>
-        <template #content>
-          <div class="space-y-4 px-4 py-3">
-            <div class="space-y-2">
-              <p class="text-surface-200 text-sm font-semibold">
-                {{ $t('settings.general.streamer_mode', 'Streamer Mode') }}
-              </p>
-              <div class="flex items-center gap-3">
-                <UCheckbox
-                  v-model="streamerMode"
-                  :disabled="
-                    !user.loggedIn ||
-                    Boolean(preferencesStore.saving && preferencesStore.saving.streamerMode)
-                  "
-                  label=""
-                />
-                <UIcon
-                  v-if="preferencesStore.saving && preferencesStore.saving.streamerMode"
-                  name="i-heroicons-arrow-path"
-                  class="text-primary-500 h-4 w-4 animate-spin"
-                />
-                <span class="text-surface-400 text-xs">
-                  {{
-                    $t(
-                      'settings.general.streamer_mode_hint',
-                      "Hides sensitive information while you're streaming."
-                    )
-                  }}
-                </span>
-              </div>
             </div>
           </div>
-        </template>
-      </GenericCard>
-      <!-- Section 2: Game Profile -->
-      <GenericCard
-        icon="mdi-controller"
-        icon-color="secondary"
-        highlight-color="secondary"
-        :fill-height="false"
-        class="h-full"
-      >
-        <template #title>
-          <span class="text-lg font-semibold">
-            {{ $t('settings.game_profile.title', 'Game Profile') }}
-          </span>
-        </template>
-        <template #content>
-          <div class="space-y-4 px-4 py-3">
-            <div class="space-y-2">
-              <p class="text-surface-200 text-sm font-semibold">
-                {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
-              </p>
-              <USelectMenu
-                v-model="selectedGameEdition"
-                :items="gameEditionOptions"
-                value-key="value"
-                :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
-                :ui="selectUi"
-                :ui-menu="selectMenuUi"
-              >
-                <template #leading>
-                  <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
-                </template>
-              </USelectMenu>
-            </div>
+          <!-- Game Edition -->
+          <div class="space-y-2">
+            <p class="text-surface-200 text-sm font-semibold">
+              {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
+            </p>
+            <USelectMenu
+              v-model="selectedGameEdition"
+              :items="gameEditionOptions"
+              value-key="value"
+              :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
+              :ui="selectUi"
+              :ui-menu="selectMenuUi"
+            >
+              <template #leading>
+                <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
+              </template>
+            </USelectMenu>
           </div>
-        </template>
-      </GenericCard>
-    </div>
+        </div>
+      </template>
+    </GenericCard>
     <!-- Section 3: Data Management -->
     <GenericCard
       icon="mdi-database"
@@ -130,179 +108,38 @@
       <template #content>
         <div class="space-y-3 px-4 py-4">
           <div class="grid gap-3 md:grid-cols-3">
-            <!-- Reset PvP Button with Modal -->
-            <UModal
-              :title="$t('settings.data_management.reset_pvp_title', 'Reset PvP Data')"
-              :description="
-                $t(
-                  'settings.data_management.reset_pvp_confirmation',
-                  'Are you sure you want to reset your PvP progress?'
-                )
-              "
+            <!-- Reset PvP Button -->
+            <UButton
+              icon="i-mdi-shield-sword"
+              block
+              :ui="{
+                base: 'bg-pvp-900 hover:bg-pvp-800 active:bg-pvp-700 text-pvp-200 focus-visible:ring focus-visible:ring-pvp-500',
+              }"
+              @click="showResetPvPDialog = true"
             >
-              <UButton
-                icon="i-mdi-shield-sword"
-                block
-                :ui="{
-                  base: 'bg-pvp-900 hover:bg-pvp-800 active:bg-pvp-700 text-pvp-200 focus-visible:ring focus-visible:ring-pvp-500',
-                }"
-              >
-                {{ $t('settings.data_management.reset_pvp_data', 'Reset PvP Data') }}
-              </UButton>
-              <template #body>
-                <UAlert
-                  icon="i-mdi-alert"
-                  color="pvp"
-                  variant="subtle"
-                  :title="
-                    $t(
-                      'settings.data_management.reset_pvp_confirmation',
-                      'Are you sure you want to reset your PvP progress?'
-                    )
-                  "
-                />
-                <p class="text-surface-200 mt-4 text-sm">
-                  {{
-                    $t(
-                      'settings.data_management.reset_pvp_warning',
-                      'This will permanently delete all your PvP progress including tasks, hideout, and level. Your PvE data will not be affected.'
-                    )
-                  }}
-                </p>
-              </template>
-              <template #footer>
-                <div class="flex w-full items-center gap-3 pt-1">
-                  <UButton
-                    color="neutral"
-                    variant="soft"
-                    class="min-w-26 justify-center text-center"
-                  >
-                    {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
-                  </UButton>
-                  <UButton
-                    color="error"
-                    variant="solid"
-                    class="ml-auto min-w-30 justify-center text-center"
-                    :loading="resetting"
-                    @click="resetPvPData"
-                  >
-                    {{ $t('settings.data_management.reset_confirm', 'Reset PvP Data') }}
-                  </UButton>
-                </div>
-              </template>
-            </UModal>
-            <!-- Reset PvE Button with Modal -->
-            <UModal
-              :title="$t('settings.data_management.reset_pve_title', 'Reset PvE Data')"
-              :description="
-                $t(
-                  'settings.data_management.reset_pve_confirmation',
-                  'Are you sure you want to reset your PvE progress?'
-                )
-              "
+              {{ $t('settings.data_management.reset_pvp_data', 'Reset PvP Data') }}
+            </UButton>
+            <!-- Reset PvE Button -->
+            <UButton
+              icon="i-mdi-account-group"
+              block
+              :ui="{
+                base: 'bg-pve-900 hover:bg-pve-800 active:bg-pve-700 text-pve-200 focus-visible:ring focus-visible:ring-pve-500',
+              }"
+              @click="showResetPvEDialog = true"
             >
-              <UButton
-                icon="i-mdi-account-group"
-                block
-                :ui="{
-                  base: 'bg-pve-900 hover:bg-pve-800 active:bg-pve-700 text-pve-200 focus-visible:ring focus-visible:ring-pve-500',
-                }"
-              >
-                {{ $t('settings.data_management.reset_pve_data', 'Reset PvE Data') }}
-              </UButton>
-              <template #body>
-                <UAlert
-                  icon="i-mdi-alert"
-                  color="pve"
-                  variant="subtle"
-                  :title="
-                    $t(
-                      'settings.data_management.reset_pve_confirmation',
-                      'Are you sure you want to reset your PvE progress?'
-                    )
-                  "
-                />
-                <p class="text-surface-200 mt-4 text-sm">
-                  {{
-                    $t(
-                      'settings.data_management.reset_pve_warning',
-                      'This will permanently delete all your PvE progress including tasks, hideout, and level. Your PvP data will not be affected.'
-                    )
-                  }}
-                </p>
-              </template>
-              <template #footer>
-                <div class="flex w-full items-center gap-3 pt-1">
-                  <UButton color="neutral" variant="soft" class="min-w-26fy-center text-center">
-                    {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
-                  </UButton>
-                  <UButton
-                    color="error"
-                    variant="solid"
-                    class="ml-auto min-w-30 justify-center text-center"
-                    :loading="resetting"
-                    @click="resetPvEData"
-                  >
-                    {{ $t('settings.data_management.reset_confirm', 'Reset PvE Data') }}
-                  </UButton>
-                </div>
-              </template>
-            </UModal>
-            <!-- Reset All Button with Modal -->
-            <UModal
-              :title="$t('settings.data_management.reset_all_title', 'Reset All Data')"
-              :description="
-                $t(
-                  'settings.data_management.reset_all_confirmation',
-                  'Are you sure you want to reset ALL your progress?'
-                )
-              "
+              {{ $t('settings.data_management.reset_pve_data', 'Reset PvE Data') }}
+            </UButton>
+            <!-- Reset All Button -->
+            <UButton
+              color="error"
+              variant="soft"
+              icon="i-mdi-delete-sweep"
+              block
+              @click="showResetAllDialog = true"
             >
-              <UButton color="error" variant="soft" icon="i-mdi-delete-sweep" block>
-                {{ $t('settings.data_management.reset_all_data', 'Reset All Data') }}
-              </UButton>
-              <template #body>
-                <UAlert
-                  icon="i-mdi-alert-octagon"
-                  color="error"
-                  variant="subtle"
-                  :title="
-                    $t(
-                      'settings.data_management.reset_all_confirmation',
-                      'Are you sure you want to reset ALL your progress?'
-                    )
-                  "
-                />
-                <p class="text-surface-200 mt-4 text-sm">
-                  {{
-                    $t(
-                      'settings.data_management.reset_all_warning',
-                      'This will permanently delete ALL your progress for both PvP and PvE modes. This action cannot be undone!'
-                    )
-                  }}
-                </p>
-              </template>
-              <template #footer>
-                <div class="flex w-full items-center gap-3 pt-1">
-                  <UButton
-                    color="neutral"
-                    variant="soft"
-                    class="min-w-26 justify-center text-center"
-                  >
-                    {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
-                  </UButton>
-                  <UButton
-                    color="error"
-                    variant="solid"
-                    class="ml-auto min-w-30 justify-center text-center"
-                    :loading="resetting"
-                    @click="resetAllData"
-                  >
-                    {{ $t('settings.data_management.reset_confirm', 'Reset All Data') }}
-                  </UButton>
-                </div>
-              </template>
-            </UModal>
+              {{ $t('settings.data_management.reset_all_data', 'Reset All Data') }}
+            </UButton>
           </div>
           <p class="text-surface-400 text-center text-xs">
             {{
@@ -315,18 +152,180 @@
         </div>
       </template>
     </GenericCard>
+    <!-- Reset PvP Modal -->
+    <UModal v-model:open="showResetPvPDialog">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-mdi-alert" class="text-pvp-400 h-5 w-5" />
+          <h3 class="text-lg font-semibold">
+            {{ $t('settings.data_management.reset_pvp_title', 'Reset PvP Data') }}
+          </h3>
+        </div>
+      </template>
+      <template #body>
+        <div class="space-y-3">
+          <UAlert
+            icon="i-mdi-alert"
+            color="pvp"
+            variant="subtle"
+            :title="
+              $t(
+                'settings.data_management.reset_pvp_confirmation',
+                'Are you sure you want to reset your PvP progress?'
+              )
+            "
+          />
+          <p class="text-surface-200 text-sm">
+            {{
+              $t(
+                'settings.data_management.reset_pvp_warning',
+                'This will permanently delete all your PvP progress including tasks, hideout, and level. Your PvE data will not be affected.'
+              )
+            }}
+          </p>
+        </div>
+      </template>
+      <template #footer="{ close }">
+        <div class="flex w-full items-center gap-3">
+          <UButton
+            color="neutral"
+            variant="soft"
+            class="min-w-26 justify-center text-center"
+            @click="close"
+          >
+            {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            variant="solid"
+            class="ml-auto min-w-30 justify-center text-center"
+            :loading="resetting"
+            @click="resetPvPData"
+          >
+            {{ $t('settings.data_management.reset_confirm', 'Reset PvP Data') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+    <!-- Reset PvE Modal -->
+    <UModal v-model:open="showResetPvEDialog">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-mdi-alert" class="text-pve-400 h-5 w-5" />
+          <h3 class="text-lg font-semibold">
+            {{ $t('settings.data_management.reset_pve_title', 'Reset PvE Data') }}
+          </h3>
+        </div>
+      </template>
+      <template #body>
+        <div class="space-y-3">
+          <UAlert
+            icon="i-mdi-alert"
+            color="pve"
+            variant="subtle"
+            :title="
+              $t(
+                'settings.data_management.reset_pve_confirmation',
+                'Are you sure you want to reset your PvE progress?'
+              )
+            "
+          />
+          <p class="text-surface-200 text-sm">
+            {{
+              $t(
+                'settings.data_management.reset_pve_warning',
+                'This will permanently delete all your PvE progress including tasks, hideout, and level. Your PvP data will not be affected.'
+              )
+            }}
+          </p>
+        </div>
+      </template>
+      <template #footer="{ close }">
+        <div class="flex w-full items-center gap-3">
+          <UButton
+            color="neutral"
+            variant="soft"
+            class="min-w-26 justify-center text-center"
+            @click="close"
+          >
+            {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            variant="solid"
+            class="ml-auto min-w-30 justify-center text-center"
+            :loading="resetting"
+            @click="resetPvEData"
+          >
+            {{ $t('settings.data_management.reset_confirm', 'Reset PvE Data') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+    <!-- Reset All Modal -->
+    <UModal v-model:open="showResetAllDialog">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-mdi-alert-octagon" class="text-error-400 h-5 w-5" />
+          <h3 class="text-lg font-semibold">
+            {{ $t('settings.data_management.reset_all_title', 'Reset All Data') }}
+          </h3>
+        </div>
+      </template>
+      <template #body>
+        <div class="space-y-3">
+          <UAlert
+            icon="i-mdi-alert-octagon"
+            color="error"
+            variant="subtle"
+            :title="
+              $t(
+                'settings.data_management.reset_all_confirmation',
+                'Are you sure you want to reset ALL your progress?'
+              )
+            "
+          />
+          <p class="text-surface-200 text-sm">
+            {{
+              $t(
+                'settings.data_management.reset_all_warning',
+                'This will permanently delete ALL your progress for both PvP and PvE modes. This action cannot be undone!'
+              )
+            }}
+          </p>
+        </div>
+      </template>
+      <template #footer="{ close }">
+        <div class="flex w-full items-center gap-3">
+          <UButton
+            color="neutral"
+            variant="soft"
+            class="min-w-26 justify-center text-center"
+            @click="close"
+          >
+            {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
+          </UButton>
+          <UButton
+            color="error"
+            variant="solid"
+            class="ml-auto min-w-30 justify-center text-center"
+            :loading="resetting"
+            @click="resetAllData"
+          >
+            {{ $t('settings.data_management.reset_confirm', 'Reset All Data') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
     <!-- Section 4: API Management -->
     <GenericCard
       icon="mdi-key-chain"
-      icon-color="primary"
-      highlight-color="blue"
+      icon-color="purple-400"
+      highlight-color="purple"
       :fill-height="false"
+      :title="$t('page.settings.card.apitokens.title', 'API Tokens')"
+      title-classes="text-lg font-semibold"
     >
-      <template #title>
-        <span class="text-lg font-semibold">
-          {{ $t('page.settings.card.apitokens.title', 'API Tokens') }}
-        </span>
-      </template>
       <template #title-right>
         <UAlert
           v-if="!user.loggedIn"
@@ -360,75 +359,20 @@
         </div>
       </template>
     </GenericCard>
-    <!-- Section 5: API Documentation -->
-    <GenericCard
-      icon="mdi-api"
-      icon-color="info"
-      highlight-color="purple"
-      :fill-height="false"
-      :title="$t('page.api.title', 'Developer API')"
-    >
-      <template #content>
-        <div class="space-y-4 px-4 py-4">
-          <p class="text-surface-200 text-sm">
-            {{
-              $t(
-                'page.api.description',
-                'Use the TarkovTracker API to access your data programmatically.'
-              )
-            }}
-          </p>
-          <UAlert
-            icon="i-heroicons-information-circle"
-            color="primary"
-            variant="subtle"
-            :title="$t('page.api.auth_required', 'Authentication Required')"
-            class="text-sm"
-          />
-          <div class="space-y-3 pt-2">
-            <h3 class="text-surface-50 text-sm font-semibold">
-              {{ $t('page.api.endpoints.title', 'Endpoints') }}
-            </h3>
-            <div class="bg-surface-950/30 space-y-3 rounded-lg border border-white/5 p-3">
-              <div class="flex items-start gap-3">
-                <UBadge color="primary" variant="solid" size="xs">GET</UBadge>
-                <div class="space-y-1">
-                  <div class="text-surface-50 font-mono text-sm">/api/items</div>
-                  <div class="text-surface-400 text-xs">
-                    {{ $t('page.api.endpoints.items', 'Get all items with their status.') }}
-                  </div>
-                </div>
-              </div>
-              <div class="h-px bg-white/5"></div>
-              <div class="flex items-start gap-3">
-                <UBadge color="primary" variant="solid" size="xs">GET</UBadge>
-                <div class="space-y-1">
-                  <div class="text-surface-50 font-mono text-sm">/api/tasks</div>
-                  <div class="text-surface-400 text-xs">
-                    {{ $t('page.api.endpoints.tasks', 'Get all tasks with their status.') }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-    </GenericCard>
-    <!-- Section 5: Data Migration -->
-    <DataMigrationCard v-if="user.loggedIn" />
+    <!-- Section 5: Data Migration (temporarily disabled until migration flow is refactored) -->
+    <!-- <DataMigrationCard v-if="user.loggedIn" /> -->
     <!-- Section 6: Account Management -->
-    <AccountDeletionCard v-if="user.loggedIn" />
+    <AccountDeletionCard />
   </div>
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import GenericCard from '@/components/ui/GenericCard.vue';
-  import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
-  import ApiTokens from '@/features/settings/ApiTokens.vue';
-  import DataMigrationCard from '@/features/settings/DataMigrationCard.vue';
-  import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useTarkovStore } from '@/stores/useTarkov';
-  import { GAME_EDITIONS } from '@/utils/constants';
+import GenericCard from '@/components/ui/GenericCard.vue';
+import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
+import ApiTokens from '@/features/settings/ApiTokens.vue';
+import { usePreferencesStore } from '@/stores/usePreferences';
+import { useTarkovStore } from '@/stores/useTarkov';
+import { GAME_EDITIONS } from '@/utils/constants';
   // Page meta
   definePageMeta({
     title: 'Settings',
@@ -455,6 +399,9 @@
   };
   // Reactive state
   const resetting = ref(false);
+  const showResetPvPDialog = ref(false);
+  const showResetPvEDialog = ref(false);
+  const showResetAllDialog = ref(false);
   // Computed properties
   const user = computed(() => ({
     loggedIn: Boolean($supabase?.user?.loggedIn),
@@ -494,7 +441,7 @@
         description: 'Your PvP progress has been reset successfully.',
         color: 'success',
       });
-      // Modal will auto-close after successful action
+      showResetPvPDialog.value = false;
     } catch (error) {
       console.error('Error resetting PvP data:', error);
       toast.add({
@@ -516,7 +463,7 @@
         description: 'Your PvE progress has been reset successfully.',
         color: 'success',
       });
-      // Modal will auto-close after successful action
+      showResetPvEDialog.value = false;
     } catch (error) {
       console.error('Error resetting PvE data:', error);
       toast.add({
@@ -538,7 +485,7 @@
         description: 'All your progress has been reset successfully.',
         color: 'success',
       });
-      // Modal will auto-close after successful action
+      showResetAllDialog.value = false;
     } catch (error) {
       console.error('Error resetting all data:', error);
       toast.add({

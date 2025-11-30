@@ -10,10 +10,10 @@
             v-model="migration.apiToken.value"
             label="API Token from Old Site"
             placeholder="Paste your API token here..."
-            :disabled="migration.fetchingApi.value"
-            :error="!!migration.apiError.value"
+            :disabled="migration.fetchingApi?.value"
+            :error="!!migration.apiError?.value"
             class="mb-4"
-            :type="migration.showToken.value ? 'text' : 'password'"
+            :type="migration.showToken?.value ? 'text' : 'password'"
             :ui="{ icon: { trailing: { pointer: '' } } }"
           >
             <template #trailing>
@@ -22,17 +22,17 @@
                 variant="link"
                 icon="i-mdi-eye"
                 :padded="false"
-                @click="migration.showToken.value = !migration.showToken.value"
+                @click="migration.showToken && (migration.showToken.value = !migration.showToken.value)"
               />
             </template>
           </UInput>
           <div class="flex items-center justify-between">
-            <div v-if="migration.fetchingApi.value" class="flex items-center">
+            <div v-if="migration.fetchingApi?.value" class="flex items-center">
               <UIcon name="i-mdi-loading" class="text-primary mr-2 h-6 w-6 animate-spin" />
               <span>Fetching data...</span>
             </div>
             <UAlert
-              v-else-if="migration.apiFetchSuccess.value"
+              v-else-if="migration.apiFetchSuccess?.value"
               color="green"
               variant="soft"
               class="mt-0 mr-4 mb-0 grow"
@@ -41,8 +41,8 @@
             <div v-else class="grow"></div>
             <UButton
               color="primary"
-              :loading="migration.fetchingApi.value"
-              :disabled="!migration.apiToken.value || migration.fetchingApi.value"
+              :loading="migration.fetchingApi?.value"
+              :disabled="!(migration.apiToken?.value) || migration.fetchingApi?.value"
               class="px-4"
               @click="migration.fetchWithApiToken"
             >
@@ -64,43 +64,39 @@
         @show-objectives-details="migration.showObjectivesDetails.value = true"
         @show-failed-tasks-details="migration.showFailedTaskDetails.value = true"
       />
-      <UModal v-model="migration.showObjectivesDetails.value">
-        <UCard>
-          <template #header>
-            <div class="px-4 py-3 text-xl font-medium">Task Objectives Information</div>
-          </template>
-          <div class="px-4 pb-4">
+      <UModal v-model:open="migration.showObjectivesDetails.value">
+        <template #header>
+          <div class="text-xl font-medium">Task Objectives Information</div>
+        </template>
+        <template #body>
+          <div class="space-y-3">
             <p>
               The count of {{ migration.countTaskObjectives.value }} task objectives represents all
               objective data in your import.
             </p>
-            <p class="mt-3">
+            <p>
               The dashboard may show a different number because it only counts unique task
               objectives that are currently relevant to your progress.
             </p>
-            <p class="mt-3">
+            <p>
               This difference is normal and doesn't indicate any problem with your data migration.
             </p>
           </div>
-          <template #footer>
-            <div class="flex justify-end px-4 pb-4">
-              <UButton
-                color="primary"
-                variant="solid"
-                @click="migration.showObjectivesDetails.value = false"
-              >
-                Close
-              </UButton>
-            </div>
-          </template>
-        </UCard>
+        </template>
+        <template #footer="{ close }">
+          <div class="flex justify-end">
+            <UButton color="primary" variant="solid" @click="close">
+              Close
+            </UButton>
+          </div>
+        </template>
       </UModal>
-      <UModal v-model="migration.showFailedTaskDetails.value">
-        <UCard>
-          <template #header>
-            <div class="px-4 py-3 text-xl font-medium">Failed Task Details</div>
-          </template>
-          <div class="px-4 pb-4">
+      <UModal v-model:open="migration.showFailedTaskDetails.value">
+        <template #header>
+          <div class="text-xl font-medium">Failed Task Details</div>
+        </template>
+        <template #body>
+          <div class="space-y-3">
             <p>
               These tasks are marked as "failed" in your data. This typically happens when you chose
               a different quest branch or when a task became unavailable.
@@ -120,24 +116,20 @@
                 </div>
               </div>
             </div>
-            <p class="mt-3">
+            <p>
               <strong>Note:</strong>
               This is normal for tasks that are mutually exclusive with other tasks you've
               completed.
             </p>
           </div>
-          <template #footer>
-            <div class="flex justify-end px-4 pb-4">
-              <UButton
-                color="primary"
-                variant="solid"
-                @click="migration.showFailedTaskDetails.value = false"
-              >
-                Close
-              </UButton>
-            </div>
-          </template>
-        </UCard>
+        </template>
+        <template #footer="{ close }">
+          <div class="flex justify-end">
+            <UButton color="primary" variant="solid" @click="close">
+              Close
+            </UButton>
+          </div>
+        </template>
       </UModal>
     </template>
   </GenericCard>

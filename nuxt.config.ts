@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL || '',
+      tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL || '',
     },
   },
   devtools: {
