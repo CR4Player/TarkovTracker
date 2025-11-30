@@ -457,7 +457,7 @@
   const resetting = ref(false);
   // Computed properties
   const user = computed(() => ({
-    loggedIn: $supabase.user.loggedIn,
+    loggedIn: Boolean($supabase?.user?.loggedIn),
   }));
   // Streamer mode
   const streamerMode = computed({
@@ -476,11 +476,11 @@
     }))
   );
   const selectedGameEdition = computed({
-    get() {
-      return tarkovStore.getGameEdition();
+    get(): number {
+      return tarkovStore.getGameEdition() || 1;
     },
     set(newValue: number) {
-      tarkovStore.setGameEdition(newValue);
+      tarkovStore.setGameEdition(newValue || 1);
     },
   });
   // Methods
