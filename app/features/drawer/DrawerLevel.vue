@@ -14,7 +14,7 @@
       <!-- Card container for expanded state -->
       <div class="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 backdrop-blur-sm">
         <div class="flex items-center gap-1">
-          <span v-if="!mdAndDown" class="mr-1.5 leading-none">
+          <span class="mr-1.5 leading-none">
             <div class="group relative h-14 w-14 overflow-hidden">
               <NuxtImg
                 :src="pmcFactionIcon"
@@ -83,10 +83,10 @@
 </template>
 <script setup>
   import { useBreakpoints } from '@vueuse/core';
-  import { computed, nextTick, ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useMetadataStore } from '@/stores/useMetadata';
-  import { useTarkovStore } from '@/stores/useTarkov';
+import { computed, nextTick, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useMetadataStore } from '@/stores/useMetadata';
+import { useTarkovStore } from '@/stores/useTarkov';
   const { t } = useI18n({ useScope: 'global' });
   // Define breakpoints (matching Vuetify's md breakpoint at 960px)
   const breakpoints = useBreakpoints({

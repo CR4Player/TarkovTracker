@@ -105,7 +105,7 @@
               <!-- Item Image -->
               <div
                 v-if="foundItem.isRealItem"
-                class="relative h-14 w-14 flex-shrink-0 transition-transform group-hover:scale-105 sm:h-20 sm:w-20 lg:h-24 lg:w-24"
+                class="relative h-14 w-14 shrink-0 transition-transform group-hover:scale-105 sm:h-20 sm:w-20 lg:h-24 lg:w-24"
               >
                 <img
                   :src="foundItem.icon"
@@ -115,13 +115,13 @@
                   @error="handleImageError"
                 />
                 <div
-                  class="pointer-events-none absolute inset-0 rounded bg-gradient-to-t from-black/20 to-transparent"
+                  class="pointer-events-none absolute inset-0 rounded bg-linear-to-t from-black/20 to-transparent"
                 ></div>
               </div>
               <!-- Fallback Icon -->
               <div
                 v-else
-                class="bg-surface-800 flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-105 sm:h-20 sm:w-20 lg:h-24 lg:w-24"
+                class="bg-surface-800 flex h-14 w-14 shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-105 sm:h-20 sm:w-20 lg:h-24 lg:w-24"
               >
                 <UIcon
                   :name="foundItem.icon"

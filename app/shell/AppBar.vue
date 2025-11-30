@@ -1,8 +1,8 @@
 <template>
   <header
-    class="from-surface-800/95 to-surface-950/95 border-primary-800/60 fixed inset-x-0 top-0 z-50 h-16 border-b bg-linear-to-tr shadow-[0_1px_0_rgba(0,0,0,0.4)] backdrop-blur-sm"
+    class="from-surface-800/95 to-surface-950/95 border-primary-800/60 fixed top-0 right-0 z-40 h-16 border-b bg-linear-to-tr shadow-[0_1px_0_rgba(0,0,0,0.4)] backdrop-blur-sm"
   >
-    <div class="flex h-full items-center gap-3 px-3">
+    <div class="flex h-full items-center gap-1 px-2 sm:gap-3 sm:px-3">
       <!-- Left: Toggle Button -->
       <UButton
         :icon="navBarIcon"
@@ -18,7 +18,7 @@
         {{ pageTitle }}
       </span>
       <!-- Right: Status Icons & Settings -->
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex items-center gap-1 sm:gap-2">
         <span v-if="dataError" title="Error Loading Tarkov Data">
           <UIcon name="i-mdi-database-alert" class="text-error-500 h-6 w-6" />
         </span>
@@ -27,60 +27,81 @@
         </span>
         <!-- Game mode quick toggle -->
         <div
-          class="bg-surface-900/90 hidden items-center overflow-hidden rounded-md border border-white/15 ring-1 ring-white/10 sm:flex"
+          class="bg-surface-900/90 flex items-center overflow-hidden rounded-md border border-white/15 ring-1 ring-white/10"
           role="group"
           aria-label="Toggle game mode"
         >
           <button
             type="button"
-            class="focus:ring-pvp-400 inline-flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:py-1.75 md:text-sm lg:px-4 lg:py-2 lg:text-[15px]"
+            class="focus:ring-pvp-400 inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
             :class="pvpClasses"
             @click="switchMode(GAME_MODES.PVP)"
           >
-            <UIcon name="i-mdi-sword-cross" class="h-4 w-4 md:h-5 md:w-5" />
+            <UIcon name="i-mdi-sword-cross" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
             PvP
           </button>
-          <div class="h-9 w-[1.5px] bg-white/15" aria-hidden="true" />
+          <div class="h-8 w-px bg-white/15" aria-hidden="true" />
           <button
             type="button"
-            class="focus:ring-pve-400 inline-flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:py-1.75 md:text-sm lg:px-4 lg:py-2 lg:text-[15px]"
+            class="focus:ring-pve-400 inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
             :class="pveClasses"
             @click="switchMode(GAME_MODES.PVE)"
           >
-            <UIcon name="i-mdi-account-group" class="h-4 w-4 md:h-5 md:w-5" />
+            <UIcon name="i-mdi-account-group" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
             PvE
           </button>
         </div>
-        <div class="hidden items-center gap-2 sm:flex">
-          <USelectMenu
-            v-model="selectedLocale"
-            :items="localeItems"
-            value-key="value"
-            :popper="{ placement: 'bottom-end', strategy: 'fixed' }"
-            :ui="selectUi"
-            :ui-menu="selectMenuUi"
-            class="h-10 w-auto min-w-0 px-2 whitespace-nowrap"
-          >
-            <template #leading>
-              <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
-            </template>
-          </USelectMenu>
-        </div>
+        <!-- Language selector -->
+        <USelectMenu
+          v-model="selectedLocale"
+          :items="localeItems"
+          value-key="value"
+          :popper="{ placement: 'bottom-end', strategy: 'fixed' }"
+          :ui="{
+            base: 'bg-surface-900/90 border border-white/15 ring-1 ring-white/10 rounded-md px-2 py-1.5',
+          }"
+          :ui-menu="{
+            container: 'z-[9999]',
+            width: 'w-auto min-w-32',
+            background: 'bg-surface-900',
+            shadow: 'shadow-xl',
+            rounded: 'rounded-lg',
+            ring: 'ring-1 ring-white/10',
+            padding: 'p-1',
+            option: {
+              base: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded',
+              inactive: 'text-surface-200 hover:bg-surface-800 hover:text-white',
+              active: 'bg-surface-800 text-white',
+              selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
+            },
+          }"
+          class="h-auto min-w-0"
+        >
+          <template #leading>
+            <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
+          </template>
+          <template #default>
+            <span class="text-xs font-medium uppercase text-white/80">{{ locale }}</span>
+          </template>
+          <template #trailing>
+            <UIcon name="i-mdi-chevron-down" class="text-surface-400 h-3 w-3" />
+          </template>
+        </USelectMenu>
       </div>
     </div>
   </header>
 </template>
 <script setup lang="ts">
   import { useWindowSize } from '@vueuse/core';
-  import { storeToRefs } from 'pinia';
-  import { computed, onMounted, onUnmounted, ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useRoute } from 'vue-router';
-  import { useAppStore } from '@/stores/useApp';
-  import { useMetadataStore } from '@/stores/useMetadata';
-  import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useTarkovStore } from '@/stores/useTarkov';
-  import { GAME_MODES, type GameMode } from '@/utils/constants';
+import { storeToRefs } from 'pinia';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
+import { useAppStore } from '@/stores/useApp';
+import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
+import { useTarkovStore } from '@/stores/useTarkov';
+import { GAME_MODES, type GameMode } from '@/utils/constants';
   const { t } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
   const tarkovStore = useTarkovStore();
@@ -90,7 +111,10 @@
   const { width } = useWindowSize();
   const mdAndDown = computed(() => width.value < 960); // Vuetify md breakpoint is 960px
   const navBarIcon = computed(() => {
-    return appStore.drawerShow && appStore.drawerRail ? 'i-mdi-menu-open' : 'i-mdi-menu';
+    if (mdAndDown.value) {
+      return appStore.mobileDrawerExpanded ? 'i-mdi-menu-open' : 'i-mdi-menu';
+    }
+    return appStore.drawerRail ? 'i-mdi-menu' : 'i-mdi-menu-open';
   });
   const currentGameMode = computed(() => {
     return tarkovStore.getCurrentGameMode();
@@ -118,9 +142,9 @@
     t(`page.${String(route.name || 'index').replace('-', '_')}.title`)
   );
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && appStore.drawerShow && mdAndDown.value) {
+    if (event.key === 'Escape' && appStore.mobileDrawerExpanded && mdAndDown.value) {
       event.preventDefault();
-      appStore.toggleDrawerShow();
+      appStore.setMobileDrawerExpanded(false);
     }
   }
   onMounted(() => {
@@ -131,14 +155,14 @@
   });
   function changeNavigationDrawer() {
     if (mdAndDown.value) {
-      appStore.toggleDrawerShow();
+      appStore.toggleMobileDrawerExpanded();
     } else {
       appStore.toggleDrawerRail();
     }
   }
   const { locale, availableLocales } = useI18n({ useScope: 'global' });
   const localeItems = computed(() => {
-    const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
+    const languageNames = new Intl.DisplayNames([locale.value], { type: 'language' });
     return availableLocales.map((localeCode) => ({
       label: languageNames.of(localeCode) || localeCode.toUpperCase(),
       value: localeCode,
@@ -146,33 +170,22 @@
   });
   const selectedLocale = computed({
     get() {
+      // Return the current locale string directly
       return locale.value;
     },
-    set(newValue) {
+    set(newValue: string | { value: string }) {
       if (!newValue) return;
-      locale.value = newValue;
-      // persist in preferences
-      preferencesStore.localeOverride = newValue;
-      console.log('[AppBar] Setting locale to:', newValue);
-      metadataStore.updateLanguageAndGameMode(newValue);
+      // Handle both string and object values
+      const newLocale = typeof newValue === 'string' ? newValue : newValue.value;
+      if (newLocale === locale.value) return;
+      // Set the i18n locale (this updates the UI translations)
+      locale.value = newLocale;
+      // Persist in preferences
+      preferencesStore.localeOverride = newLocale;
+      console.log('[AppBar] Setting locale to:', newLocale);
+      // Update metadata store and refetch data with new language
+      metadataStore.updateLanguageAndGameMode(newLocale);
       metadataStore.fetchAllData(true).catch(console.error);
     },
   });
-  // UI configs (shared look with settings page)
-  const selectUi = {};
-  const selectMenuUi = {
-    container: 'z-[9999]',
-    width: 'w-auto min-w-0',
-    background: 'bg-surface-900',
-    shadow: 'shadow-xl',
-    rounded: 'rounded-lg',
-    ring: 'ring-1 ring-white/10',
-    padding: 'p-1',
-    option: {
-      base: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded',
-      inactive: 'text-surface-200 hover:bg-surface-800 hover:text-white',
-      active: 'bg-surface-800 text-white',
-      selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
-    },
-  };
 </script>

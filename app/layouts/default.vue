@@ -4,10 +4,9 @@
     <NavDrawer />
     <!-- Application Bar (fixed header) -->
     <AppBar
-      class="bg-background/75 fixed top-0 right-0 z-20 border-b border-white/10 backdrop-blur-md transition-all duration-300 ease-in-out"
+      class="transition-all duration-300 ease-in-out"
       :style="{
         left: mainMarginLeft,
-        width: 'auto',
       }"
     />
     <!-- Main content area -->
@@ -33,8 +32,8 @@
 </template>
 <script setup lang="ts">
   import { useBreakpoints } from '@vueuse/core';
-  import { computed, defineAsyncComponent } from 'vue';
-  import { useAppStore } from '@/stores/useApp';
+import { computed, defineAsyncComponent } from 'vue';
+import { useAppStore } from '@/stores/useApp';
   const appStore = useAppStore();
   // Define breakpoints (matching Vuetify's md breakpoint at 960px)
   const breakpoints = useBreakpoints({
@@ -44,7 +43,7 @@
   const mdAndDown = breakpoints.smaller('md');
   // Calculate margin-left based on sidebar state
   const mainMarginLeft = computed(() => {
-    if (mdAndDown.value) return '0px';
+    if (mdAndDown.value) return '56px'; // Rail width on mobile
     return appStore.drawerRail ? '56px' : '224px';
   });
   // Lazy-load shell components

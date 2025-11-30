@@ -13,9 +13,54 @@
     language: 'Язык',
   },
   page: {
+    index: {
+      title: 'Приборная панель',
+    },
     dashboard: {
       title: 'Приборная панель',
+      hero: {
+        overall: 'Общий',
+        welcome: 'С возвращением, Оператор',
+        subtitle: 'Отслеживайте свой прогресс на улицах Таркова',
+        tasksComplete: 'Заданий выполнено',
+        available: 'Доступно',
+        failed: 'Провалено',
+        level: 'Уровень',
+      },
+      progress: {
+        title: 'Детализация прогресса',
+        tasks: 'Задания',
+        objectives: 'Цели',
+        items: 'Предметы заданий',
+        kappa: 'Задания Каппа',
+        lightkeeper: 'Смотритель маяка',
+      },
+      milestones: {
+        title: 'Вехи',
+        starter: 'Начало пути',
+        halfway: 'Половина пути',
+        veteran: 'Почти готово',
+        kappa: {
+          title: 'Каппа',
+          subtitle: 'Контейнер получен',
+        },
+        lightkeeper: {
+          title: 'Смотритель маяка',
+          subtitle: 'Торговец разблокирован',
+        },
+      },
+      traders: {
+        title: 'Прогресс торговцев',
+      },
       stats: {
+        available: {
+          stat: 'Доступно',
+          details: 'Задания готовы к выполнению.',
+        },
+        failed: {
+          stat: 'Провалено',
+          details: 'Проваленные задания.',
+        },
         allTasks: {
           stat: 'Выполненные задания',
           details: 'Количество выполненных вами заданий.',
@@ -27,6 +72,10 @@
         allObjectives: {
           stat: 'Задачи квеста',
           details: 'Общее количество уникальных задач в квестах.',
+        },
+        kappaTasks: {
+          stat: 'Задания Каппа',
+          details: 'Задания необходимые для квеста контейнера Каппа.',
         },
       },
     },
@@ -288,6 +337,15 @@
     },
     login: {
       title: 'Войти',
+      subtitle: 'Войдите, чтобы получить доступ к своему аккаунту',
+      discordbutton: 'Продолжить с Discord',
+      githubbutton: 'Продолжить с GitHub',
+      card_title: 'Войдите, чтобы получить доступ к своему аккаунту',
+      card_subtitle: 'Отслеживайте свой прогресс, делитесь с друзьями и координируйте рейды',
+      continue_twitch: 'Продолжить с Twitch',
+      continue_discord: 'Продолжить с Discord',
+      privacy_policy: 'Политика конфиденциальности',
+      terms_of_service: 'Условия использования',
     },
     api: {
       stats: {
@@ -326,6 +384,16 @@
       discord: 'Discord',
       github: 'GitHub',
     },
+    community_label: 'Сообщество',
+    legal_label: 'Юридическая информация',
+    support_button: 'Поддержать разработку',
+    support_tagline: 'Помогите сохранить TarkovTracker бесплатным и актуальным',
+    terms_of_service: 'Условия использования',
+    privacy_policy: 'Политика конфиденциальности',
+    game_attribution: 'Игровой контент и материалы являются товарными знаками и защищены авторским правом Battlestate Games и ее лицензиаров. Все права защищены.',
+    support: 'Поддержка',
+    contributors: 'Участники',
+    changelog: 'История изменений',
   },
   module: {
     team_settings: {
@@ -335,17 +403,66 @@
   },
   navigation_drawer: {
     home: 'Главная',
-    settings: 'Настройки',
+    api: 'API',
     login: 'Войти',
-    logout: 'Выйти из системы',
+    logout: 'Выйти',
     level: 'Уровень',
     team: 'Команда',
     tasks: 'Задания',
     hideout: 'Убежище',
-    neededitems: 'Предметы',
+    neededitems: 'Необходимые предметы',
+    traders: 'Торговцы',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
     tarkovchanges: 'Tarkov Changes',
+    tarkovmonitor: 'Tarkov Monitor',
+    settings: 'Настройки',
   },
+  settings: {
+    title: 'Настройки',
+    general: {
+      title: 'Общие настройки',
+      language: 'Язык',
+      streamer_mode: 'Режим стримера',
+      streamer_mode_hint: 'Скрывает конфиденциальную информацию во время трансляции.',
+      login_required: 'Войдите, чтобы включить эти настройки.',
+    },
+    game_profile: {
+      title: 'Игровой профиль',
+      game_edition: 'Издание игры',
+      pmc_faction: 'Фракция',
+    },
+    data_management: {
+      title: 'Управление данными',
+      login_hint: 'Войдите, чтобы включить облачную синхронизацию и управлять своим прогрессом на всех устройствах.',
+      reset_pvp_title: 'Сбросить данные PvP',
+      reset_pvp_data: 'Сбросить данные PvP',
+      reset_pvp_confirmation: 'Вы уверены, что хотите сбросить свой PvP прогресс?',
+      reset_pvp_warning: 'Это навсегда удалит весь ваш PvP прогресс, включая задания, убежище и уровень. Ваши PvE данные не будут затронуты.',
+      reset_pve_title: 'Сбросить данные PvE',
+      reset_pve_data: 'Сбросить данные PvE',
+      reset_pve_confirmation: 'Вы уверены, что хотите сбросить свой PvE прогресс?',
+      reset_pve_warning: 'Это навсегда удалит весь ваш PvE прогресс, включая задания, убежище и уровень. Ваши PvP данные не будут затронуты.',
+      reset_all_title: 'Сбросить все данные',
+      reset_all_data: 'Сбросить все данные',
+      reset_all_confirmation: 'Вы уверены, что хотите сбросить ВЕСЬ свой прогресс?',
+      reset_all_warning: 'Это навсегда удалит ВЕСЬ ваш прогресс для режимов PvP и PvE. Это действие нельзя отменить!',
+      reset_cancel: 'Отмена',
+      reset_confirm: 'Сбросить',
+      reset_hint: 'Сбросьте свой прогресс для определенных игровых режимов или все данные.',
+    },
+    danger_zone: {
+      title: 'Опасная зона',
+    },
+  },
+  generic: {
+    item: 'Предмет',
+    items: 'Предметы',
+    close_button: 'Закрыть',
+    loading: 'Загрузка...',
+    error: 'Ошибка',
+  },
+  'task.kappa_req': 'Требуется для квеста Каппа',
+  'task.level_req': 'Требуемый уровень: {level}',
 }
