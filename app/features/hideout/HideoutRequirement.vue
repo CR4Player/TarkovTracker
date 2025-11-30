@@ -102,9 +102,9 @@
       id: string;
       item: {
         id: string;
-        name: string;
-        link: string | null;
-        wikiLink: string | null;
+        name?: string;
+        link?: string | null;
+        wikiLink?: string | null;
       };
       count: number;
     };

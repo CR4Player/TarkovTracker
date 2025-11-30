@@ -10,7 +10,6 @@
       >
         <UIcon name="i-mdi-minus" class="h-5 w-5" />
       </button>
-
       <!-- Editable count display -->
       <div class="min-w-[80px] h-9 border-x border-white/20 bg-surface-800 flex items-center justify-center">
         <template v-if="isEditing">
@@ -36,7 +35,6 @@
           </button>
         </template>
       </div>
-
       <!-- Increase button -->
       <button
         class="flex items-center justify-center w-9 h-9 rounded-r-lg text-surface-200 hover:bg-surface-600 hover:text-white active:bg-surface-500 transition-colors"
@@ -46,7 +44,6 @@
         <UIcon name="i-mdi-plus" class="h-5 w-5" />
       </button>
     </div>
-
     <!-- Mark as 100% complete button - separated with more spacing -->
     <button
       class="flex items-center justify-center w-9 h-9 rounded-lg border transition-colors"
@@ -62,23 +59,19 @@
 </template>
 <script setup lang="ts">
   import { ref, nextTick, watch } from 'vue';
-
   const props = defineProps<{
     currentCount: number;
     neededCount: number;
   }>();
-
   const emit = defineEmits<{
     decrease: [];
     increase: [];
     toggle: [];
     setCount: [count: number];
   }>();
-
   const isEditing = ref(false);
   const editValue = ref(0);
   const inputRef = ref<HTMLInputElement | null>(null);
-
   const startEditing = () => {
     editValue.value = props.currentCount;
     isEditing.value = true;
@@ -87,7 +80,6 @@
       inputRef.value?.select();
     });
   };
-
   const submitEdit = () => {
     if (isEditing.value) {
       // Clamp value between 0 and neededCount
@@ -96,11 +88,9 @@
       isEditing.value = false;
     }
   };
-
   const cancelEdit = () => {
     isEditing.value = false;
   };
-
   // Close editing if currentCount changes externally
   watch(() => props.currentCount, () => {
     if (isEditing.value) {

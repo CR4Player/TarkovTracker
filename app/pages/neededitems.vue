@@ -161,7 +161,6 @@ import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/t
     return Array.from(aggregated.values());
   });
   const search = ref('');
-
   // Helper to check if the parent task/module is completed for self
   const isParentCompleted = (need: NeededItemTaskObjective | NeededItemHideoutModule): boolean => {
     if (need.needType === 'taskObjective') {
@@ -173,10 +172,8 @@ import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/t
     }
     return false;
   };
-
   const filteredItems = computed(() => {
     let items = allItems.value;
-
     // Filter by completion status first
     if (activeFilter.value === 'completed') {
       // Show only items where the parent task/module is completed
@@ -184,7 +181,6 @@ import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/t
     } else {
       // For All, Tasks, Hideout tabs - hide items where parent is completed
       items = items.filter((item) => !isParentCompleted(item));
-
       // Then filter by type (All, Tasks, Hideout)
       if (activeFilter.value === 'tasks') {
         items = items.filter((item) => item.needType === 'taskObjective');
@@ -192,7 +188,6 @@ import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/t
         items = items.filter((item) => item.needType === 'hideoutModule');
       }
     }
-
     // Filter by search
     if (search.value) {
       items = items.filter((item) => {
@@ -201,7 +196,6 @@ import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/t
         return itemName?.toLowerCase().includes(search.value.toLowerCase());
       });
     }
-
     return items;
   });
   const visibleCount = ref(20);

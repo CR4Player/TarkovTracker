@@ -93,14 +93,18 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
+  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
   import { useToast } from '#imports';
   const { $supabase } = useNuxtApp();
   const toast = useToast();
   const { teamStore } = useTeamStoreWithSupabase();
+  const { systemStore } = useSystemStoreWithSupabase();
+  const { kickTeamMember } = useEdgeFunctions();
   // Define the props for the component
   const props = defineProps<{
     teammember: string;
@@ -137,21 +141,25 @@
   const kickingTeammate = ref(false);
   const kickTeammate = async () => {
     if (!props.teammember) return;
+    const teamId = (teamStore.$state as { id?: string })?.id || systemStore.$state?.team;
+    if (!teamId) {
+      toast.add({
+        title: t('page.team.card.manageteam.membercard.kick_error'),
+        description: t('page.team.card.manageteam.membercard.kick_error'),
+        color: 'error',
+      });
+      return;
+    }
     kickingTeammate.value = true;
     try {
-      const { data, error } = await $supabase.client.functions.invoke('team-kick', {
-        body: { kicked: props.teammember },
-      });
-      if (error) {
-        throw error;
-      }
-      if (data?.success) {
+      const result = await kickTeamMember(teamId, props.teammember);
+      if (result?.success) {
         toast.add({
           title: t('page.team.card.manageteam.membercard.kick_success'),
           color: 'success',
         });
       } else {
-        throw new Error(data?.message || 'Failed to kick team member');
+        throw new Error((result as { message?: string })?.message || 'Failed to kick team member');
       }
     } catch (err) {
       const error = err as Error & { data?: { message?: string } };

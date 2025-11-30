@@ -71,7 +71,7 @@
         <div class="mb-2 text-sm">
           {{ $t('page.hideout.stationcard.gameeditiondescription') }}
         </div>
-        <UButton variant="soft" to="/settings" color="white">
+        <UButton variant="soft" to="/settings" color="neutral">
           {{ $t('page.hideout.stationcard.settingsbutton') }}
         </UButton>
       </div>
@@ -181,7 +181,7 @@
             v-if="nextLevel?.level"
             color="success"
             variant="solid"
-            size="large"
+            size="lg"
             block
             :ui="upgradeButtonUi"
             @click="upgradeStation()"
@@ -242,20 +242,24 @@
     </template>
   </GenericCard>
 </template>
-<script setup>
+<script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
+import type {
+  HideoutLevel,
+  HideoutStation,
+  ItemRequirement,
+  SkillRequirement,
+  StationLevelRequirement,
+  TraderRequirement,
+} from '@/types/tarkov';
 import { SPECIAL_STATIONS } from '@/utils/constants';
+import { useToast } from '#imports';
   const GenericCard = defineAsyncComponent(() => import('@/components/ui/GenericCard.vue'));
   const HideoutRequirement = defineAsyncComponent(() => import('./HideoutRequirement.vue'));
-  const props = defineProps({
-    station: {
-      type: Object,
-      required: true,
-    },
-  });
+  const props = defineProps<{ station: HideoutStation }>();
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
   const { t } = useI18n({ useScope: 'global' });
@@ -266,18 +270,16 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
   const downgradeButtonUi = {
     base: 'bg-red-900/40 hover:bg-red-900/60 active:bg-red-900/80 text-red-300 border border-red-700/50',
   };
-  const getHighlightColor = () => {
-    if (progressStore.hideoutLevels?.[props.station.id]?.self > 0) {
+  const getHighlightColor = (): 'secondary' | 'green' | 'red' => {
+    const level = progressStore.hideoutLevels?.[props.station.id]?.self ?? 0;
+    if (level > 0) {
       return 'secondary';
-    } else if (!prerequisitesMet.value) {
-      return 'red';
-    } else {
-      return 'green';
     }
+    return prerequisitesMet.value ? 'green' : 'red';
   };
   const highlightClasses = computed(() => {
     const color = getHighlightColor();
-    const classes = {};
+    const classes: Record<string, boolean> = {};
     switch (color) {
       case 'green':
         classes[
@@ -298,16 +300,20 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
     }
     return classes;
   });
-  const isStationReqMet = (requirement) => {
+  const isStationReqMet = (requirement: StationLevelRequirement) => {
     const currentStationLevel = progressStore.hideoutLevels?.[requirement.station.id]?.self || 0;
     return currentStationLevel >= requirement.level;
   };
-  const isSkillReqMet = (requirement) => {
+  const isSkillReqMet = (requirement: SkillRequirement) => {
     if (!requirement?.name || typeof requirement?.level !== 'number') return true;
-    const currentLevel = tarkovStore.getSkillLevel(requirement.name);
+    const currentSkills =
+      (tarkovStore.getCurrentProgressData?.() || {}).skills ||
+      // progressStore currently stores skills under current progress data; fallback to empty
+      {};
+    const currentLevel = currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
     return currentLevel >= requirement.level;
   };
-  const isTraderReqMet = (requirement) => {
+  const isTraderReqMet = (requirement: TraderRequirement) => {
     // Check user's current trader loyalty level against requirement
     if (!requirement?.trader?.id || typeof requirement?.value !== 'number') return true;
     const currentLevel = tarkovStore.getTraderLevel(requirement.trader.id);
@@ -317,17 +323,17 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
     if (!nextLevel.value) return true;
     // Check station level requirements
     const stationReqsMet =
-      nextLevel.value.stationLevelRequirements?.every((req) => {
+      nextLevel.value.stationLevelRequirements?.every((req: StationLevelRequirement) => {
         return isStationReqMet(req);
       }) ?? true;
     // Check skill requirements
     const skillReqsMet =
-      nextLevel.value.skillRequirements?.every((req) => {
+      nextLevel.value.skillRequirements?.every((req: SkillRequirement) => {
         return isSkillReqMet(req);
       }) ?? true;
     // Check trader requirements
     const traderReqsMet =
-      nextLevel.value.traderRequirements?.every((req) => {
+      nextLevel.value.traderRequirements?.every((req: TraderRequirement) => {
         return isTraderReqMet(req);
       }) ?? true;
     return stationReqsMet && skillReqsMet && traderReqsMet;
@@ -339,54 +345,55 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
     if (props.station.normalizedName === SPECIAL_STATIONS.STASH) {
       const currentStash = progressStore.hideoutLevels?.[props.station.id]?.self ?? 0;
       const editionId = tarkovStore.getGameEdition();
-      const editionData = progressStore.gameEditionData.find((e) => e.version === editionId);
+      const editionData = progressStore.gameEditionData.find((e) => e.value === editionId);
       const defaultStash = editionData?.defaultStashLevel ?? 0;
       return currentStash <= defaultStash;
     }
     if (props.station.normalizedName === SPECIAL_STATIONS.CULTIST_CIRCLE) {
       const currentLevel = progressStore.hideoutLevels?.[props.station.id]?.self ?? 0;
       const editionId = tarkovStore.getGameEdition();
-      const editionData = progressStore.gameEditionData.find((e) => e.version === editionId);
+      const editionData = progressStore.gameEditionData.find((e) => e.value === editionId);
       const defaultCultistCircle = editionData?.defaultCultistCircleLevel ?? 0;
       return currentLevel <= defaultCultistCircle;
     }
     return false;
   });
-  const nextLevel = computed(() => {
+  const nextLevel = computed<HideoutLevel | null>(() => {
     return (
       props.station.levels.find(
-        (level) => level.level === (progressStore.hideoutLevels?.[props.station.id]?.self || 0) + 1
+        (level: HideoutLevel) =>
+          level.level === (progressStore.hideoutLevels?.[props.station.id]?.self || 0) + 1
       ) || null
     );
   });
-  const currentLevel = computed(() => {
+  const currentLevel = computed<HideoutLevel | null>(() => {
     return (
       props.station.levels.find(
-        (level) => level.level === progressStore.hideoutLevels?.[props.station.id]?.self
+        (level: HideoutLevel) => level.level === progressStore.hideoutLevels?.[props.station.id]?.self
       ) || null
     );
   });
   const hasItemRequirements = computed(() => {
-    return nextLevel.value?.itemRequirements?.length > 0;
+    return (nextLevel.value?.itemRequirements?.length || 0) > 0;
   });
   const hasPrerequisites = computed(() => {
     return (
-      nextLevel.value?.stationLevelRequirements?.length > 0 ||
-      nextLevel.value?.skillRequirements?.length > 0 ||
-      nextLevel.value?.traderRequirements?.length > 0
+      (nextLevel.value?.stationLevelRequirements?.length ?? 0) > 0 ||
+      (nextLevel.value?.skillRequirements?.length ?? 0) > 0 ||
+      (nextLevel.value?.traderRequirements?.length ?? 0) > 0
     );
   });
   const stationAvatar = computed(() => {
     return `/img/hideout/${props.station.id}.avif`;
   });
-  const getStashAdjustedDescription = (description) => {
+  const getStashAdjustedDescription = (description: string | undefined) => {
     // Only modify description for stash station
     if (props.station.normalizedName !== SPECIAL_STATIONS.STASH) {
       return description;
     }
     // Check if user has an edition with max stash (Unheard editions have defaultStashLevel: 5)
     const editionId = tarkovStore.getGameEdition();
-    const editionData = progressStore.gameEditionData.find((e) => e.version === editionId);
+    const editionData = progressStore.gameEditionData.find((e) => e.value === editionId);
     const hasMaxStash = (editionData?.defaultStashLevel ?? 0) >= 5;
     // For editions with max stash, show static description with 10x72
     if (hasMaxStash) {
@@ -397,9 +404,10 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
   const upgradeStation = () => {
     // Store next level to a variable because it can change mid-function
     const upgradeLevel = nextLevel.value;
+    if (!upgradeLevel) return;
     tarkovStore.setHideoutModuleComplete(upgradeLevel.id);
     // For each objective, mark it as complete
-    upgradeLevel.itemRequirements.forEach((o) => {
+    upgradeLevel.itemRequirements.forEach((o: ItemRequirement) => {
       tarkovStore.setHideoutPartComplete(o.id);
     });
     toast.add({
@@ -407,15 +415,16 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
         name: props.station.name,
         level: upgradeLevel.level,
       }),
-      color: 'green',
+      color: 'success',
     });
   };
   const downgradeStation = () => {
     // Store current level to a variable because it can change mid-function
     const downgradeLevel = currentLevel.value;
+    if (!downgradeLevel) return;
     tarkovStore.setHideoutModuleUncomplete(downgradeLevel.id);
     // For each objective, mark it as incomplete
-    downgradeLevel.itemRequirements.forEach((o) => {
+    downgradeLevel.itemRequirements.forEach((o: ItemRequirement) => {
       tarkovStore.setHideoutPartUncomplete(o.id);
     });
     toast.add({
@@ -423,7 +432,7 @@ import { SPECIAL_STATIONS } from '@/utils/constants';
         name: props.station.name,
         level: downgradeLevel.level,
       }),
-      color: 'red',
+      color: 'error',
     });
   };
 </script>

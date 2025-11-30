@@ -82,18 +82,11 @@
   </div>
 </template>
 <script setup>
-  import { useBreakpoints } from '@vueuse/core';
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { useTarkovStore } from '@/stores/useTarkov';
   const { t } = useI18n({ useScope: 'global' });
-  // Define breakpoints (matching Vuetify's md breakpoint at 960px)
-  const breakpoints = useBreakpoints({
-    mobile: 0,
-    md: 960,
-  });
-  const mdAndDown = breakpoints.smaller('md');
   defineProps({
     isCollapsed: {
       type: Boolean,

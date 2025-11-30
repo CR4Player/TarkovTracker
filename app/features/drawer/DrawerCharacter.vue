@@ -39,7 +39,6 @@ import { getEditionName, PMC_FACTIONS } from '@/utils/constants';
   const tarkovStore = useTarkovStore();
   const factions = PMC_FACTIONS;
   const router = useRouter();
-
   function navigateToSettings() {
     router.push('/settings');
   }

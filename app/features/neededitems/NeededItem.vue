@@ -133,7 +133,6 @@ import { useTarkovStore } from '@/stores/useTarkov';
       }
     }
   };
-
   const setCount = (count) => {
     if (props.need.needType == 'taskObjective') {
       tarkovStore.setObjectiveCount(props.need.id, count);
@@ -161,7 +160,6 @@ import { useTarkovStore } from '@/stores/useTarkov';
       }
     }
   };
-
   const imageItem = computed(() => {
     if (!item.value) {
       return null;
@@ -295,7 +293,6 @@ import { useTarkovStore } from '@/stores/useTarkov';
     }
     return needingUsers;
   });
-
   // Check if the parent task/module is completed (for Completed tab display)
   const isParentCompleted = computed(() => {
     if (props.need.needType == 'taskObjective') {
@@ -305,7 +302,6 @@ import { useTarkovStore } from '@/stores/useTarkov';
     }
     return false;
   });
-
   provide('neededitem', {
     item,
     relatedTask,

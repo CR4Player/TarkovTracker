@@ -89,6 +89,18 @@ export function useSupabaseSync({
       isSyncing.value = false;
     }
   };
+  const snapshotState = (state: unknown) => {
+    if (typeof structuredClone === 'function') {
+      return structuredClone(state);
+    }
+    if (Array.isArray(state)) {
+      return state.slice();
+    }
+    if (state && typeof state === 'object') {
+      return { ...(state as Record<string, unknown>) };
+    }
+    return state;
+  };
   const debouncedSync = debounce(syncToSupabase, debounceMs);
   const unwatch = watch(
     () => store.$state,
@@ -96,10 +108,7 @@ export function useSupabaseSync({
       if (import.meta.dev) {
         console.log(`[Sync] Store state changed for ${table}, triggering debounced sync`);
       }
-      // Use structuredClone if available for better performance, otherwise fallback to JSON parse/stringify
-      const clonedState = typeof structuredClone === 'function' 
-        ? structuredClone(newState) 
-        : JSON.parse(JSON.stringify(newState));
+      const clonedState = snapshotState(newState);
       debouncedSync(clonedState);
     },
     { deep: true }
