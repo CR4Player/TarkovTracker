@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n';
 import { markDataMigrated } from '@/plugins/store-initializer';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { initializeTarkovSync, useTarkovStore } from '@/stores/useTarkov';
+import { logger } from '@/utils/logger';
 /**
  * Handles app-level initialization:
  * - Locale setup from user preferences
@@ -33,7 +34,7 @@ export function useAppInitialization() {
           store.migrateDataIfNeeded();
         }
       } catch (error) {
-        console.error('Error running data migration:', error);
+        logger.error('[useAppInitialization] Error running data migration:', error);
       }
     }
   });

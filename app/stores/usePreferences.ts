@@ -387,7 +387,7 @@ if (import.meta.client) {
                 });
               }
             } catch (_error) {
-              console.error('Error in preferencesStore watch for user.loggedIn:', _error);
+              logger.error('[PreferencesStore] Error in preferencesStore watch for user.loggedIn:', _error);
             }
           },
           { immediate: true }
@@ -403,7 +403,7 @@ if (import.meta.client) {
         }
       }
     } catch (error) {
-      console.error('Error setting up preferences store watchers:', error);
+      logger.error('[PreferencesStore] Error setting up preferences store watchers:', error);
     }
   }, 100);
 }

@@ -92,14 +92,15 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import { useMetadataStore } from '@/stores/useMetadata';
-  import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useProgressStore } from '@/stores/useProgress';
-  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
-  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
-  import { useToast } from '#imports';
+import { useI18n } from 'vue-i18n';
+import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
+import { useProgressStore } from '@/stores/useProgress';
+import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+import { logger } from '@/utils/logger';
+import { useToast } from '#imports';
   const { $supabase } = useNuxtApp();
   const toast = useToast();
   const { teamStore } = useTeamStoreWithSupabase();
@@ -165,7 +166,7 @@
       const error = err as Error & { data?: { message?: string } };
       const backendMsg = error?.message || error?.data?.message || String(err);
       const message = backendMsg || t('page.team.card.manageteam.membercard.kick_error');
-      console.error('[TeamMemberCard.vue] Error kicking teammate:', error);
+      logger.error('[TeamMemberCard] Error kicking teammate:', error);
       toast.add({ title: message, color: 'error' });
     } finally {
       kickingTeammate.value = false;

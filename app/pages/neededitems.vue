@@ -91,12 +91,13 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, ref, watch } from 'vue';
-  import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
-  import NeededItem from '@/features/neededitems/NeededItem.vue';
-  import { useMetadataStore } from '@/stores/useMetadata';
-  import { useProgressStore } from '@/stores/useProgress';
-  import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
+import { computed, ref, watch } from 'vue';
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
+import NeededItem from '@/features/neededitems/NeededItem.vue';
+import { useMetadataStore } from '@/stores/useMetadata';
+import { useProgressStore } from '@/stores/useProgress';
+import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
+import { logger } from '@/utils/logger';
   const inputUi = {
     base: 'w-full',
     input:
@@ -132,7 +133,7 @@
         // For tasks: get itemId from either item or markerItem (for mark objectives)
         itemId = need.item?.id || need.markerItem?.id;
         if (!itemId) {
-          console.warn('[NeededItems] Skipping objective without item/markerItem:', need);
+          logger.warn('[NeededItems] Skipping objective without item/markerItem:', need);
           continue;
         }
         // Aggregate by taskId + itemId
@@ -142,7 +143,7 @@
         // For hideout: get itemId from item
         itemId = need.item?.id;
         if (!itemId) {
-          console.warn('[NeededItems] Skipping hideout requirement without item:', need);
+          logger.warn('[NeededItems] Skipping hideout requirement without item:', need);
           continue;
         }
         // This combines multiple requirements for the same item in the same module

@@ -373,6 +373,7 @@ import ApiTokens from '@/features/settings/ApiTokens.vue';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { GAME_EDITIONS } from '@/utils/constants';
+import { logger } from '@/utils/logger';
   // Page meta
   definePageMeta({
     title: 'Settings',
@@ -434,8 +435,7 @@ import { GAME_EDITIONS } from '@/utils/constants';
   const resetPvPData = async () => {
     resetting.value = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (tarkovStore as any).resetPvPData();
+      await tarkovStore.resetPvPData();
       toast.add({
         title: 'PvP Data Reset',
         description: 'Your PvP progress has been reset successfully.',
@@ -443,7 +443,7 @@ import { GAME_EDITIONS } from '@/utils/constants';
       });
       showResetPvPDialog.value = false;
     } catch (error) {
-      console.error('Error resetting PvP data:', error);
+      logger.error('[Settings] Error resetting PvP data:', error);
       toast.add({
         title: 'Reset Failed',
         description: 'Failed to reset PvP data. Please try again.',
@@ -456,8 +456,7 @@ import { GAME_EDITIONS } from '@/utils/constants';
   const resetPvEData = async () => {
     resetting.value = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (tarkovStore as any).resetPvEData();
+      await tarkovStore.resetPvEData();
       toast.add({
         title: 'PvE Data Reset',
         description: 'Your PvE progress has been reset successfully.',
@@ -465,7 +464,7 @@ import { GAME_EDITIONS } from '@/utils/constants';
       });
       showResetPvEDialog.value = false;
     } catch (error) {
-      console.error('Error resetting PvE data:', error);
+      logger.error('[Settings] Error resetting PvE data:', error);
       toast.add({
         title: 'Reset Failed',
         description: 'Failed to reset PvE data. Please try again.',
@@ -478,8 +477,7 @@ import { GAME_EDITIONS } from '@/utils/constants';
   const resetAllData = async () => {
     resetting.value = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (tarkovStore as any).resetAllData();
+      await tarkovStore.resetAllData();
       toast.add({
         title: 'All Data Reset',
         description: 'All your progress has been reset successfully.',
@@ -487,7 +485,7 @@ import { GAME_EDITIONS } from '@/utils/constants';
       });
       showResetAllDialog.value = false;
     } catch (error) {
-      console.error('Error resetting all data:', error);
+      logger.error('[Settings] Error resetting all data:', error);
       toast.add({
         title: 'Reset Failed',
         description: 'Failed to reset data. Please try again.',

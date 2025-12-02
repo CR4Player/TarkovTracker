@@ -75,6 +75,7 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type { Task, TaskObjective } from '@/types/tarkov';
+import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const {
@@ -116,7 +117,7 @@ import type { Task, TaskObjective } from '@/types/tarkov';
       mergedMaps.value,
       tasksLoading.value
     ).catch((error) => {
-      console.error('Failed to refresh tasks', error);
+      logger.error('[Tasks] Failed to refresh tasks:', error);
     });
   };
   watch(

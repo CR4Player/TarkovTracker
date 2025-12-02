@@ -267,10 +267,11 @@
 </template>
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
-  import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
+import { useI18n } from 'vue-i18n';
+import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
+import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
+import { logger } from '@/utils/logger';
   interface SupabaseTable {
     select: (query: string) => SupabaseTable;
     insert: (data: Record<string, unknown>) => SupabaseTable;
@@ -369,7 +370,7 @@
           tokenValue: supportsRawTokens.value ? row.token_value ?? null : null,
         })) || [];
     } catch (error) {
-      console.error('[ApiTokens] Failed to load tokens', error);
+      logger.error('[ApiTokens] Failed to load tokens:', error);
       toast.add({
         title: t('page.settings.card.apitokens.create_token_error'),
         color: 'error',
@@ -460,7 +461,7 @@
         resetForm();
         return;
       } catch (gatewayError) {
-        console.warn('[ApiTokens] Gateway create failed, falling back to direct insert', gatewayError);
+        logger.warn('[ApiTokens] Gateway create failed, falling back to direct insert:', gatewayError);
       }
       const newTokenId = await createTokenDirect(rawToken);
       generatedToken.value = rawToken;
@@ -477,7 +478,7 @@
       }
       resetForm();
     } catch (error) {
-      console.error('[ApiTokens] Failed to create token', error);
+      logger.error('[ApiTokens] Failed to create token:', error);
       toast.add({
         title: t('page.settings.card.apitokens.create_token_error'),
         color: 'error',
@@ -495,7 +496,7 @@
         color: 'success',
       });
     } catch (error) {
-      console.error('[ApiTokens] Failed to copy token', error);
+      logger.error('[ApiTokens] Failed to copy token:', error);
     }
   };
   const toggleTokenVisibility = (tokenId: string) => {
@@ -514,7 +515,7 @@
         color: 'success',
       });
     } catch (error) {
-      console.error('[ApiTokens] Failed to copy token', error);
+      logger.error('[ApiTokens] Failed to copy token:', error);
       toast.add({
         title: t('page.settings.card.apitokens.copy_failed', 'Failed to copy token'),
         color: 'error',
@@ -537,7 +538,7 @@
       });
       await loadTokens();
     } catch (error) {
-      console.error('[ApiTokens] Failed to revoke token', error);
+      logger.error('[ApiTokens] Failed to revoke token:', error);
       toast.add({
         title: t('page.settings.card.apitokens.token_revoke_error'),
         color: 'error',

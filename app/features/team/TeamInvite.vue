@@ -31,11 +31,12 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import { useSystemStore } from '@/stores/useSystemStore';
-  import type { SystemState } from '@/types/tarkov';
-  import { useToast } from '#imports';
+import { useRoute } from 'vue-router';
+import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+import { useSystemStore } from '@/stores/useSystemStore';
+import type { SystemState } from '@/types/tarkov';
+import { logger } from '@/utils/logger';
+import { useToast } from '#imports';
   const systemStore = useSystemStore();
   const route = useRoute();
   const toast = useToast();
@@ -68,7 +69,7 @@
     } catch (err) {
       const error = err as Error & { data?: { message?: string } };
       const message = error?.message || error?.data?.message || String(err);
-      console.error('[TeamInvite.vue] Error joining team:', error);
+      logger.error('[TeamInvite] Error joining team:', error);
       toast.add({
         title: message,
         color: 'error',

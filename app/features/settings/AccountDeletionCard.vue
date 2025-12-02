@@ -94,7 +94,6 @@
               </UButton>
             </div>
           </template>
-
           <!-- Logged in state -->
           <template v-else>
             <!-- Account Information (Moved to Top) -->
@@ -124,22 +123,15 @@
                       <span class="mr-2 text-gray-400">Auth Method:</span>
                       <UBadge
                         size="xs"
-                        :color="$supabase.user.provider === 'discord' ? 'indigo' : 'purple'"
+                        :color="providerColor"
                         variant="solid"
                         class="text-white"
                       >
                         <UIcon
-                          :name="
-                            $supabase.user.provider === 'discord' ? 'i-mdi-discord' : 'i-mdi-twitch'
-                          "
+                          :name="providerIcon"
                           class="mr-1 h-4 w-4"
                         />
-                        {{
-                          $supabase.user.provider
-                            ? $supabase.user.provider.charAt(0).toUpperCase() +
-                              $supabase.user.provider.slice(1)
-                            : 'Unknown'
-                        }}
+                        {{ providerLabel }}
                       </UBadge>
                     </span>
                   </div>
@@ -162,7 +154,7 @@
                     size="xs"
                     variant="ghost"
                     :icon="accountIdCopied ? 'i-mdi-check' : 'i-mdi-content-copy'"
-                    :color="accountIdCopied ? 'green' : 'primary'"
+                    :color="accountIdCopied ? 'success' : 'primary'"
                     class="ml-1"
                     @click="copyAccountId"
                   />
@@ -172,7 +164,7 @@
             <!-- Deletion Warning -->
             <UAlert
               icon="i-mdi-alert-circle"
-              color="red"
+              color="error"
               variant="soft"
               class="mb-4"
               title="Permanent Account Deletion"
@@ -197,7 +189,7 @@
             <UAlert
               v-if="hasOwnedTeams"
               icon="i-mdi-account-group"
-              color="orange"
+              color="warning"
               variant="soft"
               class="mb-4"
               title="Team Ownership Transfer"
@@ -239,7 +231,7 @@
     <template #body>
       <div class="space-y-4">
         <UAlert
-          color="red"
+          color="error"
           variant="solid"
           title="This action is irreversible!"
           description="All your data will be permanently deleted and cannot be recovered."
@@ -256,23 +248,23 @@
           <UInput
             v-model="confirmationText"
             placeholder="DELETE MY ACCOUNT"
-            :color="confirmationError ? 'red' : 'white'"
+            :color="confirmationError ? 'error' : 'neutral'"
             @input="confirmationError = false"
           />
           <div v-if="confirmationError" class="mt-1 text-xs text-red-500">
             Please type exactly: DELETE MY ACCOUNT
           </div>
         </div>
-        <UAlert v-if="deleteError" color="red" variant="soft" :title="deleteError" />
+        <UAlert v-if="deleteError" color="error" variant="soft" :title="deleteError" />
       </div>
     </template>
     <template #footer="{ close }">
       <div class="flex justify-end">
-        <UButton variant="ghost" color="gray" :disabled="isDeleting" @click="close">
+        <UButton variant="ghost" color="neutral" :disabled="isDeleting" @click="close">
           Cancel
         </UButton>
         <UButton
-          color="red"
+          color="error"
           variant="solid"
           :loading="isDeleting"
           :disabled="!canDelete || isDeleting"
@@ -308,11 +300,12 @@
     </template>
   </UModal>
 </template>
-<script setup>
+<script setup lang="ts">
   import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import GenericCard from '@/components/ui/GenericCard.vue';
 import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+import { logger } from '@/utils/logger';
   defineOptions({
     inheritAttrs: false,
   });
@@ -326,11 +319,37 @@ import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
   const deleteError = ref('');
   const isDeleting = ref(false);
   const accountIdCopied = ref(false);
-
   const isLoggedIn = computed(() => {
     return Boolean($supabase?.user?.loggedIn);
   });
-
+  // Safely extract provider information with proper typing
+  type AuthProvider = 'discord' | 'twitch' | null;
+  interface SupabaseUserWithProvider {
+    app_metadata?: { provider?: string };
+    provider?: string;
+  }
+  const provider = computed<AuthProvider>(() => {
+    if (!$supabase?.user) return null;
+    const user = $supabase.user as SupabaseUserWithProvider;
+    const providerValue = user.app_metadata?.provider || user.provider;
+    if (providerValue === 'discord' || providerValue === 'twitch') {
+      return providerValue;
+    }
+    return null;
+  });
+  const providerLabel = computed(() => {
+    if (!provider.value) return 'Unknown';
+    return provider.value.charAt(0).toUpperCase() + provider.value.slice(1);
+  });
+  const providerIcon = computed(() => {
+    if (provider.value === 'discord') return 'i-mdi-discord';
+    if (provider.value === 'twitch') return 'i-mdi-twitch';
+    return 'i-mdi-account';
+  });
+  const providerColor = computed(() => {
+    if (provider.value === 'discord') return 'primary';
+    return 'secondary';
+  });
   const hasOwnedTeams = computed(() => {
     if (!isLoggedIn.value) return false;
     return teamStore.$state.team && teamStore.$state.team.owner === $supabase.user.id;
@@ -341,19 +360,19 @@ import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
   const canDelete = computed(() => {
     return confirmationText.value === 'DELETE MY ACCOUNT';
   });
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString();
   };
   const copyAccountId = async () => {
     try {
-      await navigator.clipboard.writeText($supabase.user.id);
+      await navigator.clipboard.writeText($supabase.user.id || '');
       accountIdCopied.value = true;
       setTimeout(() => {
         accountIdCopied.value = false;
       }, 2000);
     } catch (error) {
-      console.error('Failed to copy account ID:', error);
+      logger.error('Failed to copy account ID:', error);
     }
   };
   const deleteAccount = async () => {
@@ -379,8 +398,8 @@ import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
         throw new Error('Failed to delete account.');
       }
     } catch (error) {
-      console.error('Account deletion error:', error);
-      deleteError.value = error.message || 'Failed to delete account. Please try again.';
+      logger.error('Account deletion error:', error);
+      deleteError.value = (error as Error).message || 'Failed to delete account. Please try again.';
     } finally {
       isDeleting.value = false;
     }
@@ -388,13 +407,13 @@ import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
   const redirectToHome = async () => {
     try {
       showSuccessDialog.value = false;
-      console.log('Signing out user and redirecting to dashboard...');
+      logger.info('Signing out user and redirecting to dashboard...');
       localStorage.clear();
       await $supabase.signOut();
       await router.push('/');
-      console.log('Successfully signed out and redirected to dashboard');
+      logger.info('Successfully signed out and redirected to dashboard');
     } catch (error) {
-      console.error('Failed to sign out and redirect:', error);
+      logger.error('Failed to sign out and redirect:', error);
       window.location.href = '/';
     }
   };

@@ -25,27 +25,27 @@
     </template>
   </icon-card>
 </template>
-<script setup>
-  import {
-    computed,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    defineProps,
-    ref,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    watch,
-  } from 'vue';
-  import IconCard from '@/components/ui/IconCard.vue';
-  import TeamMemberCard from '@/features/team/TeamMemberCard.vue';
-  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+<script setup lang="ts">
+  import { computed, onUnmounted, ref } from 'vue';
+import IconCard from '@/components/ui/IconCard.vue';
+import TeamMemberCard from '@/features/team/TeamMemberCard.vue';
+import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
   const { $supabase } = useNuxtApp();
   const { teamStore } = useTeamStoreWithSupabase();
-  const teamMembers = ref([]);
-  teamStore.$subscribe((mutation, state) => {
+  const teamMembers = ref<string[]>([]);
+  // Initialize with current store state before subscribing
+  teamMembers.value = teamStore.members || [];
+  // Subscribe to team store changes and store unsubscribe function
+  const unsubscribe = teamStore.$subscribe((_mutation, state) => {
     if (state.members) {
       teamMembers.value = state.members;
     } else {
       teamMembers.value = [];
     }
+  });
+  // Cleanup subscription on component unmount to prevent memory leaks
+  onUnmounted(() => {
+    unsubscribe();
   });
   const isCurrentUserTeamOwner = computed(() => {
     const currentTeamOwner = teamStore.owner;

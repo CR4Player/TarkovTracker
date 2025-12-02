@@ -93,15 +93,16 @@
 </template>
 <script setup lang="ts">
   import { useWindowSize } from '@vueuse/core';
-  import { storeToRefs } from 'pinia';
-  import { computed, onMounted, onUnmounted, ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useRoute } from 'vue-router';
-  import { useAppStore } from '@/stores/useApp';
-  import { useMetadataStore } from '@/stores/useMetadata';
-  import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useTarkovStore } from '@/stores/useTarkov';
-  import { GAME_MODES, type GameMode } from '@/utils/constants';
+import { storeToRefs } from 'pinia';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
+import { useAppStore } from '@/stores/useApp';
+import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
+import { useTarkovStore } from '@/stores/useTarkov';
+import { GAME_MODES, type GameMode } from '@/utils/constants';
+import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
   const tarkovStore = useTarkovStore();
@@ -109,7 +110,7 @@
   const preferencesStore = usePreferencesStore();
   const route = useRoute();
   const { width } = useWindowSize();
-  const mdAndDown = computed(() => width.value < 960); // Vuetify md breakpoint is 960px
+  const mdAndDown = computed(() => width.value < 960); // md breakpoint at 960px
   const navBarIcon = computed(() => {
     if (mdAndDown.value) {
       return appStore.mobileDrawerExpanded ? 'i-mdi-menu-open' : 'i-mdi-menu';
@@ -182,11 +183,11 @@
       locale.value = newLocale;
       // Persist in preferences
       preferencesStore.localeOverride = newLocale;
-      console.log('[AppBar] Setting locale to:', newLocale);
+      logger.debug('[AppBar] Setting locale to:', newLocale);
       // Update metadata store and refetch data with new language
       metadataStore.updateLanguageAndGameMode(newLocale);
       // Use cached data if available (forceRefresh = false)
-      metadataStore.fetchAllData(false).catch(console.error);
+      metadataStore.fetchAllData(false).catch((err) => logger.error('[AppBar] Error fetching data:', err));
     },
   });
 </script>

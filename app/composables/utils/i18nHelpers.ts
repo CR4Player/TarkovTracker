@@ -21,7 +21,7 @@ function getSavedLocale(): string | null {
         return prefs.localeOverride || null;
       }
     } catch (error) {
-      console.warn('[i18nHelpers] Failed to read locale from localStorage:', error);
+      logger.warn('[i18nHelpers] Failed to read locale from localStorage:', error);
     }
   }
   return null;

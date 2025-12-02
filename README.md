@@ -15,7 +15,7 @@ A comprehensive Escape from Tarkov progress tracker built with Nuxt 4, featuring
 ## Tech Stack
 
 - **Framework**: Nuxt 4 (SPA mode)
-- **UI**: Vuetify with Material Design components
+- **UI**: Nuxt UI component library
 - **Styling**: Tailwind CSS v4
 - **State Management**: Pinia with three-store architecture
 - **Backend**: Supabase (authentication, database, real-time)

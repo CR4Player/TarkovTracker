@@ -41,7 +41,7 @@ function openDatabase(): Promise<IDBDatabase> {
     }
     const request = indexedDB.open(CACHE_CONFIG.DB_NAME, CACHE_CONFIG.DB_VERSION);
     request.onerror = () => {
-      console.error('[TarkovCache] Failed to open database:', request.error);
+      logger.error('[TarkovCache] Failed to open database:', request.error);
       reject(request.error);
     };
     request.onsuccess = () => {
@@ -81,17 +81,30 @@ export async function getCachedData<T>(
     const db = await openDatabase();
     const cacheKey = generateCacheKey(type, gameMode, lang);
     return new Promise((resolve, _reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readonly');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const request = store.get(cacheKey);
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to get cached data:', request.error);
-        resolve(null);
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to get cached data:', request.error);
+          resolve(null);
+        }
       };
       request.onsuccess = () => {
+        if (settled) return;
         const cachedResult = request.result as CachedData<T> | undefined;
         if (!cachedResult) {
           logger.debug(`[TarkovCache] Cache MISS: ${cacheKey}`);
+          settled = true;
           resolve(null);
           return;
         }
@@ -103,20 +116,29 @@ export async function getCachedData<T>(
             `[TarkovCache] Cache EXPIRED: ${cacheKey} (age: ${Math.round(age / 1000 / 60)}min)`
           );
           // Don't delete here, let the write operation overwrite it
+          settled = true;
           resolve(null);
           return;
         }
         logger.debug(
           `[TarkovCache] Cache HIT: ${cacheKey} (age: ${Math.round(age / 1000 / 60)}min)`
         );
+        settled = true;
         resolve(cachedResult.data);
       };
       transaction.oncomplete = () => {
-        db.close();
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          resolve(null);
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error getting cached data:', error);
+    logger.error('[TarkovCache] Error getting cached data:', error);
     return null;
   }
 }
@@ -143,23 +165,45 @@ export async function setCachedData<T>(
       version: CACHE_CONFIG.DB_VERSION,
     };
     return new Promise((resolve, reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const request = store.put(cacheEntry);
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to store data:', request.error);
-        reject(request.error);
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to store data:', request.error);
+          reject(request.error);
+        }
       };
       request.onsuccess = () => {
-        logger.debug(`[TarkovCache] Cache STORED: ${cacheKey}`);
-        resolve();
+        if (!settled) {
+          settled = true;
+          logger.debug(`[TarkovCache] Cache STORED: ${cacheKey}`);
+          resolve();
+        }
       };
       transaction.oncomplete = () => {
-        db.close();
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          reject(new Error('Transaction aborted'));
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error storing cached data:', error);
+    logger.error('[TarkovCache] Error storing cached data:', error);
+    throw error;
   }
 }
 /**
@@ -174,23 +218,45 @@ export async function clearCacheEntry(
     const db = await openDatabase();
     const cacheKey = generateCacheKey(type, gameMode, lang);
     return new Promise((resolve, reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const request = store.delete(cacheKey);
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to delete cache entry:', request.error);
-        reject(request.error);
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to delete cache entry:', request.error);
+          reject(request.error);
+        }
       };
       request.onsuccess = () => {
-        logger.debug(`[TarkovCache] Cache DELETED: ${cacheKey}`);
-        resolve();
+        if (!settled) {
+          settled = true;
+          logger.debug(`[TarkovCache] Cache DELETED: ${cacheKey}`);
+          resolve();
+        }
       };
       transaction.oncomplete = () => {
-        db.close();
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          reject(new Error('Transaction aborted'));
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error deleting cache entry:', error);
+    logger.error('[TarkovCache] Error deleting cache entry:', error);
+    throw error;
   }
 }
 /**
@@ -200,15 +266,27 @@ export async function clearCacheByGameMode(gameMode: string): Promise<void> {
   try {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const index = store.index('gameMode');
       const request = index.openCursor(IDBKeyRange.only(gameMode));
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to clear cache by game mode:', request.error);
-        reject(request.error);
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to clear cache by game mode:', request.error);
+          reject(request.error);
+        }
       };
       request.onsuccess = (event) => {
+        if (settled) return;
         const cursor = (event.target as IDBRequest).result as IDBCursorWithValue | null;
         if (cursor) {
           cursor.delete();
@@ -216,13 +294,24 @@ export async function clearCacheByGameMode(gameMode: string): Promise<void> {
         }
       };
       transaction.oncomplete = () => {
-        logger.debug(`[TarkovCache] Cleared all cache for gameMode: ${gameMode}`);
-        db.close();
-        resolve();
+        if (!settled) {
+          settled = true;
+          logger.debug(`[TarkovCache] Cleared all cache for gameMode: ${gameMode}`);
+          resolve();
+        }
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          reject(new Error('Transaction aborted'));
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error clearing cache by game mode:', error);
+    logger.error('[TarkovCache] Error clearing cache by game mode:', error);
+    throw error;
   }
 }
 /**
@@ -232,23 +321,45 @@ export async function clearAllCache(): Promise<void> {
   try {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const request = store.clear();
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to clear all cache:', request.error);
-        reject(request.error);
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to clear all cache:', request.error);
+          reject(request.error);
+        }
       };
       request.onsuccess = () => {
-        logger.debug('[TarkovCache] All cache CLEARED');
-        resolve();
+        if (!settled) {
+          settled = true;
+          logger.debug('[TarkovCache] All cache CLEARED');
+          resolve();
+        }
       };
       transaction.oncomplete = () => {
-        db.close();
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          reject(new Error('Transaction aborted'));
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error clearing all cache:', error);
+    logger.error('[TarkovCache] Error clearing all cache:', error);
+    throw error;
   }
 }
 /**
@@ -270,42 +381,63 @@ export async function getCacheStats(): Promise<CacheStats> {
   try {
     const db = await openDatabase();
     return new Promise((resolve, _reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readonly');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const request = store.getAll();
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to get cache stats:', request.error);
-        resolve({ totalEntries: 0, totalSize: 0, entries: [] });
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to get cache stats:', request.error);
+          resolve({ totalEntries: 0, totalSize: 0, entries: [] });
+        }
       };
       request.onsuccess = () => {
-        const entries = request.result as CachedData<unknown>[];
-        const now = Date.now();
-        const stats: CacheStats = {
-          totalEntries: entries.length,
-          totalSize: 0,
-          entries: entries.map((entry) => {
-            const age = now - entry.timestamp;
-            // Rough size estimate
-            const entrySize = JSON.stringify(entry.data).length;
-            stats.totalSize += entrySize;
-            return {
-              cacheKey: entry.cacheKey,
-              gameMode: entry.gameMode,
-              lang: entry.lang,
-              age: Math.round(age / 1000 / 60), // minutes
-              ttl: Math.round(entry.ttl / 1000 / 60), // minutes
-              isExpired: age > entry.ttl,
-            };
-          }),
-        };
-        resolve(stats);
+        if (!settled) {
+          settled = true;
+          const entries = request.result as CachedData<unknown>[];
+          const now = Date.now();
+          const stats: CacheStats = {
+            totalEntries: entries.length,
+            totalSize: 0,
+            entries: entries.map((entry) => {
+              const age = now - entry.timestamp;
+              // Rough size estimate
+              const entrySize = JSON.stringify(entry.data).length;
+              stats.totalSize += entrySize;
+              return {
+                cacheKey: entry.cacheKey,
+                gameMode: entry.gameMode,
+                lang: entry.lang,
+                age: Math.round(age / 1000 / 60), // minutes
+                ttl: Math.round(entry.ttl / 1000 / 60), // minutes
+                isExpired: age > entry.ttl,
+              };
+            }),
+          };
+          resolve(stats);
+        }
       };
       transaction.oncomplete = () => {
-        db.close();
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          resolve({ totalEntries: 0, totalSize: 0, entries: [] });
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error getting cache stats:', error);
+    logger.error('[TarkovCache] Error getting cache stats:', error);
     return { totalEntries: 0, totalSize: 0, entries: [] };
   }
 }
@@ -316,16 +448,28 @@ export async function cleanupExpiredCache(): Promise<number> {
   try {
     const db = await openDatabase();
     return new Promise((resolve, _reject) => {
+      let settled = false;
       const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
       const request = store.openCursor();
       let deletedCount = 0;
       const now = Date.now();
+      const closeDb = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore close errors; nothing else to do here
+        }
+      };
       request.onerror = () => {
-        console.error('[TarkovCache] Failed to cleanup expired cache:', request.error);
-        resolve(0);
+        if (!settled) {
+          settled = true;
+          logger.error('[TarkovCache] Failed to cleanup expired cache:', request.error);
+          resolve(0);
+        }
       };
       request.onsuccess = (event) => {
+        if (settled) return;
         const cursor = (event.target as IDBRequest).result as IDBCursorWithValue | null;
         if (cursor) {
           const entry = cursor.value as CachedData<unknown>;
@@ -338,15 +482,25 @@ export async function cleanupExpiredCache(): Promise<number> {
         }
       };
       transaction.oncomplete = () => {
-        if (deletedCount > 0) {
-          logger.debug(`[TarkovCache] Cleaned up ${deletedCount} expired entries`);
+        if (!settled) {
+          settled = true;
+          if (deletedCount > 0) {
+            logger.debug(`[TarkovCache] Cleaned up ${deletedCount} expired entries`);
+          }
+          resolve(deletedCount);
         }
-        db.close();
-        resolve(deletedCount);
+        closeDb();
+      };
+      transaction.onabort = () => {
+        if (!settled) {
+          settled = true;
+          resolve(0);
+        }
+        closeDb();
       };
     });
   } catch (error) {
-    console.error('[TarkovCache] Error cleaning up expired cache:', error);
+    logger.error('[TarkovCache] Error cleaning up expired cache:', error);
     return 0;
   }
 }

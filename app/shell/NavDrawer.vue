@@ -30,7 +30,7 @@
   import { useBreakpoints } from '@vueuse/core';
   import { computed, defineAsyncComponent, watch } from 'vue';
   import { useAppStore } from '@/stores/useApp';
-  // Define breakpoints (matching Vuetify's md breakpoint at 960px)
+  // Define breakpoints (md breakpoint at 960px)
   const breakpoints = useBreakpoints({
     mobile: 0,
     md: 960,

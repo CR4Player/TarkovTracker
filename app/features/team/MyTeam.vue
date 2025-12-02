@@ -113,15 +113,16 @@
 </template>
 <script setup lang="ts">
   import { computed, nextTick, ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import GenericCard from '@/components/ui/GenericCard.vue';
-  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
-  import { useTarkovStore } from '@/stores/useTarkov';
-  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
-  import type { SystemState } from '@/types/tarkov';
-  import type { CreateTeamResponse, LeaveTeamResponse } from '@/types/team';
-  import { LIMITS } from '@/utils/constants';
+import { useI18n } from 'vue-i18n';
+import GenericCard from '@/components/ui/GenericCard.vue';
+import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+import { useTarkovStore } from '@/stores/useTarkov';
+import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+import type { SystemState } from '@/types/tarkov';
+import type { CreateTeamResponse, LeaveTeamResponse } from '@/types/team';
+import { LIMITS } from '@/utils/constants';
+import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const { teamStore } = useTeamStoreWithSupabase();
   const { systemStore } = useSystemStoreWithSupabase();
@@ -262,7 +263,7 @@
         throw new Error(t('page.team.card.myteam.create_team_error_ui_update'));
       }
     } catch (error: unknown) {
-      console.error('[MyTeam] Error creating team:', error);
+      logger.error('[MyTeam] Error creating team:', error);
       const message =
         error &&
         typeof error === 'object' &&
@@ -298,7 +299,7 @@
       }
       showNotification(t('page.team.card.myteam.leave_team_success'));
     } catch (error: unknown) {
-      console.error('[MyTeam] Error leaving team:', error);
+      logger.error('[MyTeam] Error leaving team:', error);
       const message =
         error instanceof Error
           ? error.message
@@ -310,7 +311,7 @@
   const copyUrl = async () => {
     // Guard against SSR - clipboard API is only available on client
     if (typeof window === 'undefined' || !navigator || !navigator.clipboard) {
-      console.warn('[MyTeam] Clipboard API is not available');
+      logger.warn('[MyTeam] Clipboard API is not available');
       return;
     }
     if (teamUrl.value) {
@@ -318,16 +319,15 @@
         await navigator.clipboard.writeText(teamUrl.value);
         showNotification('URL copied to clipboard');
       } catch (error) {
-        console.error('[MyTeam] Failed to copy URL to clipboard:', error);
+        logger.error('[MyTeam] Failed to copy URL to clipboard:', error);
         showNotification('Failed to copy URL to clipboard', 'error');
       }
     }
   };
   const teamUrl = computed(() => {
     const { team: teamId } = systemStore.$state;
-    // Support legacy password and new join_code
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const code = (teamStore.$state as any).password || (teamStore.$state as any).join_code;
+    // Use getter to get invite code (supports legacy password and new joinCode)
+    const code = teamStore.inviteCode;
     if (!teamId || !code) return '';
     // Use Nuxt-safe route composables instead of window.location
     // This works during SSR and client-side

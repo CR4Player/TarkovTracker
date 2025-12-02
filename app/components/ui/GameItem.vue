@@ -141,8 +141,9 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent, ref } from 'vue';
-  import ContextMenu from './ContextMenu.vue';
-  import ContextMenuItem from './ContextMenuItem.vue';
+import { logger } from '@/utils/logger';
+import ContextMenu from './ContextMenu.vue';
+import ContextMenuItem from './ContextMenuItem.vue';
   const ItemCountControls = defineAsyncComponent(
     () => import('@/features/neededitems/ItemCountControls.vue')
   );
@@ -264,7 +265,7 @@
   // Image error handling
   const handleImgError = () => {
     // Log error for debugging if needed
-    console.warn(`Failed to load image for item: ${props.itemId || 'unknown'}`);
+    logger.warn(`[GameItem] Failed to load image for item: ${props.itemId || 'unknown'}`);
   };
   // Action methods
   const openTarkovDevLink = () => {

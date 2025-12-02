@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 import { reactive } from 'vue';
+import { logger } from '@/utils/logger';
 type SupabaseUser = {
   id: string | null;
   loggedIn: boolean;
@@ -51,7 +52,7 @@ export default defineNuxtPlugin(() => {
     };
   };
   if (!supabaseUrl || !supabaseKey) {
-    console.error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
+    logger.error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
     // Fail fast in production to avoid silent bad deploys
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Supabase configuration missing');
@@ -122,7 +123,7 @@ export default defineNuxtPlugin(() => {
     // Clean up OAuth hash after session is established
     if (session && window.location.hash.includes('access_token')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      console.log('[Supabase] Cleaned OAuth hash from URL after session established');
+      logger.debug('[Supabase] Cleaned OAuth hash from URL after session established');
     }
   });
   supabase.auth.onAuthStateChange((_event, session) => {
@@ -130,7 +131,7 @@ export default defineNuxtPlugin(() => {
     // Clean up OAuth hash on auth state change
     if (session && window.location.hash.includes('access_token')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      console.log('[Supabase] Cleaned OAuth hash from URL on auth state change');
+      logger.debug('[Supabase] Cleaned OAuth hash from URL on auth state change');
     }
   });
   const signInWithOAuth = async (
@@ -151,7 +152,7 @@ export default defineNuxtPlugin(() => {
     // Clear game progress from localStorage to prevent cross-user contamination
     // This prevents User A's data from being migrated to User B's account
     if (typeof window !== 'undefined') {
-      console.log('[Supabase] Clearing game progress localStorage on logout');
+      logger.debug('[Supabase] Clearing game progress localStorage on logout');
       localStorage.removeItem('progress');
       // Keep UI preferences (user store) but you may want to clear user-specific data
       // localStorage.removeItem("user"); // Uncomment if user data should also be cleared

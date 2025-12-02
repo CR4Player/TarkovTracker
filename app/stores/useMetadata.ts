@@ -134,7 +134,7 @@ export const useMetadataStore = defineStore('metadata', {
             svg: staticData.svg,
           };
         } else {
-          console.warn(`Static SVG data not found for map: ${map.name} (lookup key: ${mapKey})`);
+          logger.warn(`[MetadataStore] Static SVG data not found for map: ${map.name} (lookup key: ${mapKey})`);
           return map;
         }
       });
@@ -265,7 +265,7 @@ export const useMetadataStore = defineStore('metadata', {
     async fetchAllData(forceRefresh = false) {
       // Run cleanup once per session
       if (typeof window !== 'undefined') {
-        cleanupExpiredCache().catch(console.error);
+        cleanupExpiredCache().catch((err) => logger.error('[MetadataStore] Error during cache cleanup:', err));
       }
       await Promise.all([this.fetchTasksData(forceRefresh), this.fetchHideoutData(forceRefresh)]);
     },
@@ -321,13 +321,13 @@ export const useMetadataStore = defineStore('metadata', {
               this.languageCode,
               response.data,
               CACHE_CONFIG.DEFAULT_TTL
-            ).catch(console.error);
+            ).catch((err) => logger.error('[MetadataStore] Error caching tasks data:', err));
           }
         } else {
           this.resetTasksData();
         }
       } catch (err) {
-        console.error('Error fetching tasks data:', err);
+        logger.error('[MetadataStore] Error fetching tasks data:', err);
         this.error = err as Error;
         this.resetTasksData();
       } finally {
@@ -387,13 +387,13 @@ export const useMetadataStore = defineStore('metadata', {
               this.languageCode,
               response.data,
               CACHE_CONFIG.DEFAULT_TTL
-            ).catch(console.error);
+            ).catch((err) => logger.error('[MetadataStore] Error caching hideout data:', err));
           }
         } else {
           this.resetHideoutData();
         }
       } catch (err) {
-        console.error('Error fetching hideout data:', err);
+        logger.error('[MetadataStore] Error fetching hideout data:', err);
         this.hideoutError = err as Error;
         this.resetHideoutData();
       } finally {
@@ -445,13 +445,13 @@ export const useMetadataStore = defineStore('metadata', {
               this.languageCode,
               response.data,
               CACHE_CONFIG.MAX_TTL
-            ).catch(console.error);
+            ).catch((err) => logger.error('[MetadataStore] Error caching items data:', err));
           }
         } else {
           this.items = [];
         }
       } catch (err) {
-        console.error('Error fetching items data:', err);
+        logger.error('[MetadataStore] Error fetching items data:', err);
         this.itemsError = err as Error;
         this.items = [];
       } finally {

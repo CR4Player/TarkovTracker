@@ -1,5 +1,6 @@
 import { getCurrentInstance, onUnmounted, ref, toRaw, watch } from 'vue';
 import { debounce } from '@/utils/debounce';
+import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
 import type { UserProgressData } from '~/stores/progressState';
 export interface SupabaseSyncConfig {
@@ -23,28 +24,24 @@ export function useSupabaseSync({
   transform,
   debounceMs = 1000,
 }: SupabaseSyncConfig) {
-  if (import.meta.dev) {
-    console.log(
-      `[Sync] useSupabaseSync initialized for table: ${table}, debounce: ${debounceMs}ms`
-    );
-  }
+  logger.debug(
+    `[Sync] useSupabaseSync initialized for table: ${table}, debounce: ${debounceMs}ms`
+  );
   const { $supabase } = useNuxtApp();
   const isSyncing = ref(false);
   const isPaused = ref(false);
   const syncToSupabase = async (inputState: unknown) => {
     const state = inputState as Record<string, unknown>;
-    if (import.meta.dev) {
-      console.log('[Sync] syncToSupabase called', {
-        loggedIn: $supabase.user.loggedIn,
-        isPaused: isPaused.value,
-      });
-    }
+    logger.debug('[Sync] syncToSupabase called', {
+      loggedIn: $supabase.user.loggedIn,
+      isPaused: isPaused.value,
+    });
     if (isPaused.value) {
-      if (import.meta.dev) console.log('[Sync] Skipping - sync is paused');
+      logger.debug('[Sync] Skipping - sync is paused');
       return;
     }
     if (!$supabase.user.loggedIn || !$supabase.user.id) {
-      if (import.meta.dev) console.log('[Sync] Skipping - user not logged in');
+      logger.debug('[Sync] Skipping - user not logged in');
       return;
     }
     isSyncing.value = true;
@@ -52,7 +49,7 @@ export function useSupabaseSync({
       const dataToSave = transform ? transform(state) : state;
       // Skip if transform returned null (e.g., during initial load)
       if (!dataToSave) {
-        if (import.meta.dev) console.log('[Sync] Skipping - transform returned null');
+        logger.debug('[Sync] Skipping - transform returned null');
         isSyncing.value = false;
         return;
       }
@@ -61,12 +58,12 @@ export function useSupabaseSync({
         dataToSave.user_id = $supabase.user.id;
       }
       // Log detailed info about what we're syncing (dev only)
-      if (import.meta.dev) {
+      if (import.meta.env.DEV) {
         if (table === 'user_progress') {
           const userData = dataToSave as SupabaseUserData;
           const pvpTasks = Object.keys(userData.pvp_data?.taskCompletions || {}).length;
           const pveTasks = Object.keys(userData.pve_data?.taskCompletions || {}).length;
-          console.log(`[Sync] About to upsert to ${table}:`, {
+          logger.debug(`[Sync] About to upsert to ${table}:`, {
             gameMode: userData.current_game_mode,
             pvpLevel: userData.pvp_data?.level,
             pvpTasksCompleted: pvpTasks,
@@ -74,17 +71,17 @@ export function useSupabaseSync({
             pveTasksCompleted: pveTasks,
           });
         } else {
-          console.log('[Sync] About to upsert to', table);
+          logger.debug('[Sync] About to upsert to', table);
         }
       }
       const { error } = await $supabase.client.from(table).upsert(dataToSave);
       if (error) {
-        console.error(`[Sync] Error syncing to ${table}:`, error);
-      } else if (import.meta.dev) {
-        console.log(`[Sync] ✅ Successfully synced to ${table}`);
+        logger.error(`[Sync] Error syncing to ${table}:`, error);
+      } else {
+        logger.debug(`[Sync] ✅ Successfully synced to ${table}`);
       }
     } catch (err) {
-      console.error(`[Sync] Unexpected error:`, err);
+      logger.error('[Sync] Unexpected error:', err);
     } finally {
       isSyncing.value = false;
     }
@@ -112,9 +109,7 @@ export function useSupabaseSync({
   const unwatch = watch(
     () => store.$state,
     (newState) => {
-      if (import.meta.dev) {
-        console.log(`[Sync] Store state changed for ${table}, triggering debounced sync`);
-      }
+      logger.debug(`[Sync] Store state changed for ${table}, triggering debounced sync`);
       const clonedState = snapshotState(newState);
       debouncedSync(clonedState);
     },
@@ -128,12 +123,12 @@ export function useSupabaseSync({
     onUnmounted(cleanup);
   }
   const pause = () => {
-    if (import.meta.dev) console.log(`[Sync] Pausing sync for ${table}`);
+    logger.debug(`[Sync] Pausing sync for ${table}`);
     isPaused.value = true;
     debouncedSync.cancel();
   };
   const resume = () => {
-    if (import.meta.dev) console.log(`[Sync] Resuming sync for ${table}`);
+    logger.debug(`[Sync] Resuming sync for ${table}`);
     isPaused.value = false;
   };
   return {

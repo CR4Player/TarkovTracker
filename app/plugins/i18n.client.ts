@@ -6,6 +6,7 @@ import es from '@/locales/es.json5';
 import fr from '@/locales/fr.json5';
 import ru from '@/locales/ru.json5';
 import uk from '@/locales/uk.json5';
+import { logger } from '@/utils/logger';
 const messages = {
   en,
   de,
@@ -30,7 +31,7 @@ function getInitialLocale(): string {
         }
       }
     } catch (error) {
-      console.warn('[i18n] Failed to read locale from localStorage:', error);
+      logger.warn('[i18n] Failed to read locale from localStorage:', error);
     }
   }
   // Fallback to browser language

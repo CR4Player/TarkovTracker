@@ -32,7 +32,8 @@
 </template>
 <script setup lang="ts">
   import { nextTick, onMounted, ref } from 'vue';
-  import DataMigrationService from '@/utils/dataMigrationService';
+import DataMigrationService from '@/utils/dataMigrationService';
+import { logger } from '@/utils/logger';
   const { $supabase } = useNuxtApp();
   const loading = ref({
     google: false, // Kept for compatibility if needed, but we'll use Twitch/Discord
@@ -50,7 +51,7 @@
       // Check for local data
       hasLocalData.value = DataMigrationService.hasLocalData();
     } catch (error) {
-      console.error('Error in onMounted:', error);
+      logger.error('[AuthButtons] Error in onMounted:', error);
     }
   });
   const buildCallbackUrl = () => {
@@ -106,13 +107,13 @@
           window.addEventListener('message', messageHandler);
         } else {
           // Popup blocked - fallback to redirect
-          console.warn('Popup was blocked, falling back to redirect');
+          logger.warn('[AuthButtons] Popup was blocked, falling back to redirect');
           loading.value.twitch = false;
-          alert('Please allow popups for this site to use OAuth authentication.');
+          window.location.href = data.url;
         }
       }
     } catch (error) {
-      console.error('Twitch sign in error:', error);
+      logger.error('[AuthButtons] Twitch sign in error:', error);
       loading.value.twitch = false;
     }
   };
@@ -163,13 +164,13 @@
           window.addEventListener('message', messageHandler);
         } else {
           // Popup blocked - fallback to redirect
-          console.warn('Popup was blocked, falling back to redirect');
+          logger.warn('[AuthButtons] Popup was blocked, falling back to redirect');
           loading.value.discord = false;
-          alert('Please allow popups for this site to use OAuth authentication.');
+          window.location.href = data.url;
         }
       }
     } catch (error) {
-      console.error('Discord sign in error:', error);
+      logger.error('[AuthButtons] Discord sign in error:', error);
       loading.value.discord = false;
     }
   };

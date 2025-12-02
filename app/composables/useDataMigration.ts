@@ -2,6 +2,7 @@ import { computed, ref } from 'vue';
 import { markDataMigrated } from '@/plugins/store-initializer';
 import type { GameMode } from '@/utils/constants';
 import DataMigrationService from '@/utils/dataMigrationService';
+import { logger } from '@/utils/logger';
 // Composable to handle data migration from localStorage or old API to Supabase
 export function useDataMigration() {
   // Reactive state for migration process
@@ -18,7 +19,7 @@ export function useDataMigration() {
    */
   const migrateLocalData = async (userId: string): Promise<boolean> => {
     if (!userId) {
-      console.warn('[useDataMigration] No user ID provided for migration');
+      logger.warn('[useDataMigration] No user ID provided for migration');
       return false;
     }
     try {
@@ -53,7 +54,7 @@ export function useDataMigration() {
         throw new Error('Migration process reported failure');
       }
     } catch (error) {
-      console.error('[useDataMigration] Migration failed:', error);
+      logger.error('[useDataMigration] Migration failed:', error);
       migrationStatus.value = 'error';
       migrationError.value = error as Error;
       migrationMessage.value =
@@ -74,7 +75,7 @@ export function useDataMigration() {
     targetGameMode?: GameMode
   ): Promise<boolean> => {
     if (!apiToken || !userId) {
-      console.warn('[useDataMigration] Missing API token or user ID for import');
+      logger.warn('[useDataMigration] Missing API token or user ID for import');
       return false;
     }
     try {
@@ -101,7 +102,7 @@ export function useDataMigration() {
         throw new Error('Import process reported failure');
       }
     } catch (error) {
-      console.error('[useDataMigration] Import failed:', error);
+      logger.error('[useDataMigration] Import failed:', error);
       migrationStatus.value = 'error';
       migrationError.value = error as Error;
       migrationMessage.value =

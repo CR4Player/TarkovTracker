@@ -1,6 +1,7 @@
 /**
  * Simplified store initialization and data migration utilities
  */
+import { logger } from '@/utils/logger';
 // Extend Window interface for custom properties
 declare global {
   interface Window {
@@ -33,7 +34,7 @@ export function markDataMigrated(): void {
     try {
       sessionStorage.setItem('tarkovDataMigrated', 'true');
     } catch (e) {
-      console.warn('Could not save migration flag to sessionStorage', e);
+      logger.warn('Could not save migration flag to sessionStorage', e);
     }
   }
 }

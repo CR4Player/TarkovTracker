@@ -24,6 +24,12 @@ export const useTeamStore = defineStore<string, TeamState, TeamGetters>('team', 
     teamPassword(state) {
       return state?.password || null;
     },
+    /**
+     * Get the invite code for team joining
+     */
+    inviteCode(state) {
+      return state?.joinCode || state?.password || null;
+    },
     teamMembers(state) {
       return state?.members || [];
     },
@@ -61,6 +67,9 @@ export function useTeamStoreWithSupabase() {
         patch.owner = (data as { owner_id: string }).owner_id;
       }
       if ('join_code' in data) {
+        // Map server's join_code to client's joinCode
+        patch.joinCode = (data as { join_code: string }).join_code;
+        // Also keep password for legacy support
         patch.password = (data as { join_code: string }).join_code;
       }
       teamStore.$patch(patch as Partial<TeamState>);
@@ -90,6 +99,8 @@ export function useTeammateStores() {
   const { teamStore } = useTeamStoreWithSupabase();
   const teammateStores = ref<Record<string, Store<string, UserState>>>({});
   const teammateUnsubscribes = ref<Record<string, () => void>>({});
+  // Track pending retry timeouts for cleanup
+  const pendingRetryTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
   // Watch team state changes to manage teammate stores
   watch(
     () => teamStore.$state,
@@ -122,8 +133,13 @@ export function useTeammateStores() {
         logger.error('Error managing teammate stores:', error);
         const toast = useToast();
         toast.add({ title: 'Failed to load teammate data. Retrying…', color: 'warning' });
+        // Clear any existing retry timeout before setting a new one
+        if (pendingRetryTimeout.value) {
+          clearTimeout(pendingRetryTimeout.value);
+        }
         // Basic retry once after a short delay for transient issues
-        setTimeout(async () => {
+        pendingRetryTimeout.value = setTimeout(async () => {
+          pendingRetryTimeout.value = null;
           try {
             for (const teammate of newTeammatesArray) {
               if (!teammateStores.value[teammate]) {
@@ -172,6 +188,11 @@ export function useTeammateStores() {
   };
   // Cleanup all teammate stores
   const cleanup = () => {
+    // Clear any pending retry timeout
+    if (pendingRetryTimeout.value) {
+      clearTimeout(pendingRetryTimeout.value);
+      pendingRetryTimeout.value = null;
+    }
     Object.values(teammateUnsubscribes.value).forEach((unsubscribe) => {
       if (unsubscribe) unsubscribe();
     });

@@ -92,7 +92,7 @@ import TaskInfo from './TaskInfo.vue';
     neededBy: string[];
   }>();
   const emit = defineEmits(['on-task-action']);
-  // Shared breakpoints (matching Vuetify's xs/sm breakpoint at 600px)
+  // Shared breakpoints (xs/sm breakpoint at 600px)
   const { xs } = useSharedBreakpoints();
   const tarkovStore = useTarkovStore();
   const progressStore = useProgressStore();

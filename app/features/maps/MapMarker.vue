@@ -21,11 +21,13 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
   import { computed, ref } from 'vue';
-  import TaskLink from '@/features/tasks/TaskLink.vue';
-  import TaskObjective from '@/features/tasks/TaskObjective.vue';
-  import { useMetadataStore } from '@/stores/useMetadata';
+import TaskLink from '@/features/tasks/TaskLink.vue';
+import TaskObjective from '@/features/tasks/TaskObjective.vue';
+import { useMetadataStore } from '@/stores/useMetadata';
+import { logger } from '@/utils/logger';
+import type { CSSProperties } from 'vue';
   const metadataStore = useMetadataStore();
   const objectives = computed(() => metadataStore.objectives);
   const tasks = computed(() => metadataStore.tasks);
@@ -82,7 +84,7 @@
       !Array.isArray(bounds[0]) ||
       !Array.isArray(bounds[1])
     ) {
-      console.warn('MapMarker: Invalid or missing map bounds for map:', props.map?.name);
+      logger.warn('MapMarker: Invalid or missing map bounds for map:', props.map?.name);
       return { leftPercent: 0, topPercent: 0 }; // Return default if bounds are invalid
     }
     // Get original coordinates
@@ -112,7 +114,7 @@
     const mapHeight = Math.max(bounds[0][1], bounds[1][1]) - Math.min(bounds[0][1], bounds[1][1]);
     // Prevent division by zero if width or height is 0
     if (mapWidth === 0 || mapHeight === 0) {
-      console.warn('MapMarker: Map width or height is zero for map:', props.map?.name);
+      logger.warn('MapMarker: Map width or height is zero for map:', props.map?.name);
       return { leftPercent: 0, topPercent: 0 };
     }
     const relativeLeft = Math.abs(x - mapLeft);
@@ -124,7 +126,7 @@
       topPercent: relativeTopPercent,
     };
   });
-  const markerStyle = computed(() => {
+  const markerStyle = computed<CSSProperties>(() => {
     return {
       position: 'absolute',
       top: relativeLocation.value.topPercent + '%',
@@ -138,7 +140,7 @@
       opacity: 1,
     };
   });
-  const tooltipStyle = computed(() => {
+  const tooltipStyle = computed<CSSProperties>(() => {
     return {
       position: 'absolute',
       top: relativeLocation.value.topPercent + '%',

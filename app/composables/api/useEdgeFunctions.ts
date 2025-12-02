@@ -4,11 +4,12 @@
  */
 import type { UpdateProgressPayload } from '@/types/api';
 import type {
-  CreateTeamResponse,
-  JoinTeamResponse,
-  KickMemberResponse,
-  LeaveTeamResponse,
+    CreateTeamResponse,
+    JoinTeamResponse,
+    KickMemberResponse,
+    LeaveTeamResponse,
 } from '@/types/team';
+import { logger } from '@/utils/logger';
 type GameMode = 'pvp' | 'pve';
 export const useEdgeFunctions = () => {
   const { $supabase } = useNuxtApp();
@@ -19,7 +20,6 @@ export const useEdgeFunctions = () => {
       ''
   );
   const rawTokenGatewayUrl = String(runtimeConfig?.public?.tokenGatewayUrl || rawTeamGatewayUrl);
-
   const gatewayUrl = rawTeamGatewayUrl.replace(/\/+$/, ''); // team routes
   const tokenGatewayUrl = rawTokenGatewayUrl.replace(/\/+$/, ''); // token routes
   const getAuthToken = async () => {
@@ -80,7 +80,7 @@ export const useEdgeFunctions = () => {
       try {
         return await callGateway<T>(action, body);
       } catch (error) {
-        console.warn(`[EdgeFunctions] Gateway failed, falling back to Supabase:`, error);
+        logger.warn('[EdgeFunctions] Gateway failed, falling back to Supabase:', error);
       }
     }
     const fnName = `team-${action}`;
@@ -97,7 +97,7 @@ export const useEdgeFunctions = () => {
       method: 'POST',
     });
     if (error) {
-      console.error('Progress update failed:', error);
+      logger.error('[EdgeFunctions] Progress update failed:', error);
       throw error;
     }
     return data;
@@ -147,7 +147,7 @@ export const useEdgeFunctions = () => {
       try {
         return await callTokenGateway<T>(action, body);
       } catch (error) {
-        console.warn(`[EdgeFunctions] Token gateway failed, falling back to Supabase:`, error);
+        logger.warn('[EdgeFunctions] Token gateway failed, falling back to Supabase:', error);
       }
     }
     const fnName = action === 'revoke' ? 'token-revoke' : 'token-create';
@@ -182,7 +182,7 @@ export const useEdgeFunctions = () => {
         if (deleteError) throw deleteError;
         return { success: true } as unknown;
       } catch (innerError) {
-        console.error('Token revocation failed after all fallbacks:', innerError || error);
+        logger.error('[EdgeFunctions] Token revocation failed after all fallbacks:', innerError || error);
         throw innerError || error;
       }
     }

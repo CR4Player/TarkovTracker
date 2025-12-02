@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
 /**
  * Clears store properties that are not present in the new state
@@ -11,7 +12,7 @@ export function clearStaleState(store: Store, newState?: Record<string, unknown>
       try {
         return !Object.prototype.hasOwnProperty.call(newState, key);
       } catch (error) {
-        console.error(`Error checking property ${key}:`, error);
+        logger.error(`[StoreHelpers] Error checking property ${key}:`, error);
         return true;
       }
     });
@@ -26,7 +27,7 @@ export function clearStaleState(store: Store, newState?: Record<string, unknown>
       store.$patch(missingPropertiesObject);
     }
   } catch (error) {
-    console.error('Error clearing stale state:', error);
+    logger.error('[StoreHelpers] Error clearing stale state:', error);
   }
 }
 /**
@@ -38,11 +39,11 @@ export function safePatchStore(store: Store, data: Record<string, unknown>): voi
       store.$patch(data);
     } else {
       if (import.meta.env.DEV) {
-        console.warn('Invalid data provided to safePatchStore:', data);
+        logger.warn('[StoreHelpers] Invalid data provided to safePatchStore:', data);
       }
     }
   } catch (error) {
-    console.error('Error patching store:', error);
+    logger.error('[StoreHelpers] Error patching store:', error);
   }
 }
 /**
@@ -52,7 +53,7 @@ export function resetStore(store: Store): void {
   try {
     clearStaleState(store, {});
   } catch (error) {
-    console.error('Error resetting store:', error);
+    logger.error('[StoreHelpers] Error resetting store:', error);
   }
 }
 /**
@@ -66,7 +67,7 @@ export function devLog(_message: string, ..._args: unknown[]): void {
  */
 export function devWarn(message: string, ...args: unknown[]): void {
   if (import.meta.env.DEV) {
-    console.warn(`[DEV] ${message}`, ...args);
+    logger.warn(`[DEV] ${message}`, ...args);
   }
 }
 /**
@@ -74,7 +75,7 @@ export function devWarn(message: string, ...args: unknown[]): void {
  */
 export function devError(message: string, ...args: unknown[]): void {
   if (import.meta.env.DEV) {
-    console.error(`[DEV] ${message}`, ...args);
+    logger.error(`[DEV] ${message}`, ...args);
   }
 }
 /**
@@ -86,7 +87,7 @@ export function safeJsonCopy<T>(obj: T): T {
   try {
     return JSON.parse(JSON.stringify(obj));
   } catch (error) {
-    console.error('Error creating JSON copy:', error);
+    logger.error('[StoreHelpers] Error creating JSON copy:', error);
     return obj;
   }
 }
@@ -112,7 +113,7 @@ export function safeGet<T>(obj: unknown, path: string, defaultValue?: T): T | un
     }
     return result as T | undefined;
   } catch (error) {
-    console.error(`Error getting property ${path}:`, error);
+    logger.error(`[StoreHelpers] Error getting property ${path}:`, error);
     return defaultValue;
   }
 }

@@ -1,22 +1,23 @@
 import type {
-  HideoutModule,
-  HideoutStation,
-  NeededItemHideoutModule,
-  NeededItemTaskObjective,
-  ObjectiveGPSInfo,
-  ObjectiveMapInfo,
-  Task,
-  TaskRequirement,
+    HideoutModule,
+    HideoutStation,
+    NeededItemHideoutModule,
+    NeededItemTaskObjective,
+    ObjectiveGPSInfo,
+    ObjectiveMapInfo,
+    Task,
+    TaskRequirement,
 } from '@/types/tarkov';
 import {
-  createGraph,
-  getChildren,
-  getParents,
-  getPredecessors,
-  getSuccessors,
-  safeAddEdge,
-  safeAddNode,
+    createGraph,
+    getChildren,
+    getParents,
+    getPredecessors,
+    getSuccessors,
+    safeAddEdge,
+    safeAddNode,
 } from '@/utils/graphHelpers';
+import { logger } from '@/utils/logger';
 import type { AbstractGraph } from 'graphology-types';
 /**
  * Composable for building task and hideout dependency graphs
@@ -170,8 +171,8 @@ export function useGraphBuilder() {
               safeAddNode(newGraph, requiredLevel.id);
               safeAddEdge(newGraph, requiredLevel.id, level.id);
             } else {
-              console.warn(
-                `Could not find required level ID for station ${requirement.station.id} ` +
+              logger.warn(
+                `[GraphBuilder] Could not find required level ID for station ${requirement.station.id} ` +
                   `level ${requirement.level} needed by ${level.id}`
               );
             }
@@ -219,7 +220,6 @@ export function useGraphBuilder() {
               foundInRaid = firAttribute.value === 'true';
             }
           }
-
           neededItems.push({
             id: req.id,
             needType: 'hideoutModule',

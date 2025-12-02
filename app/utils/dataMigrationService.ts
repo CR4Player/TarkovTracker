@@ -1,6 +1,7 @@
 import type { UserProgressData } from '@/stores/progressState';
 import type { GameMode } from '@/utils/constants';
 import { GAME_EDITION_STRING_VALUES, normalizePMCFaction } from '@/utils/constants';
+import { logger } from '@/utils/logger';
 // import { defaultState, migrateToGameModeStructure } from "@/stores/progressState";
 // Define a basic interface for the progress data structure
 export interface ProgressData {
@@ -111,7 +112,7 @@ export default class DataMigrationService {
         Object.keys(parsedData.hideoutModules || {}).length > 0;
       return hasKeys && hasProgress;
     } catch (error) {
-      console.warn('[DataMigrationService] Error in hasLocalData:', error);
+      logger.warn('[DataMigrationService] Error in hasLocalData:', error);
       return false;
     }
   }
@@ -131,7 +132,7 @@ export default class DataMigrationService {
       }
       return null;
     } catch (error) {
-      console.warn('[DataMigrationService] Error in getLocalData:', error);
+      logger.warn('[DataMigrationService] Error in getLocalData:', error);
       return null;
     }
   }
@@ -161,7 +162,7 @@ export default class DataMigrationService {
         (data.hideout_modules && Object.keys(data.hideout_modules).length > 0);
       return !!hasProgress;
     } catch (error) {
-      console.warn('[DataMigrationService] Error in hasUserData:', error);
+      logger.warn('[DataMigrationService] Error in hasUserData:', error);
       return false;
     }
   }
@@ -178,7 +179,7 @@ export default class DataMigrationService {
       const { $supabase } = useNuxtApp();
       const hasExisting = await this.hasUserData(uid);
       if (hasExisting) {
-        console.warn('[DataMigrationService] User already has data, aborting automatic migration.');
+        logger.warn('[DataMigrationService] User already has data, aborting automatic migration.');
         return false;
       }
       // Prepare data for Supabase (map to snake_case columns)
@@ -202,7 +203,7 @@ export default class DataMigrationService {
       };
       const { error } = await $supabase.client.from('user_progress').upsert(supabaseData);
       if (error) {
-        console.error('[DataMigrationService] Error migrating data to Supabase:', error);
+        logger.error('[DataMigrationService] Error migrating data to Supabase:', error);
         return false;
       }
       // Backup local data
@@ -210,11 +211,11 @@ export default class DataMigrationService {
       try {
         localStorage.setItem(backupKey, JSON.stringify(localData));
       } catch (backupError) {
-        console.warn('[DataMigrationService] Could not backup local data:', backupError);
+        logger.warn('[DataMigrationService] Could not backup local data:', backupError);
       }
       return true;
     } catch (error) {
-      console.error('[DataMigrationService] General error in migrateDataToUser:', error);
+      logger.error('[DataMigrationService] General error in migrateDataToUser:', error);
       return false;
     }
   }
@@ -251,7 +252,7 @@ export default class DataMigrationService {
       };
       const { error } = await $supabase.client.from('user_progress').upsert(supabaseData);
       if (error) {
-        console.error(
+        logger.error(
           `[DataMigrationService] Supabase error importing data for user ${uid}:`,
           error
         );
@@ -264,7 +265,7 @@ export default class DataMigrationService {
       localStorage.setItem(LOCAL_PROGRESS_KEY, JSON.stringify(importedData));
       return true;
     } catch (error) {
-      console.error(
+      logger.error(
         `[DataMigrationService] General error in importDataToUser for user ${uid}:`,
         error
       );
@@ -295,7 +296,7 @@ export default class DataMigrationService {
         headers,
       });
       if (!response.ok) {
-        console.error(`[DataMigrationService] API token fetch failed: ${response.status}`);
+        logger.error(`[DataMigrationService] API token fetch failed: ${response.status}`);
         return null;
       }
       // Definition for the raw data structure from the old API
@@ -325,7 +326,7 @@ export default class DataMigrationService {
           dataFromApi = apiJsonResponse as OldApiRawData;
         }
       } else {
-        console.error('[DataMigrationService] API response is not a valid object.');
+        logger.error('[DataMigrationService] API response is not a valid object.');
         return null;
       }
       // Type definitions for the expected array elements from the old API
@@ -412,7 +413,7 @@ export default class DataMigrationService {
       };
       return migrationData;
     } catch (error) {
-      console.error('[DataMigrationService] Error fetching data with API token:', error);
+      logger.error('[DataMigrationService] Error fetching data with API token:', error);
       return null;
     }
   }

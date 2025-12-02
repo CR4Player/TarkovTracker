@@ -203,7 +203,7 @@
       required: true,
     },
   });
-  // Define breakpoints (matching Vuetify's sm: 600px, md: 960px)
+  // Define breakpoints (sm: 600px, md: 960px)
   const breakpoints = useBreakpoints({
     mobile: 0,
     sm: 600,

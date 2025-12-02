@@ -50,8 +50,9 @@
 </template>
 <script setup lang="ts">
   import { select, xml } from 'd3';
-  import { computed, defineAsyncComponent, onMounted, ref, watch, withDefaults } from 'vue';
-  import type { TarkovMap } from '~/types/tarkov';
+import { computed, defineAsyncComponent, onMounted, ref, watch, withDefaults } from 'vue';
+import { logger } from '@/utils/logger';
+import type { TarkovMap } from '~/types/tarkov';
   interface Props {
     map: TarkovMap;
     marks?: MapMark[];
@@ -146,7 +147,7 @@
     // Add check for map svg data before proceeding
     const svg = props.map?.svg;
     if (!svg || !isSvgObject(svg) || !svg.file) {
-      console.warn('Map SVG file info missing, skipping draw.');
+      logger.warn('Map SVG file info missing, skipping draw.');
       // Clear existing SVG if any
       select(document.getElementById(randomMapId.value)).selectAll('svg').remove();
       return;
@@ -210,7 +211,7 @@
           mainSvg.appendChild(floorGroup);
         }
       } catch (error) {
-        console.error(`Failed to load Factory floor: ${floor}`, error);
+        logger.error(`Failed to load Factory floor: ${floor}`, error);
       }
     }
     // Append the main SVG to the container
@@ -254,7 +255,7 @@
       select(mapContainer).select('svg').style('width', '100%');
       select(mapContainer).select('svg').style('height', '100%');
     } catch (error) {
-      console.error(`Failed to load map SVG: ${svgUrl}`, error);
+      logger.error(`Failed to load map SVG: ${svgUrl}`, error);
       return;
     }
     // Apply floor visibility logic for standard maps

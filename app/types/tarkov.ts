@@ -256,12 +256,14 @@ export interface SystemGetters extends _GettersTree<SystemState> {
 export interface TeamState extends StateTree {
   owner?: string | null;
   password?: string | null;
+  joinCode?: string | null;
   members?: string[];
 }
 export interface TeamGetters extends _GettersTree<TeamState> {
   teamOwner: (state: TeamState) => string | null;
   isOwner: (state: TeamState) => boolean;
   teamPassword: (state: TeamState) => string | null;
+  inviteCode: (state: TeamState) => string | null;
   teamMembers: (state: TeamState) => string[];
   teammates: (state: TeamState) => string[];
 }

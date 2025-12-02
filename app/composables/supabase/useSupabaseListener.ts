@@ -1,4 +1,5 @@
 import { isRef, onUnmounted, ref, unref, watch, type ComputedRef, type Ref } from 'vue';
+import { logger } from '@/utils/logger';
 import { clearStaleState, devLog, resetStore, safePatchStore } from '@/utils/storeHelpers';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import type { Store } from 'pinia';
@@ -38,7 +39,7 @@ export function useSupabaseListener({
     // Expecting format "column=eq.value"
     const [column, rest] = currentFilter.split('=eq.');
     if (!column || !rest) {
-      console.error(`[${storeIdForLogging}] Invalid filter format. Expected 'col=eq.val'`);
+      logger.error(`[${storeIdForLogging}] Invalid filter format. Expected 'col=eq.val'`);
       return;
     }
     const { data, error } = await $supabase.client
@@ -48,7 +49,7 @@ export function useSupabaseListener({
       .single();
     if (error && error.code !== 'PGRST116') {
       // PGRST116 is "The result contains 0 rows"
-      console.error(`[${storeIdForLogging}] Error fetching initial data:`, error);
+      logger.error(`[${storeIdForLogging}] Error fetching initial data:`, error);
       return;
     }
     if (data) {

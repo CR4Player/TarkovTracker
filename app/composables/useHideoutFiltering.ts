@@ -4,6 +4,7 @@ import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import type { HideoutStation } from '@/types/tarkov';
+import { logger } from '@/utils/logger';
 export function useHideoutFiltering() {
   const metadataStore = useMetadataStore();
   const { hideoutStations, hideoutLoading } = storeToRefs(metadataStore);
@@ -34,7 +35,7 @@ export function useHideoutFiltering() {
       // Since we've already verified both are available above, we can proceed
       return false;
     } catch (error) {
-      console.error('Error in hideout loading check:', error);
+      logger.error('[useHideoutFiltering] Error in hideout loading check:', error);
       // Return false to prevent stuck loading state on error
       return false;
     }
@@ -80,7 +81,7 @@ export function useHideoutFiltering() {
       if (activePrimaryView.value === 'all') return hideoutStationList;
       return hideoutStationList;
     } catch (error) {
-      console.error('Error computing visible stations:', error);
+      logger.error('[useHideoutFiltering] Error computing visible stations:', error);
       // Return empty array on error to prevent stuck states
       return [];
     }
