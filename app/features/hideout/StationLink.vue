@@ -1,25 +1,28 @@
 <template>
-  <router-link to="/" class="text-blue-400 no-underline hover:text-blue-300">
+  <router-link
+    :to="stationHref"
+    class="text-blue-400 no-underline hover:text-blue-300"
+    :aria-label="`Go to ${props.station.name} card`"
+  >
     <div class="flex items-center">
-      <img :src="stationIcon" class="max-h-8 max-w-8 align-middle" />
+      <img
+        :src="stationIcon"
+        :alt="`${props.station.name} icon`"
+        class="max-h-8 max-w-8 align-middle"
+        loading="lazy"
+      />
       <span class="ml-2 text-sm font-bold">
-        {{ props.station?.name }}
+        {{ props.station.name }}
       </span>
     </div>
   </router-link>
 </template>
-<script setup>
+<script setup lang="ts">
   import { computed } from 'vue';
-  const props = defineProps({
-    station: {
-      type: Object,
-      required: true,
-    },
-  });
-  const stationIcon = computed(() => {
-    return `/img/hideout/${props.station.id}.avif`;
-  });
+  import type { HideoutStation } from '@/types/tarkov';
+  const props = defineProps<{
+    station: Pick<HideoutStation, 'id' | 'name'>;
+  }>();
+  const stationIcon = computed(() => `/img/hideout/${props.station.id}.avif`);
+  const stationHref = computed(() => `/hideout#station-${props.station.id}`);
 </script>
-<style scoped>
-  /* Scoped styles removed - using Tailwind classes */
-</style>

@@ -37,7 +37,8 @@
                   <TaskLink :task="relatedTask" />
                 </template>
                 <template v-else-if="props.need.needType == 'hideoutModule'">
-                  <StationLink :station="relatedStation" />
+                  <StationLink v-if="relatedStation" :station="relatedStation" />
+                  <span v-else class="text-sm text-gray-300">Unknown station</span>
                 </template>
               </span>
             </span>
@@ -90,7 +91,12 @@
                       <template v-else-if="props.need.needType == 'hideoutModule'">
                         <div class="mt-1 mb-1 flex justify-center">
                           <div class="text-center">
-                            <station-link :station="relatedStation" class="justify-center" />
+                            <template v-if="relatedStation">
+                              <station-link :station="relatedStation" class="justify-center" />
+                            </template>
+                            <template v-else>
+                              <span class="text-sm text-gray-300">Unknown station</span>
+                            </template>
                           </div>
                           <div class="ml-1">
                             {{ props.need.hideoutModule.level }}

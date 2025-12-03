@@ -42,7 +42,12 @@
           <template v-else-if="props.need.needType == 'hideoutModule'">
             <div class="mt-1 mb-1 flex justify-center">
               <div class="text-center">
-                <station-link :station="relatedStation" class="justify-center" />
+                <station-link
+                  v-if="relatedStation"
+                  :station="relatedStation"
+                  class="justify-center"
+                />
+                <span v-else class="text-sm text-gray-300">Unknown station</span>
               </div>
               <div class="ml-1">{{ props.need.hideoutModule.level }}</div>
             </div>

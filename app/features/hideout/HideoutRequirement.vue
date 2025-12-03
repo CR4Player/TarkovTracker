@@ -124,10 +124,11 @@
   }
   const props = defineProps<Props>();
   const tarkovStore = useTarkovStore();
+  const requirementId = computed(() => props.requirement.id);
+  const requiredCount = computed(() => props.requirement.count);
   // Check if item requires Found in Raid status
   const isFoundInRaid = computed(() => {
-    if (!props.requirement.attributes) return false;
-    const firAttribute = props.requirement.attributes.find(
+    const firAttribute = props.requirement.attributes?.find(
       (attr) => attr.type === 'foundInRaid' || attr.name === 'foundInRaid'
     );
     return firAttribute?.value === 'true';
@@ -138,32 +139,26 @@
   const inputRef = ref<HTMLInputElement | null>(null);
   // Get current count from store (synced with needed items page)
   const currentCount = computed(() => {
-    const storeCount = tarkovStore.getHideoutPartCount(props.requirement.id);
+    const storeCount = tarkovStore.getHideoutPartCount(requirementId.value);
     // If marked as complete but no count set, return required count
-    if (storeCount === 0 && tarkovStore.isHideoutPartComplete(props.requirement.id)) {
-      return props.requirement.count;
+    if (storeCount === 0 && tarkovStore.isHideoutPartComplete(requirementId.value)) {
+      return requiredCount.value;
     }
     return storeCount;
   });
-  const isComplete = computed(() => {
-    return currentCount.value >= props.requirement.count;
-  });
-  const incrementCount = () => {
-    const newCount = Math.min(currentCount.value + 1, props.requirement.count);
-    tarkovStore.setHideoutPartCount(props.requirement.id, newCount);
-    // Mark as complete when reaching required count
-    if (newCount >= props.requirement.count) {
-      tarkovStore.setHideoutPartComplete(props.requirement.id);
+  const isComplete = computed(() => currentCount.value >= requiredCount.value);
+  const clampCount = (value: number) => Math.max(0, Math.min(value, requiredCount.value));
+  const setCount = (value: number): void => {
+    const clampedValue = clampCount(value);
+    tarkovStore.setHideoutPartCount(requirementId.value, clampedValue);
+    if (clampedValue >= requiredCount.value) {
+      tarkovStore.setHideoutPartComplete(requirementId.value);
+    } else {
+      tarkovStore.setHideoutPartUncomplete(requirementId.value);
     }
   };
-  const decrementCount = () => {
-    const newCount = Math.max(currentCount.value - 1, 0);
-    tarkovStore.setHideoutPartCount(props.requirement.id, newCount);
-    // Unmark if going below required count
-    if (newCount < props.requirement.count) {
-      tarkovStore.setHideoutPartUncomplete(props.requirement.id);
-    }
-  };
+  const incrementCount = (): void => setCount(currentCount.value + 1);
+  const decrementCount = (): void => setCount(currentCount.value - 1);
   // Manual entry functions
   const startEditing = () => {
     editValue.value = currentCount.value;
@@ -173,29 +168,21 @@
       inputRef.value?.select();
     });
   };
-  const finishEditing = () => {
-    const newValue = Math.max(0, Math.min(editValue.value, props.requirement.count));
-    tarkovStore.setHideoutPartCount(props.requirement.id, newValue);
-    if (newValue >= props.requirement.count) {
-      tarkovStore.setHideoutPartComplete(props.requirement.id);
-    } else {
-      tarkovStore.setHideoutPartUncomplete(props.requirement.id);
-    }
+  const finishEditing = (): void => {
+    setCount(editValue.value);
     isEditing.value = false;
   };
-  const cancelEditing = () => {
+  const cancelEditing = (): void => {
     isEditing.value = false;
   };
   // Toggle between 0% and 100% completion
-  const toggleComplete = () => {
+  const toggleComplete = (): void => {
     if (isComplete.value) {
       // Mark as incomplete (set to 0)
-      tarkovStore.setHideoutPartCount(props.requirement.id, 0);
-      tarkovStore.setHideoutPartUncomplete(props.requirement.id);
+      setCount(0);
     } else {
       // Mark as complete (set to required count)
-      tarkovStore.setHideoutPartCount(props.requirement.id, props.requirement.count);
-      tarkovStore.setHideoutPartComplete(props.requirement.id);
+      setCount(requiredCount.value);
     }
   };
 </script>

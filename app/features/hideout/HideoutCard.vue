@@ -1,5 +1,6 @@
 <template>
   <GenericCard
+    :id="stationAnchorId"
     :avatar="stationAvatar"
     :highlight-color="getHighlightColor()"
     :avatar-height="50"
@@ -264,6 +265,7 @@
   const tarkovStore = useTarkovStore();
   const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
+  const stationAnchorId = computed(() => `station-${props.station.id}`);
   const upgradeButtonUi = {
     base: 'bg-success-500 hover:bg-success-600 active:bg-success-700 text-white border border-success-700',
   };

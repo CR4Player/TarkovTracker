@@ -16,20 +16,22 @@
     </div>
     <!-- Station Info for Hideout -->
     <div v-if="needType === 'hideoutModule'" class="mr-2 flex items-center">
-      <station-link :station="relatedStation" />
+      <station-link v-if="relatedStation" :station="relatedStation" />
+      <span v-else class="text-sm text-gray-300">Unknown station</span>
       <span class="ml-1">{{ hideoutLevel }}</span>
     </div>
   </div>
 </template>
 <script setup lang="ts">
   import { computed } from 'vue';
+  import type { HideoutStation } from '@/types/tarkov';
   import StationLink from '~/features/hideout/StationLink.vue';
   const props = defineProps<{
     needType: string;
     levelRequired: number;
     lockedBefore: number;
     playerLevel: number;
-    relatedStation?: Record<string, unknown>;
+    relatedStation?: Pick<HideoutStation, 'id' | 'name'> | null;
     hideoutLevel?: number;
   }>();
   const showLevelRequirement = computed(
