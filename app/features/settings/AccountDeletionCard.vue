@@ -121,16 +121,8 @@
                     <UIcon name="i-mdi-login" class="mr-2 h-4.5 w-4.5 text-gray-400" />
                     <span class="flex items-center text-sm">
                       <span class="mr-2 text-gray-400">Auth Method:</span>
-                      <UBadge
-                        size="xs"
-                        :color="providerColor"
-                        variant="solid"
-                        class="text-white"
-                      >
-                        <UIcon
-                          :name="providerIcon"
-                          class="mr-1 h-4 w-4"
-                        />
+                      <UBadge size="xs" :color="providerColor" variant="solid" class="text-white">
+                        <UIcon :name="providerIcon" class="mr-1 h-4 w-4" />
                         {{ providerLabel }}
                       </UBadge>
                     </span>
@@ -139,7 +131,9 @@
                     <UIcon name="i-mdi-calendar" class="mr-2 h-4.5 w-4.5 text-gray-400" />
                     <span class="text-sm">
                       <span class="text-gray-400">Member since:</span>
-                      <span class="ml-1 font-medium">{{ formatDate($supabase.user.createdAt) }}</span>
+                      <span class="ml-1 font-medium">
+                        {{ formatDate($supabase.user.createdAt) }}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -302,10 +296,10 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import GenericCard from '@/components/ui/GenericCard.vue';
-import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
-import { logger } from '@/utils/logger';
+  import { useRouter } from 'vue-router';
+  import GenericCard from '@/components/ui/GenericCard.vue';
+  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+  import { logger } from '@/utils/logger';
   defineOptions({
     inheritAttrs: false,
   });

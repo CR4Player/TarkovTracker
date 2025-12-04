@@ -92,15 +92,15 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-import { useMetadataStore } from '@/stores/useMetadata';
-import { usePreferencesStore } from '@/stores/usePreferences';
-import { useProgressStore } from '@/stores/useProgress';
-import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
-import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
-import { logger } from '@/utils/logger';
-import { useToast } from '#imports';
+  import { useI18n } from 'vue-i18n';
+  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useProgressStore } from '@/stores/useProgress';
+  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+  import { logger } from '@/utils/logger';
+  import { useToast } from '#imports';
   const { $supabase } = useNuxtApp();
   const toast = useToast();
   const { teamStore } = useTeamStoreWithSupabase();
@@ -148,7 +148,8 @@ import { useToast } from '#imports';
   });
   const groupIcon = computed(() => {
     const level =
-      teamStore.memberProfiles?.[props.teammember]?.level ?? progressStore.getLevel(props.teammember);
+      teamStore.memberProfiles?.[props.teammember]?.level ??
+      progressStore.getLevel(props.teammember);
     const entry = playerLevels.value.find((pl) => pl.level === level);
     return entry?.levelBadgeImageLink ?? '';
   });

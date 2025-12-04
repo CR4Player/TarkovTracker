@@ -1,18 +1,12 @@
 import { createError, defineEventHandler, getQuery, getRequestHeader } from 'h3';
-const supabaseUrl =
-  process.env.SB_URL ||
-  process.env.SUPABASE_URL ||
-  '';
+const supabaseUrl = process.env.SB_URL || process.env.SUPABASE_URL || '';
 const supabaseServiceKey =
-  process.env.SB_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  '';
-const supabaseAnonKey =
-  process.env.SB_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  '';
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('[team/members] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env');
+  process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseAnonKey = process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+  throw new Error(
+    '[team/members] Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_ANON_KEY must all be set'
+  );
 }
 const restFetch = async (path: string, init?: RequestInit) => {
   const url = `${supabaseUrl}/rest/v1/${path}`;
@@ -38,7 +32,7 @@ export default defineEventHandler(async (event) => {
   const authResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
       Authorization: authHeader,
-      apikey: supabaseAnonKey || supabaseServiceKey,
+      apikey: supabaseAnonKey,
     },
   });
   if (!authResp.ok) {
@@ -81,8 +75,16 @@ export default defineEventHandler(async (event) => {
     const profiles = (await profilesResp.json()) as Array<{
       user_id: string;
       current_game_mode?: string | null;
-      pvp_data?: { displayName?: string | null; level?: number | null; taskCompletions?: Record<string, { complete?: boolean }> };
-      pve_data?: { displayName?: string | null; level?: number | null; taskCompletions?: Record<string, { complete?: boolean }> };
+      pvp_data?: {
+        displayName?: string | null;
+        level?: number | null;
+        taskCompletions?: Record<string, { complete?: boolean }>;
+      };
+      pve_data?: {
+        displayName?: string | null;
+        level?: number | null;
+        taskCompletions?: Record<string, { complete?: boolean }>;
+      };
     }>;
     profiles.forEach((p) => {
       const mode = (p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp';
@@ -91,10 +93,9 @@ export default defineEventHandler(async (event) => {
         level?: number | null;
         taskCompletions?: Record<string, { complete?: boolean }>;
       } | null;
-      const completedCount =
-        data?.taskCompletions
-          ? Object.values(data.taskCompletions).filter((t) => t?.complete).length
-          : null;
+      const completedCount = data?.taskCompletions
+        ? Object.values(data.taskCompletions).filter((t) => t?.complete).length
+        : null;
       profileMap[p.user_id] = {
         displayName: data?.displayName ?? null,
         level: data?.level ?? null,
@@ -111,8 +112,16 @@ export default defineEventHandler(async (event) => {
       const profiles = (await resp.json()) as Array<{
         user_id: string;
         current_game_mode?: string | null;
-        pvp_data?: { displayName?: string | null; level?: number | null; taskCompletions?: Record<string, { complete?: boolean }> };
-        pve_data?: { displayName?: string | null; level?: number | null; taskCompletions?: Record<string, { complete?: boolean }> };
+        pvp_data?: {
+          displayName?: string | null;
+          level?: number | null;
+          taskCompletions?: Record<string, { complete?: boolean }>;
+        };
+        pve_data?: {
+          displayName?: string | null;
+          level?: number | null;
+          taskCompletions?: Record<string, { complete?: boolean }>;
+        };
       }>;
       profiles.forEach((p) => {
         const mode = (p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp';
@@ -121,10 +130,9 @@ export default defineEventHandler(async (event) => {
           level?: number | null;
           taskCompletions?: Record<string, { complete?: boolean }>;
         } | null;
-        const completedCount =
-          data?.taskCompletions
-            ? Object.values(data.taskCompletions).filter((t) => t?.complete).length
-            : null;
+        const completedCount = data?.taskCompletions
+          ? Object.values(data.taskCompletions).filter((t) => t?.complete).length
+          : null;
         profileMap[p.user_id] = {
           displayName: data?.displayName ?? null,
           level: data?.level ?? null,

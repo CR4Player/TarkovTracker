@@ -27,9 +27,9 @@
 </template>
 <script setup lang="ts">
   import { computed, onUnmounted, ref } from 'vue';
-import IconCard from '@/components/ui/IconCard.vue';
-import TeamMemberCard from '@/features/team/TeamMemberCard.vue';
-import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+  import IconCard from '@/components/ui/IconCard.vue';
+  import TeamMemberCard from '@/features/team/TeamMemberCard.vue';
+  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
   const { $supabase } = useNuxtApp();
   const { teamStore } = useTeamStoreWithSupabase();
   const teamMembers = ref<string[]>([]);

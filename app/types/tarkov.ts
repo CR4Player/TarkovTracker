@@ -179,6 +179,12 @@ export interface PlayerLevel {
   exp: number;
   levelBadgeImageLink: string;
 }
+export interface MemberProfile {
+  displayName: string | null;
+  level: number | null;
+  tasksCompleted: number | null;
+  gameMode?: 'pvp' | 'pve';
+}
 // Query Result Types
 export interface LanguageQueryResult {
   __type?: { enumValues: { name: string }[] };
@@ -265,7 +271,7 @@ export interface TeamState extends StateTree {
   owner?: string | null;
   joinCode?: string | null;
   members?: string[];
-  memberProfiles?: Record<string, { displayName: string | null; level: number | null; tasksCompleted: number | null; gameMode?: 'pvp' | 'pve' }>;
+  memberProfiles?: Record<string, MemberProfile>;
 }
 export interface TeamGetters extends _GettersTree<TeamState> {
   teamOwner: (state: TeamState) => string | null;

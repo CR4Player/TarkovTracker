@@ -44,7 +44,7 @@
             </span>
           </div>
           <div class="flex w-3/12 flex-col items-end justify-center md:w-1/2">
-            <div v-if="smAndDown" class="mr-2 block">
+            <div v-if="belowMd" class="mr-2 block">
               <UButton
                 variant="ghost"
                 color="gray"
@@ -195,8 +195,9 @@
   </KeepAlive>
 </template>
 <script setup>
-  import { useBreakpoints } from '@vueuse/core';
-  import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, defineAsyncComponent, inject, ref } from 'vue';
+  import { useItemRowIntersection } from '@/composables/useItemRowIntersection';
+  import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useTarkovStore } from '@/stores/useTarkov';
   import ItemCountControls from './ItemCountControls.vue';
   import RequirementInfo from './RequirementInfo.vue';
@@ -209,14 +210,8 @@
       required: true,
     },
   });
-  // Define breakpoints (sm: 600px, md: 960px)
-  const breakpoints = useBreakpoints({
-    mobile: 0,
-    sm: 600,
-    md: 960,
-  });
-  const smAndDown = breakpoints.smaller('sm');
-  const mdAndUp = breakpoints.greaterOrEqual('md');
+  // Use shared breakpoints to avoid duplicate listeners
+  const { belowMd, mdAndUp } = useSharedBreakpoints();
   const tarkovStore = useTarkovStore();
   const smallDialog = ref(false);
   const {
@@ -234,28 +229,7 @@
   } = inject('neededitem');
   // Intersection observer for lazy loading
   const cardRef = ref(null);
-  const isVisible = ref(false);
-  const observer = ref(null);
-  onMounted(() => {
-    if (cardRef.value) {
-      observer.value = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            isVisible.value = true;
-            observer.value?.disconnect();
-          }
-        },
-        {
-          rootMargin: '50px',
-          threshold: 0.1,
-        }
-      );
-      observer.value.observe(cardRef.value);
-    }
-  });
-  onUnmounted(() => {
-    observer.value?.disconnect();
-  });
+  const { isVisible } = useItemRowIntersection(cardRef);
   const itemRowClasses = computed(() => {
     return {
       'bg-gradient-to-l from-complete to-surface':

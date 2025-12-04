@@ -1,12 +1,12 @@
 import { type _GettersTree, defineStore, type StateTree } from 'pinia';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
 import {
-    actions,
-    defaultState,
-    getters,
-    migrateToGameModeStructure,
-    type UserActions,
-    type UserState,
+  actions,
+  defaultState,
+  getters,
+  migrateToGameModeStructure,
+  type UserActions,
+  type UserState,
 } from '@/stores/progressState';
 import { GAME_MODES, type GameMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';

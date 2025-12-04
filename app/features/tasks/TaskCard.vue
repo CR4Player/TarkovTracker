@@ -73,19 +73,21 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent, ref } from 'vue';
-import ContextMenu from '@/components/ui/ContextMenu.vue';
-import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
-import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
-import { useMetadataStore } from '@/stores/useMetadata';
-import { usePreferencesStore } from '@/stores/usePreferences';
-import { useProgressStore } from '@/stores/useProgress';
-import { useTarkovStore } from '@/stores/useTarkov';
-import type { Task, TaskObjective } from '@/types/tarkov';
-import TaskActions from './TaskActions.vue';
-import TaskInfo from './TaskInfo.vue';
+  import ContextMenu from '@/components/ui/ContextMenu.vue';
+  import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
+  import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
+  import TaskActions from '@/features/tasks/TaskActions.vue';
+  import TaskInfo from '@/features/tasks/TaskInfo.vue';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useProgressStore } from '@/stores/useProgress';
+  import { useTarkovStore } from '@/stores/useTarkov';
+  import type { Task, TaskObjective } from '@/types/tarkov';
   // Conditionally rendered components - lazy load
-  const QuestKeys = defineAsyncComponent(() => import('./QuestKeys.vue'));
-  const QuestObjectives = defineAsyncComponent(() => import('./QuestObjectives.vue'));
+  const QuestKeys = defineAsyncComponent(() => import('@/features/tasks/QuestKeys.vue'));
+  const QuestObjectives = defineAsyncComponent(
+    () => import('@/features/tasks/QuestObjectives.vue')
+  );
   const props = defineProps<{
     task: Task;
     activeUserView: string;

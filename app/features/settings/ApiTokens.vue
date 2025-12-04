@@ -28,11 +28,15 @@
         v-if="!supportsRawTokens"
         color="warning"
         variant="soft"
-        :title="t('page.settings.card.apitokens.token_value_unavailable', 'Token values are hidden')"
-        :description="t(
-          'page.settings.card.apitokens.token_value_unavailable_desc',
-          'Token viewing requires the latest database migration. Tokens will still work, but create a new token after updating the database to view and copy it here.'
-        )"
+        :title="
+          t('page.settings.card.apitokens.token_value_unavailable', 'Token values are hidden')
+        "
+        :description="
+          t(
+            'page.settings.card.apitokens.token_value_unavailable_desc',
+            'Token viewing requires the latest database migration. Tokens will still work, but create a new token after updating the database to view and copy it here.'
+          )
+        "
       />
       <div v-if="loading" class="space-y-2">
         <div class="h-12 animate-pulse rounded-lg bg-white/5"></div>
@@ -80,7 +84,9 @@
               >
                 <code class="text-surface-300 flex-1 font-mono text-xs">
                   <template v-if="token.tokenValue">
-                    {{ visibleTokens.has(token.id) ? token.tokenValue : maskToken(token.tokenValue) }}
+                    {{
+                      visibleTokens.has(token.id) ? token.tokenValue : maskToken(token.tokenValue)
+                    }}
                   </template>
                   <template v-else>
                     {{
@@ -267,11 +273,11 @@
 </template>
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
-import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
-import { logger } from '@/utils/logger';
+  import { useI18n } from 'vue-i18n';
+  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+  import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
+  import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
+  import { logger } from '@/utils/logger';
   interface SupabaseTable {
     select: (query: string) => SupabaseTable;
     insert: (data: Record<string, unknown>) => SupabaseTable;
@@ -367,7 +373,7 @@ import { logger } from '@/utils/logger';
           lastUsedAt: row.last_used_at,
           usageCount: row.usage_count ?? 0,
           isActive: row.is_active ?? true,
-          tokenValue: supportsRawTokens.value ? row.token_value ?? null : null,
+          tokenValue: supportsRawTokens.value ? (row.token_value ?? null) : null,
         })) || [];
     } catch (error) {
       logger.error('[ApiTokens] Failed to load tokens:', error);
@@ -461,7 +467,10 @@ import { logger } from '@/utils/logger';
         resetForm();
         return;
       } catch (gatewayError) {
-        logger.warn('[ApiTokens] Gateway create failed, falling back to direct insert:', gatewayError);
+        logger.warn(
+          '[ApiTokens] Gateway create failed, falling back to direct insert:',
+          gatewayError
+        );
       }
       const newTokenId = await createTokenDirect(rawToken);
       generatedToken.value = rawToken;

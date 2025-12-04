@@ -1,5 +1,5 @@
 import { createI18n, type I18n, type LocaleMessages } from 'vue-i18n';
-import { markI18nReady } from '@/composables/utils/i18nHelpers';
+import { markI18nReady } from '@/composables/i18nHelpers';
 import de from '@/locales/de.json5';
 import en from '@/locales/en.json5';
 import es from '@/locales/es.json5';

@@ -31,12 +31,12 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
-import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-import { useSystemStore } from '@/stores/useSystemStore';
-import type { SystemState } from '@/types/tarkov';
-import { logger } from '@/utils/logger';
-import { useToast } from '#imports';
+  import { useRoute } from 'vue-router';
+  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+  import { useSystemStore } from '@/stores/useSystemStore';
+  import type { SystemState } from '@/types/tarkov';
+  import { logger } from '@/utils/logger';
+  import { useToast } from '#imports';
   const systemStore = useSystemStore();
   const route = useRoute();
   const toast = useToast();
@@ -46,9 +46,14 @@ import { useToast } from '#imports';
   });
   const inInviteTeam = computed(() => {
     // Access state directly for reactivity
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
+    const systemState = systemStore.$state;
     const currentTeamId = systemState.team ?? systemState.team_id;
-    return currentTeamId != null && currentTeamId == route?.query?.team;
+    const queryTeam = route.query.team;
+    // Normalize query param: if array, take first; if null/undefined, bail
+    const inviteTeamId = Array.isArray(queryTeam) ? queryTeam[0] : queryTeam;
+    if (!inviteTeamId || !currentTeamId) return false;
+    // Strict comparison after ensuring both are strings
+    return String(currentTeamId) === String(inviteTeamId);
   });
   const declined = ref(false);
   const accepting = ref(false);
@@ -64,7 +69,7 @@ import { useToast } from '#imports';
           title: 'Joined team successfully!',
           color: 'success',
         });
-        systemStore.$patch({ team: teamId } as Partial<SystemState>);
+        systemStore.$patch({ team: teamId, team_id: teamId } as Partial<SystemState>);
         declined.value = false;
       } else {
         throw new Error((result as { message?: string })?.message || 'Failed to join team');

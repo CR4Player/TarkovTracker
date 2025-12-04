@@ -3,14 +3,14 @@ import { useMetadataStore } from '@/stores/useMetadata';
 import { API_GAME_MODES, GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import {
-    CACHE_CONFIG,
-    type CacheStats,
-    type CacheType,
-    cleanupExpiredCache,
-    clearAllCache,
-    clearCacheByGameMode,
-    clearCacheEntry,
-    getCacheStats,
+  CACHE_CONFIG,
+  type CacheStats,
+  type CacheType,
+  cleanupExpiredCache,
+  clearAllCache,
+  clearCacheByGameMode,
+  clearCacheEntry,
+  getCacheStats,
 } from '@/utils/tarkovCache';
 /**
  * Composable for managing Tarkov data cache

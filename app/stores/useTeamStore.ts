@@ -5,12 +5,21 @@ import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener'
 import type { UserState } from '@/stores/progressState';
 import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
 import { useTarkovStore } from '@/stores/useTarkov';
-import type { TeamGetters, TeamState } from '@/types/tarkov';
+import type { MemberProfile, TeamGetters, TeamState } from '@/types/tarkov';
 import { GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Store } from 'pinia';
 import { useToast } from '#imports';
+/**
+ * Helper to extract team ID from system store
+ * Uses the userTeam getter which handles both 'team' and legacy 'team_id' fields
+ */
+function getTeamIdFromSystemStore(
+  systemStore: ReturnType<typeof useSystemStoreWithSupabase>['systemStore']
+): string | null {
+  return systemStore.userTeam;
+}
 /**
  * Team store definition with getters for team info and members
  */
@@ -75,8 +84,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
   // Computed reference to the team document based on system store
   const teamFilter = computed(() => {
     // Access state directly for reactivity
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    const currentSystemStateTeam = systemState.team ?? systemState.team_id;
+    const currentSystemStateTeam = getTeamIdFromSystemStore(systemStore);
     if (
       $supabase.user.loggedIn &&
       currentSystemStateTeam &&
@@ -90,7 +98,10 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
   const handleTeamData = (data: Record<string, unknown> | null) => {
     if (data) {
       // Transform database fields to client fields BEFORE patching
-      const transformed: Partial<TeamState> & { owner_id?: string | null; join_code?: string | null } = {
+      const transformed: Partial<TeamState> & {
+        owner_id?: string | null;
+        join_code?: string | null;
+      } = {
         ...data,
       };
       // Map owner_id to owner
@@ -109,7 +120,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
         hasOwnerId: 'owner_id' in data,
         hasJoinCode: 'join_code' in data,
         owner: transformed.owner,
-        joinCode: transformed.joinCode
+        joinCode: transformed.joinCode,
       });
       // Manually patch the store with transformed data
       teamStore.$patch(transformed as Partial<TeamState>);
@@ -118,7 +129,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
       logger.debug('[TeamStore] After patch:', {
         owner: teamStore.owner,
         joinCode: teamStore.joinCode,
-        inviteCode: teamStore.inviteCode
+        inviteCode: teamStore.inviteCode,
       });
     } else {
       teamStore.$reset();
@@ -134,8 +145,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
     }
   };
   const refreshMembers = async () => {
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    const currentTeamId = systemState.team ?? systemState.team_id;
+    const currentTeamId = getTeamIdFromSystemStore(systemStore);
     if (!currentTeamId) {
       teamStore.$patch((state) => {
         state.members = [];
@@ -156,8 +166,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
     }
   };
   const setupMembershipSubscription = () => {
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    const currentTeamId = systemState.team ?? systemState.team_id;
+    const currentTeamId = getTeamIdFromSystemStore(systemStore);
     cleanupMembership();
     if (!currentTeamId) return;
     teamChannel.value = $supabase.client
@@ -191,7 +200,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
               level: data.level ?? null,
               tasksCompleted: data.tasksCompleted ?? null,
             },
-          } as Record<string, { displayName: string | null; level: number | null; tasksCompleted: number | null; gameMode?: 'pvp' | 'pve' }>;
+          } as Record<string, MemberProfile>;
         });
       })
       .subscribe((status) => {
@@ -205,7 +214,6 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
   const { cleanup: teamListenerCleanup, isSubscribed } = useSupabaseListener({
     store: teamStore,
     table: 'teams',
-    // Pass the computed ref so subscription tracks team id changes reactively
     filter: teamFilter,
     storeId: 'team',
     onData: handleTeamData,
@@ -218,9 +226,9 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
     },
     { immediate: true }
   );
-  // Broadcast local progress summary to teammates whenever it changes
   const localProgressSnapshot = computed(() => {
-    const mode = (tarkovStore.$state.currentGameMode as 'pvp' | 'pve' | undefined) || GAME_MODES.PVP;
+    const mode =
+      (tarkovStore.$state.currentGameMode as 'pvp' | 'pve' | undefined) || GAME_MODES.PVP;
     const modeState = (tarkovStore.$state as unknown as Record<string, unknown>)[mode] as {
       displayName?: string | null;
       level?: number | null;
@@ -239,12 +247,10 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
   watch(
     () => localProgressSnapshot.value,
     (snapshot) => {
-      const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-      const currentTeamId = systemState.team ?? systemState.team_id;
+      const currentTeamId = getTeamIdFromSystemStore(systemStore);
       if (!currentTeamId || !teamChannel.value || !$supabase.user?.id) {
         return;
       }
-      // Push to teammates
       void teamChannel.value.send({
         type: 'broadcast',
         event: 'progress',
@@ -256,7 +262,6 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
           gameMode: snapshot.mode,
         },
       });
-      // Apply locally so the current user card updates immediately
       teamStore.$patch((state) => {
         state.memberProfiles = {
           ...teamStore.memberProfiles,
@@ -266,7 +271,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
             tasksCompleted: snapshot.tasksCompleted,
             gameMode: snapshot.mode,
           },
-        } as Record<string, { displayName: string | null; level: number | null; tasksCompleted: number | null; gameMode?: 'pvp' | 'pve' }>;
+        } as Record<string, MemberProfile>;
       });
     },
     { deep: true }

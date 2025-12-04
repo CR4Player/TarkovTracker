@@ -39,14 +39,16 @@ npx eslint app   # Lint code
 
 ## Documentation Index
 
-| File                                | Purpose                                      |
-| ----------------------------------- | -------------------------------------------- |
-| `00_VERSION_CONTRACT.md`            | Stack requirements and patterns              |
-| `APP_STRUCTURE.md`                  | App organization (app.vue, layouts, shell)   |
-| `BACKEND_STATUS.md`                 | Backend integration status                   |
-| `I18N_STATUS.md`                    | Translation system                           |
-| `TEAM_SYSTEM.md`                    | Team architecture (Workers + Edge Functions) |
-| `Analysis/CONSOLIDATED_ANALYSIS.md` | Verified architectural issues and priorities |
+| File                                  | Purpose                                           |
+| ------------------------------------- | ------------------------------------------------- |
+| `00_VERSION_CONTRACT.md`              | Stack requirements and patterns                   |
+| `APP_STRUCTURE.md`                    | App organization (app.vue, layouts, shell)        |
+| `BACKEND_STATUS.md`                   | Backend integration status                        |
+| `I18N_STATUS.md`                      | Translation system                                |
+| `TEAM_SYSTEM.md`                      | Team architecture (Workers + Edge Functions)      |
+| `Analysis/CONSOLIDATED_ANALYSIS.md`   | Verified architectural issues and priorities      |
+| `Analysis/CODEBASE_REVIEW_2025_11.md` | November 2025 codebase review and refactor plan   |
+| `Runbooks/`                           | Operational procedures and troubleshooting guides |
 
 --- DO NOT TOUCH ANY OF THIS FILE CONENT BELOW HERE, IT IS MANUALLY MAINTAINED ---
 

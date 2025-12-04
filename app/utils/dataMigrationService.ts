@@ -1,8 +1,20 @@
 import type { UserProgressData } from '@/stores/progressState';
 import type { GameMode } from '@/utils/constants';
-import { GAME_EDITION_STRING_VALUES, normalizePMCFaction } from '@/utils/constants';
+import {
+  DEFAULT_GAME_EDITION,
+  DEFAULT_PMC_FACTION,
+  GAME_EDITION_STRING_VALUES,
+  LIMITS,
+  normalizePMCFaction,
+} from '@/utils/constants';
 import { logger } from '@/utils/logger';
 // import { defaultState, migrateToGameModeStructure } from "@/stores/progressState";
+// Compute default edition index once at module scope (constant value)
+const DEFAULT_EDITION_INDEX = Math.max(
+  0,
+  Math.min(GAME_EDITION_STRING_VALUES.length - 1, DEFAULT_GAME_EDITION - 1)
+);
+const DEFAULT_EDITION_STRING = GAME_EDITION_STRING_VALUES[DEFAULT_EDITION_INDEX];
 // Define a basic interface for the progress data structure
 export interface ProgressData {
   level: number;
@@ -42,9 +54,170 @@ export interface ProgressData {
 const LOCAL_PROGRESS_KEY = 'progress';
 /**
  * Service to handle migration of local data to a user's Supabase account
+ * Also includes validation utilities for progress data
  */
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export default class DataMigrationService {
+  // ============================================
+  // Validation Utilities
+  // ============================================
+  /**
+   * Check if user has significant progress data worth preserving
+   */
+  static hasSignificantProgress(data: ProgressData): boolean {
+    return (
+      data.level > 1 ||
+      Object.keys(data.taskCompletions || {}).length > 0 ||
+      Object.keys(data.taskObjectives || {}).length > 0 ||
+      Object.keys(data.hideoutModules || {}).length > 0 ||
+      Object.keys(data.hideoutParts || {}).length > 0
+    );
+  }
+  /**
+   * Validate that an object has the structure of progress data
+   * Performs shallow structural checks on nested fields to prevent malformed data
+   */
+  static isValidProgressData(data: unknown): data is ProgressData {
+    if (typeof data !== 'object' || data === null) return false;
+    const typed = data as ProgressData;
+    // Level is required and must be a valid number >= 1
+    if (typeof typed.level !== 'number' || typed.level < 1) return false;
+    // If taskCompletions exists, validate it's a plain object (not array) with object values
+    if (typed.taskCompletions !== undefined) {
+      if (
+        typeof typed.taskCompletions !== 'object' ||
+        typed.taskCompletions === null ||
+        Array.isArray(typed.taskCompletions)
+      ) {
+        return false;
+      }
+      // Check that all values are objects with expected structure
+      for (const key of Object.keys(typed.taskCompletions)) {
+        const completion = (typed.taskCompletions as Record<string, unknown>)[key];
+        if (typeof completion !== 'object' || completion === null || Array.isArray(completion)) {
+          return false;
+        }
+      }
+    }
+    // If taskObjectives exists, validate it's a plain object (not array)
+    if (typed.taskObjectives !== undefined) {
+      if (
+        typeof typed.taskObjectives !== 'object' ||
+        typed.taskObjectives === null ||
+        Array.isArray(typed.taskObjectives)
+      ) {
+        return false;
+      }
+    }
+    // If hideoutModules exists, validate it's a plain object (not array) with object values
+    if (typed.hideoutModules !== undefined) {
+      if (
+        typeof typed.hideoutModules !== 'object' ||
+        typed.hideoutModules === null ||
+        Array.isArray(typed.hideoutModules)
+      ) {
+        return false;
+      }
+      // Check that all values are objects with expected structure
+      for (const key of Object.keys(typed.hideoutModules)) {
+        const module = (typed.hideoutModules as Record<string, unknown>)[key];
+        if (typeof module !== 'object' || module === null || Array.isArray(module)) {
+          return false;
+        }
+      }
+    }
+    // If hideoutParts exists, validate it's a plain object (not array) with object values
+    if (typed.hideoutParts !== undefined) {
+      if (
+        typeof typed.hideoutParts !== 'object' ||
+        typed.hideoutParts === null ||
+        Array.isArray(typed.hideoutParts)
+      ) {
+        return false;
+      }
+      // Check that all values are objects with expected structure
+      for (const key of Object.keys(typed.hideoutParts)) {
+        const part = (typed.hideoutParts as Record<string, unknown>)[key];
+        if (typeof part !== 'object' || part === null || Array.isArray(part)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  /**
+   * Validate import file format structure
+   */
+  static validateImportFormat(
+    parsedJson: unknown
+  ): parsedJson is { type: string; data: ProgressData } {
+    return (
+      typeof parsedJson === 'object' &&
+      parsedJson !== null &&
+      'type' in parsedJson &&
+      (parsedJson as { type: unknown }).type === 'tarkovtracker-migration' &&
+      'data' in parsedJson &&
+      this.isValidProgressData((parsedJson as { data: unknown }).data)
+    );
+  }
+  /**
+   * Validate API token format
+   * Checks that token contains only alphanumeric characters, underscores, and hyphens
+   */
+  static isValidApiToken(token: string): boolean {
+    return (
+      typeof token === 'string' &&
+      token.length > 10 &&
+      token.trim() === token &&
+      /^[A-Za-z0-9_-]+$/.test(token)
+    );
+  }
+  /**
+   * Check if data is worth migrating (has meaningful content)
+   */
+  static hasDataWorthMigrating(data: ProgressData): boolean {
+    return (
+      this.hasSignificantProgress(data) ||
+      (data.displayName !== undefined && data.displayName.trim().length > 0) ||
+      (data.gameEdition !== undefined &&
+        data.gameEdition !== '' &&
+        data.gameEdition !== GAME_EDITION_STRING_VALUES[0]) ||
+      normalizePMCFaction(data.pmcFaction) !== DEFAULT_PMC_FACTION
+    );
+  }
+  /**
+   * Validate that an object looks like old API data
+   */
+  static isValidOldApiData(data: unknown): boolean {
+    if (typeof data !== 'object' || data === null) return false;
+    const typed = data as Record<string, unknown>;
+    // Must have at least level or playerLevel
+    return (
+      typeof typed.level === 'number' ||
+      typeof typed.playerLevel === 'number' ||
+      Array.isArray(typed.tasksProgress) ||
+      Array.isArray(typed.hideoutModulesProgress)
+    );
+  }
+  /**
+   * Sanitize user input data
+   */
+  static sanitizeProgressData(data: ProgressData): ProgressData {
+    return {
+      ...data,
+      level: Math.max(1, Math.min(LIMITS.GAME_MAX_LEVEL, Math.floor(data.level))),
+      displayName: data.displayName?.trim().slice(0, 50) || '',
+      gameEdition: GAME_EDITION_STRING_VALUES.includes(
+        data.gameEdition as (typeof GAME_EDITION_STRING_VALUES)[number]
+      )
+        ? data.gameEdition
+        : DEFAULT_EDITION_STRING,
+      pmcFaction: normalizePMCFaction(data.pmcFaction).toLowerCase(),
+    };
+  }
+  // ============================================
+  // Data Transformation Utilities
+  // ============================================
   /**
    * Transform task objectives to ensure proper timestamp format
    * @param taskObjectives The task objectives to transform
@@ -103,14 +276,13 @@ export default class DataMigrationService {
       if (!progressData || progressData === '{}') {
         return false;
       }
-      const parsedData: ProgressData = JSON.parse(progressData);
-      const hasKeys = Object.keys(parsedData).length > 0;
-      const hasProgress =
-        parsedData.level > 1 ||
-        Object.keys(parsedData.taskCompletions || {}).length > 0 ||
-        Object.keys(parsedData.taskObjectives || {}).length > 0 ||
-        Object.keys(parsedData.hideoutModules || {}).length > 0;
-      return hasKeys && hasProgress;
+      const parsedData = JSON.parse(progressData);
+      // Validate parsedData has expected structure before checking
+      if (!this.isValidProgressData(parsedData)) {
+        return false;
+      }
+      // hasDataWorthMigrating checks progress, displayName, gameEdition, and pmcFaction
+      return this.hasDataWorthMigrating(parsedData);
     } catch (error) {
       logger.warn('[DataMigrationService] Error in hasLocalData:', error);
       return false;
@@ -123,14 +295,17 @@ export default class DataMigrationService {
   static getLocalData(): ProgressData | null {
     try {
       const progressData = localStorage.getItem(LOCAL_PROGRESS_KEY);
-      if (!progressData) {
+      if (!progressData || progressData === '{}') {
         return null;
       }
-      const parsedData: ProgressData = JSON.parse(progressData);
-      if (Object.keys(parsedData).length > 0) {
-        return JSON.parse(JSON.stringify(parsedData)) as ProgressData;
+      const parsedData = JSON.parse(progressData);
+      // Validate parsedData has expected structure before returning
+      if (!this.isValidProgressData(parsedData)) {
+        logger.warn('[DataMigrationService] Invalid progress data structure in localStorage');
+        return null;
       }
-      return null;
+      // Return a deep copy to prevent mutations to the cached data
+      return JSON.parse(JSON.stringify(parsedData)) as ProgressData;
     } catch (error) {
       logger.warn('[DataMigrationService] Error in getLocalData:', error);
       return null;
@@ -242,7 +417,7 @@ export default class DataMigrationService {
           typeof importedData.gameEdition === 'string'
             ? parseInt(importedData.gameEdition) || 1
             : importedData.gameEdition || 1,
-        pmc_faction: normalizePMCFaction(importedData.pmcFaction),
+        pmc_faction: normalizePMCFaction(importedData.pmcFaction).toLowerCase(),
         display_name: importedData.displayName || null,
         task_completions: importedData.taskCompletions || {},
         task_objectives: this.transformTaskObjectives(importedData.taskObjectives || {}),

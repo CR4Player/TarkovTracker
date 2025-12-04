@@ -112,9 +112,9 @@ export function useTaskFiltering() {
     for (const task of taskList) {
       const relevantTeamIds = getRelevantTeamIds(task, teamIds);
       if (relevantTeamIds.length === 0) continue;
-      const taskStatuses = relevantTeamIds.map(teamId => ({
+      const taskStatuses = relevantTeamIds.map((teamId) => ({
         teamId,
-        ...getTaskStatus(task.id, teamId)
+        ...getTaskStatus(task.id, teamId),
       }));
       if (secondaryView === 'available') {
         const usersWhoNeedTask = taskStatuses
@@ -122,13 +122,16 @@ export function useTaskFiltering() {
           .map(({ teamId }) => progressStore.getDisplayName(teamId));
         if (usersWhoNeedTask.length > 0) {
           if (usersWhoNeedTask.length > 1) {
-            logger.debug(`[TaskFiltering] Task "${task.name}" needed by multiple users:`, usersWhoNeedTask);
+            logger.debug(
+              `[TaskFiltering] Task "${task.name}" needed by multiple users:`,
+              usersWhoNeedTask
+            );
           }
           tempVisibleTasks.push({ ...task, neededBy: usersWhoNeedTask });
         }
       } else if (secondaryView === 'locked') {
-        const isAvailableForAny = taskStatuses.some(({ isUnlocked, isCompleted }) => 
-          isUnlocked && !isCompleted
+        const isAvailableForAny = taskStatuses.some(
+          ({ isUnlocked, isCompleted }) => isUnlocked && !isCompleted
         );
         const isCompletedByAll = taskStatuses.every(({ isCompleted }) => isCompleted);
         if (!isAvailableForAny && !isCompletedByAll) {
@@ -204,7 +207,12 @@ export function useTaskFiltering() {
   /**
    * Helper to check if task passes all filters
    */
-  const taskPassesFilters = (task: Task, disabledTasks: string[], hideGlobalTasks: boolean, hideNonKappaTasks: boolean): boolean => {
+  const taskPassesFilters = (
+    task: Task,
+    disabledTasks: string[],
+    hideGlobalTasks: boolean,
+    hideNonKappaTasks: boolean
+  ): boolean => {
     if (disabledTasks.includes(task.id)) return false;
     if (hideGlobalTasks && !task.map) return false;
     if (hideNonKappaTasks && task.kappaRequired !== true) return false;
@@ -222,15 +230,21 @@ export function useTaskFiltering() {
   /**
    * Helper to check if any objectives remain incomplete
    */
-  const hasIncompleteObjectives = (task: Task, mapIds: string[], activeUserView: string): boolean => {
-    return task.objectives?.some((objective) => {
-      if (!Array.isArray(objective.maps)) return false;
-      if (!objective.maps.some((m) => mapIds.includes(m.id))) return false;
-      const completions = progressStore.objectiveCompletions[objective.id] || {};
-      return activeUserView === 'all'
-        ? !Object.values(completions).every(Boolean)
-        : completions[activeUserView] !== true;
-    }) ?? false;
+  const hasIncompleteObjectives = (
+    task: Task,
+    mapIds: string[],
+    activeUserView: string
+  ): boolean => {
+    return (
+      task.objectives?.some((objective) => {
+        if (!Array.isArray(objective.maps)) return false;
+        if (!objective.maps.some((m) => mapIds.includes(m.id))) return false;
+        const completions = progressStore.objectiveCompletions[objective.id] || {};
+        return activeUserView === 'all'
+          ? !Object.values(completions).every(Boolean)
+          : completions[activeUserView] !== true;
+      }) ?? false
+    );
   };
   /**
    * Calculate task totals per map for badge display

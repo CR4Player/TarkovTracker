@@ -57,28 +57,6 @@ export function resetStore(store: Store): void {
   }
 }
 /**
- * Development-only logging utility
- */
-export function devLog(message: string, ...args: unknown[]): void {
-  logger.debug(`[DEV] ${message}`, ...args);
-}
-/**
- * Development-only warning utility
- */
-export function devWarn(message: string, ...args: unknown[]): void {
-  if (import.meta.env.DEV) {
-    logger.warn(`[DEV] ${message}`, ...args);
-  }
-}
-/**
- * Development-only error logging utility
- */
-export function devError(message: string, ...args: unknown[]): void {
-  if (import.meta.env.DEV) {
-    logger.error(`[DEV] ${message}`, ...args);
-  }
-}
-/**
  * Creates a deep copy of an object using JSON methods
  * Note: This method has limitations (no functions, dates become strings, etc.)
  * Use only for simple data structures

@@ -181,6 +181,8 @@ export const LIMITS = {
   TEAM_MAX_MEMBERS: 5,
   // Random name generation default length
   RANDOM_NAME_LENGTH: 6,
+  // Maximum player level in Tarkov
+  GAME_MAX_LEVEL: 79,
 } as const;
 // Cache configuration (sync with tarkovCache.ts)
 export const CACHE_CONSTANTS = {

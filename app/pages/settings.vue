@@ -367,13 +367,13 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-import GenericCard from '@/components/ui/GenericCard.vue';
-import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
-import ApiTokens from '@/features/settings/ApiTokens.vue';
-import { usePreferencesStore } from '@/stores/usePreferences';
-import { useTarkovStore } from '@/stores/useTarkov';
-import { GAME_EDITIONS } from '@/utils/constants';
-import { logger } from '@/utils/logger';
+  import GenericCard from '@/components/ui/GenericCard.vue';
+  import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
+  import ApiTokens from '@/features/settings/ApiTokens.vue';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useTarkovStore } from '@/stores/useTarkov';
+  import { GAME_EDITIONS } from '@/utils/constants';
+  import { logger } from '@/utils/logger';
   // Page meta
   definePageMeta({
     title: 'Settings',

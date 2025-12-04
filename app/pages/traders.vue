@@ -18,9 +18,9 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-import TraderCard from '@/features/traders/TraderCard.vue';
-import { useMetadataStore } from '@/stores/useMetadata';
-import { useTarkovStore } from '@/stores/useTarkov';
+  import TraderCard from '@/features/traders/TraderCard.vue';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { useTarkovStore } from '@/stores/useTarkov';
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
   const { sortedTraders, loading } = storeToRefs(metadataStore);

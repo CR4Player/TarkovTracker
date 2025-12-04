@@ -7,14 +7,14 @@
     leave-to-class="opacity-0"
   >
     <div
-      v-if="mdAndDown && mobileExpanded"
+      v-if="belowMd && mobileExpanded"
       class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
       @click="closeMobileDrawer"
     />
   </Transition>
   <!-- Unified Sidebar - works as rail on mobile, rail/expanded on desktop -->
   <aside
-    class="border-primary-800/60 fixed inset-y-0 left-0 z-50 flex flex-col border-r backdrop-blur-sm transition-all duration-300 bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(14,14,15,0.96)_45%,rgba(12,12,13,0.97)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),inset_0_-1px_0_rgba(0,0,0,0.6),1px_0_0_rgba(0,0,0,0.55)]"
+    class="border-primary-800/60 fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(14,14,15,0.96)_45%,rgba(12,12,13,0.97)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),inset_0_-1px_0_rgba(0,0,0,0.6),1px_0_0_rgba(0,0,0,0.55)] backdrop-blur-sm transition-all duration-300"
     :class="[sidebarWidth]"
   >
     <div class="relative z-10 flex h-full flex-col overflow-x-hidden overflow-y-auto">
@@ -42,16 +42,16 @@
         <template v-if="isLoggedIn">
           <UDropdownMenu :items="accountItems" :content="{ side: 'right', align: 'start' }">
             <UButton
-            color="neutral"
-            variant="ghost"
-            :padded="!isCollapsed"
-            class="w-full justify-between rounded-md px-2 py-2"
-            :class="[isCollapsed ? 'justify-center px-0' : '']"
-          >
-            <div class="flex min-w-0 items-center gap-3">
-              <UAvatar :src="avatarSrc" size="md" alt="User avatar" class="shrink-0" />
-              <span v-if="!isCollapsed" class="truncate">{{ userDisplayName }}</span>
-            </div>
+              color="neutral"
+              variant="ghost"
+              :padded="!isCollapsed"
+              class="w-full justify-between rounded-md px-2 py-2"
+              :class="[isCollapsed ? 'justify-center px-0' : '']"
+            >
+              <div class="flex min-w-0 items-center gap-3">
+                <UAvatar :src="avatarSrc" size="md" alt="User avatar" class="shrink-0" />
+                <span v-if="!isCollapsed" class="truncate">{{ userDisplayName }}</span>
+              </div>
               <template #trailing>
                 <UIcon
                   v-if="!isCollapsed"
@@ -145,25 +145,21 @@
   </aside>
 </template>
 <script setup lang="ts">
-  import { useBreakpoints } from '@vueuse/core';
   import { computed, defineAsyncComponent, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
+  import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { getEditionName, PMC_FACTIONS, type PMCFaction } from '@/utils/constants';
-  // Define breakpoints (md breakpoint at 960px)
-  const breakpoints = useBreakpoints({
-    mobile: 0,
-    md: 960,
-  });
-  const mdAndDown = breakpoints.smaller('md');
+  // Use shared breakpoints to avoid duplicate listeners
+  const { belowMd } = useSharedBreakpoints();
   const appStore = useAppStore();
   // Mobile expanded state from store
   const mobileExpanded = computed(() => appStore.mobileDrawerExpanded);
   // Close mobile expanded when switching to desktop
-  watch(mdAndDown, (isMobile) => {
+  watch(belowMd, (isMobile) => {
     if (!isMobile) {
       appStore.setMobileDrawerExpanded(false);
     }
@@ -173,7 +169,7 @@
   };
   // Determine if sidebar should be collapsed (rail mode)
   const isCollapsed = computed(() => {
-    if (mdAndDown.value) {
+    if (belowMd.value) {
       // On mobile: collapsed unless expanded
       return !mobileExpanded.value;
     }
@@ -182,7 +178,7 @@
   });
   // Determine sidebar width class
   const sidebarWidth = computed(() => {
-    if (mdAndDown.value) {
+    if (belowMd.value) {
       // Mobile: rail by default, expanded when open
       return mobileExpanded.value ? 'w-56' : 'w-14';
     }

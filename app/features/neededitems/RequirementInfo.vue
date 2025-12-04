@@ -24,8 +24,8 @@
 </template>
 <script setup lang="ts">
   import { computed } from 'vue';
+  import StationLink from '@/features/hideout/StationLink.vue';
   import type { HideoutStation } from '@/types/tarkov';
-  import StationLink from '~/features/hideout/StationLink.vue';
   const props = defineProps<{
     needType: string;
     levelRequired: number;

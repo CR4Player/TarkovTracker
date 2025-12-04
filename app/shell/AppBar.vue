@@ -35,6 +35,7 @@
             type="button"
             class="focus:ring-pvp-400 inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
             :class="pvpClasses"
+            :disabled="dataLoading"
             @click="switchMode(GAME_MODES.PVP)"
           >
             <UIcon name="i-mdi-sword-cross" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
@@ -45,6 +46,7 @@
             type="button"
             class="focus:ring-pve-400 inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
             :class="pveClasses"
+            :disabled="dataLoading"
             @click="switchMode(GAME_MODES.PVE)"
           >
             <UIcon name="i-mdi-account-group" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
@@ -93,16 +95,16 @@
 </template>
 <script setup lang="ts">
   import { useWindowSize } from '@vueuse/core';
-import { storeToRefs } from 'pinia';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
-import { useAppStore } from '@/stores/useApp';
-import { useMetadataStore } from '@/stores/useMetadata';
-import { usePreferencesStore } from '@/stores/usePreferences';
-import { useTarkovStore } from '@/stores/useTarkov';
-import { GAME_MODES, type GameMode } from '@/utils/constants';
-import { logger } from '@/utils/logger';
+  import { storeToRefs } from 'pinia';
+  import { computed, onMounted, onUnmounted, ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
+  import { useRoute } from 'vue-router';
+  import { useAppStore } from '@/stores/useApp';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useTarkovStore } from '@/stores/useTarkov';
+  import { GAME_MODES, type GameMode } from '@/utils/constants';
+  import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
   const tarkovStore = useTarkovStore();
@@ -131,14 +133,23 @@ import { logger } from '@/utils/logger';
       : 'bg-pvp-950/80 text-pvp-400 hover:bg-pvp-900/90'
   );
   async function switchMode(mode: GameMode) {
-    if (mode !== currentGameMode.value) {
-      await tarkovStore.switchGameMode(mode);
-      metadataStore.updateLanguageAndGameMode();
-      await metadataStore.fetchAllData();
+    if (mode !== currentGameMode.value && !dataLoading.value) {
+      dataLoading.value = true;
+      try {
+        await tarkovStore.switchGameMode(mode);
+        metadataStore.updateLanguageAndGameMode();
+        await metadataStore.fetchAllData();
+        dataError.value = false;
+      } catch (err) {
+        logger.error('[AppBar] Error switching mode:', err);
+        dataError.value = true;
+      } finally {
+        dataLoading.value = false;
+      }
     }
   }
   const { loading: dataLoading, hideoutLoading } = storeToRefs(metadataStore);
-  const dataError = ref(false); // Placeholder - TODO: implement error handling
+  const dataError = ref(false);
   const pageTitle = computed(() =>
     t(`page.${String(route.name || 'index').replace('-', '_')}.title`)
   );
@@ -187,7 +198,15 @@ import { logger } from '@/utils/logger';
       // Update metadata store and refetch data with new language
       metadataStore.updateLanguageAndGameMode(newLocale);
       // Use cached data if available (forceRefresh = false)
-      metadataStore.fetchAllData(false).catch((err) => logger.error('[AppBar] Error fetching data:', err));
+      metadataStore
+        .fetchAllData(false)
+        .then(() => {
+          dataError.value = false;
+        })
+        .catch((err) => {
+          logger.error('[AppBar] Error fetching data:', err);
+          dataError.value = true;
+        });
     },
   });
 </script>

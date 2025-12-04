@@ -1,5 +1,5 @@
 import { getCurrentInstance, onUnmounted, ref, toRaw, watch } from 'vue';
-import { debounce } from '@/utils/debounce';
+import { debounce } from '@/utils/helpers';
 import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
 import type { UserProgressData } from '~/stores/progressState';
@@ -24,9 +24,7 @@ export function useSupabaseSync({
   transform,
   debounceMs = 1000,
 }: SupabaseSyncConfig) {
-  logger.debug(
-    `[Sync] useSupabaseSync initialized for table: ${table}, debounce: ${debounceMs}ms`
-  );
+  logger.debug(`[Sync] useSupabaseSync initialized for table: ${table}, debounce: ${debounceMs}ms`);
   const { $supabase } = useNuxtApp();
   const isSyncing = ref(false);
   const isPaused = ref(false);

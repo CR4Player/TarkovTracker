@@ -74,9 +74,7 @@ export function wouldCreateCycle(graph: Graph, sourceId: string, targetId: strin
 export function safeAddEdge(graph: Graph, sourceId: string, targetId: string): void {
   try {
     if (!graph.hasNode(sourceId) || !graph.hasNode(targetId)) {
-      logger.warn(
-        `Cannot add edge from ${sourceId} to ${targetId}: one or both nodes don't exist`
-      );
+      logger.warn(`Cannot add edge from ${sourceId} to ${targetId}: one or both nodes don't exist`);
       return;
     }
     // Check for cycles before adding

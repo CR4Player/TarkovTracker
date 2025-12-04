@@ -64,18 +64,18 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-import { computed, ref, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useTaskFiltering } from '@/composables/useTaskFiltering';
-import TaskCard from '@/features/tasks/TaskCard.vue';
-import TaskEmptyState from '@/features/tasks/TaskEmptyState.vue';
-import TaskLoadingState from '@/features/tasks/TaskLoadingState.vue';
-import { useMetadataStore } from '@/stores/useMetadata';
-import { usePreferencesStore } from '@/stores/usePreferences';
-import { useProgressStore } from '@/stores/useProgress';
-import { useTarkovStore } from '@/stores/useTarkov';
-import type { Task, TaskObjective } from '@/types/tarkov';
-import { logger } from '@/utils/logger';
+  import { computed, ref, watch } from 'vue';
+  import { useI18n } from 'vue-i18n';
+  import { useTaskFiltering } from '@/composables/useTaskFiltering';
+  import TaskCard from '@/features/tasks/TaskCard.vue';
+  import TaskEmptyState from '@/features/tasks/TaskEmptyState.vue';
+  import TaskLoadingState from '@/features/tasks/TaskLoadingState.vue';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useProgressStore } from '@/stores/useProgress';
+  import { useTarkovStore } from '@/stores/useTarkov';
+  import type { Task, TaskObjective } from '@/types/tarkov';
+  import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const {

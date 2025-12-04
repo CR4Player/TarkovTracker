@@ -112,17 +112,25 @@
   </GenericCard>
 </template>
 <script setup lang="ts">
-  import { computed, nextTick, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import GenericCard from '@/components/ui/GenericCard.vue';
-import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
-import { useTarkovStore } from '@/stores/useTarkov';
-import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
-import type { SystemState, TeamState } from '@/types/tarkov';
-import type { CreateTeamResponse, LeaveTeamResponse } from '@/types/team';
-import { LIMITS } from '@/utils/constants';
-import { logger } from '@/utils/logger';
+  import { computed, nextTick, ref, watch } from 'vue';
+  import { useI18n } from 'vue-i18n';
+  import GenericCard from '@/components/ui/GenericCard.vue';
+  import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+  import { useTarkovStore } from '@/stores/useTarkov';
+  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+  import type { SystemState, TeamState } from '@/types/tarkov';
+  import type { CreateTeamResponse, LeaveTeamResponse } from '@/types/team';
+  import { LIMITS } from '@/utils/constants';
+  import { delay } from '@/utils/helpers';
+  import { logger } from '@/utils/logger';
+  /**
+   * Helper to extract team ID from system store state
+   * Handles both 'team' and legacy 'team_id' fields
+   */
+  function getTeamId(): string | null {
+    return systemStore.userTeam;
+  }
   const { t } = useI18n({ useScope: 'global' });
   const { teamStore } = useTeamStoreWithSupabase();
   const { systemStore } = useSystemStoreWithSupabase();
@@ -165,9 +173,8 @@ import { logger } from '@/utils/logger';
     ).join('');
   // Access team ID directly from store state for better reactivity
   const localUserTeam = computed(() => {
-    const state = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    const teamId = state.team ?? state.team_id ?? null;
-    logger.debug('[MyTeam] Computing localUserTeam:', { team: state.team, team_id: state.team_id, result: teamId });
+    const teamId = getTeamId();
+    logger.debug('[MyTeam] Computing localUserTeam:', { result: teamId });
     return teamId;
   });
   // Debug: Watch for changes to localUserTeam
@@ -182,9 +189,7 @@ import { logger } from '@/utils/logger';
   const isTeamOwner = computed(() => {
     const teamState = teamStore.$state as { owner_id?: string; owner?: string };
     const owner = teamState.owner_id ?? teamState.owner;
-    // Access system store state directly
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    const hasTeam = !!(systemState.team || systemState.team_id);
+    const hasTeam = !!getTeamId();
     return owner === $supabase.user.id && hasTeam;
   });
   const loading = ref({ createTeam: false, leaveTeam: false });
@@ -222,9 +227,7 @@ import { logger } from '@/utils/logger';
         return await createTeam(teamName, password, maxMembers);
       }
       case 'leaveTeam': {
-        // Access team ID directly from state instead of using getter
-        const state = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-        const teamId = payload.teamId || state.team || state.team_id;
+        const teamId = payload.teamId || getTeamId();
         if (!teamId) {
           throw new Error(t('page.team.card.myteam.no_team'));
         }
@@ -267,7 +270,10 @@ import { logger } from '@/utils/logger';
       if (membership?.team_id) {
         logger.warn('[MyTeam] User already in team:', membership.team_id);
         // Sync local state with database truth (cover both keys for reactivity)
-        systemStore.$patch({ team: membership.team_id, team_id: membership.team_id } as Partial<SystemState>);
+        systemStore.$patch({
+          team: membership.team_id,
+          team_id: membership.team_id,
+        } as Partial<SystemState>);
         showNotification('You are already in a team. Leave your current team first.', 'error');
         loading.value.createTeam = false;
         return;
@@ -290,12 +296,12 @@ import { logger } from '@/utils/logger';
         teamStore.$patch({
           joinCode: result.team.joinCode,
           owner: result.team.ownerId,
-          members: [result.team.ownerId]
+          members: [result.team.ownerId],
         } as Partial<TeamState>);
       }
       // Wait a brief moment for database to settle, then verify
       logger.debug('[MyTeam] Waiting 500ms for database to settle...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await delay(500);
       // Verify the team was created by checking the database directly
       logger.debug('[MyTeam] Verifying team creation in database...');
       const { data: verification, error: verificationError } = await $supabase.client
@@ -344,8 +350,7 @@ import { logger } from '@/utils/logger';
     try {
       validateAuth();
       // Diagnostic: Check team_memberships directly
-      const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-      const currentTeamId = systemState.team ?? systemState.team_id;
+      const currentTeamId = getTeamId();
       logger.debug('[MyTeam] [DIAGNOSTIC] Current team from state:', currentTeamId);
       const { data: membershipData, error: membershipError } = await $supabase.client
         .from('team_memberships')
@@ -357,7 +362,9 @@ import { logger } from '@/utils/logger';
       logger.debug('[MyTeam] [DIAGNOSTIC] Membership error:', membershipError);
       // Handle broken state: user has team_id but no membership record
       if (!membershipData && !membershipError) {
-        logger.warn('[MyTeam] [DIAGNOSTIC] Broken state detected: team_id exists but no membership record');
+        logger.warn(
+          '[MyTeam] [DIAGNOSTIC] Broken state detected: team_id exists but no membership record'
+        );
         logger.debug('[MyTeam] [DIAGNOSTIC] Cleaning up broken state...');
         // Clear the team_id from user_system
         systemStore.$patch({ team: null, team_id: null } as Partial<SystemState>);
@@ -378,7 +385,9 @@ import { logger } from '@/utils/logger';
             logger.debug('[MyTeam] [DIAGNOSTIC] Successfully deleted empty team');
           }
         }
-        showNotification('Your team data was in a broken state and has been cleaned up. Please create a new team.');
+        showNotification(
+          'Your team data was in a broken state and has been cleaned up. Please create a new team.'
+        );
         loading.value.leaveTeam = false;
         return;
       }
@@ -404,11 +413,14 @@ import { logger } from '@/utils/logger';
           if (deleteError) {
             logger.error('[MyTeam] [DIAGNOSTIC] Failed to delete ghost member:', deleteError);
           } else {
-            logger.debug('[MyTeam] [DIAGNOSTIC] Successfully deleted ghost member:', ghostMember.user_id);
+            logger.debug(
+              '[MyTeam] [DIAGNOSTIC] Successfully deleted ghost member:',
+              ghostMember.user_id
+            );
           }
         }
         // Wait a moment for database to update
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await delay(500);
         logger.debug('[MyTeam] [DIAGNOSTIC] Ghost cleanup complete, retrying leave/disband...');
       }
       const result = (await callTeamFunction('leaveTeam')) as LeaveTeamResponse;
@@ -421,7 +433,7 @@ import { logger } from '@/utils/logger';
       // Also reset team store
       teamStore.$reset();
       // Wait a brief moment for database to settle
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await delay(500);
       await nextTick();
       const displayName = tarkovStore.getDisplayName();
       if (displayName && displayName.startsWith('User ')) {
@@ -456,9 +468,7 @@ import { logger } from '@/utils/logger';
     }
   };
   const teamUrl = computed(() => {
-    // Access state directly for reactivity
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    const teamId = systemState.team ?? systemState.team_id;
+    const teamId = getTeamId();
     // Use getter to get invite code (supports legacy password and new joinCode)
     const code = teamStore.inviteCode;
     // Debug logging
@@ -466,7 +476,7 @@ import { logger } from '@/utils/logger';
       teamId,
       code,
       teamStoreState: teamStore.$state,
-      inviteCode: teamStore.inviteCode
+      inviteCode: teamStore.inviteCode,
     });
     if (!teamId || !code) return '';
     // Use Nuxt-safe route composables instead of window.location
@@ -486,7 +496,7 @@ import { logger } from '@/utils/logger';
     }
   });
   watch(
-    () => tarkovStore.getDisplayName,
+    () => tarkovStore.getDisplayName(),
     (newDisplayName) => {
       if (isTeamOwner.value && newDisplayName !== teamStore.getOwnerDisplayName) {
         teamStore.setOwnerDisplayName(newDisplayName);

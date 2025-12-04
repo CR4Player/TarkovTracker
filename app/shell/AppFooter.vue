@@ -1,13 +1,13 @@
 <template>
   <footer
-    class="relative w-full border-t border-white/10 bg-gradient-to-t from-black/60 via-black/30 to-black/20 px-6 py-5"
+    class="relative w-full border-t border-white/10 bg-linear-to-t from-black/60 via-black/30 to-black/20 px-6 py-5"
   >
     <div class="mx-auto w-full max-w-6xl">
       <!-- Top Row: Community & Support -->
       <div class="grid grid-cols-1 items-center gap-5 lg:grid-cols-[1fr_auto_1fr] lg:gap-8">
         <!-- Community Links -->
         <div class="flex flex-col gap-2 text-center lg:items-start lg:text-left">
-          <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-white/55">
+          <div class="text-[0.6875rem] font-semibold tracking-[0.08em] text-white/55 uppercase">
             {{ t('footer.community_label') }}
           </div>
           <div class="flex items-center justify-center gap-2.5 lg:justify-start">
@@ -47,7 +47,7 @@
             href="https://ko-fi.com/dysektai"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 rounded-lg border border-success-500 bg-success-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-black/40 transition-all duration-150 hover:-translate-y-0.5 hover:border-success-400 hover:bg-success-500 hover:shadow-lg active:translate-y-0 active:shadow-md"
+            class="border-success-500 bg-success-600 hover:border-success-400 hover:bg-success-500 inline-flex items-center gap-2 rounded-lg border px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-black/40 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-md"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +55,7 @@
               height="16"
               viewBox="0 0 24 24"
               fill="currentColor"
-              class="h-4 w-4 text-error-500"
+              class="text-error-500 h-4 w-4"
             >
               <path
                 d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
@@ -63,24 +63,24 @@
             </svg>
             <span>{{ t('footer.support_button') }}</span>
           </a>
-          <p class="mt-1 text-xs italic text-white/65">{{ t('footer.support_tagline') }}</p>
+          <p class="mt-1 text-xs text-white/65 italic">{{ t('footer.support_tagline') }}</p>
         </div>
         <!-- Legal Links -->
         <div class="flex flex-col gap-2 text-center lg:items-end lg:text-right">
-          <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-white/55">
+          <div class="text-[0.6875rem] font-semibold tracking-[0.08em] text-white/55 uppercase">
             {{ t('footer.legal_label') }}
           </div>
           <div class="flex items-center justify-center gap-2 lg:justify-end">
             <router-link
               to="/terms-of-service"
-              class="text-sm text-primary-400 underline decoration-primary-400/40 underline-offset-2 transition-colors duration-150 hover:text-primary-300 hover:decoration-primary-300"
+              class="text-primary-400 decoration-primary-400/40 hover:text-primary-300 hover:decoration-primary-300 text-sm underline underline-offset-2 transition-colors duration-150"
             >
               {{ t('footer.terms_of_service') }}
             </router-link>
             <span class="text-sm text-white/40">·</span>
             <router-link
               to="/privacy"
-              class="text-sm text-primary-400 underline decoration-primary-400/40 underline-offset-2 transition-colors duration-150 hover:text-primary-300 hover:decoration-primary-300"
+              class="text-primary-400 decoration-primary-400/40 hover:text-primary-300 hover:decoration-primary-300 text-sm underline underline-offset-2 transition-colors duration-150"
             >
               {{ t('footer.privacy_policy') }}
             </router-link>
@@ -88,7 +88,7 @@
         </div>
       </div>
       <!-- Divider -->
-      <div class="my-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div class="my-4 h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
       <!-- Bottom Row: Copyright & Attribution -->
       <div class="flex flex-col items-center gap-1.5 text-center">
         <p class="m-0 text-sm font-semibold text-[#bfbfbf]">

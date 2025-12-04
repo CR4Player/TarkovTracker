@@ -5,6 +5,19 @@ import type { SystemGetters, SystemState } from '@/types/tarkov';
 import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
 /**
+ * Helper to extract team ID from system store state.
+ * Handles both 'team' (canonical) and 'team_id' (from database) fields.
+ */
+export function getTeamIdFromState(state: SystemState): string | null {
+  return state.team ?? state.team_id ?? null;
+}
+/**
+ * Helper to check if user has a team from system store state.
+ */
+export function hasTeamInState(state: SystemState): boolean {
+  return !!(state.team ?? state.team_id);
+}
+/**
  * System store definition with getters for user tokens and team info
  */
 export const useSystemStore = defineStore<string, SystemState, SystemGetters>('system', {
@@ -17,17 +30,12 @@ export const useSystemStore = defineStore<string, SystemState, SystemGetters>('s
       return state?.tokens?.length || 0;
     },
     userTeam(state): string | null {
-      // Support both 'team' (canonical) and 'team_id' (from database)
-      // Access team_id directly for Vue reactivity
-      const stateAny = state as unknown as { team?: string | null; team_id?: string | null };
-      const teamId = stateAny.team ?? stateAny.team_id ?? null;
-      return teamId;
+      return getTeamIdFromState(state);
     },
     userTeamIsOwn(state) {
       const { $supabase } = useNuxtApp();
-      const stateAny = state as unknown as { team?: string | null; team_id?: string | null };
-      const teamId = stateAny.team ?? stateAny.team_id ?? null;
-      return teamId === $supabase.user?.id || false;
+      const teamId = getTeamIdFromState(state);
+      return teamId === $supabase.user?.id;
     },
   },
 });
@@ -36,6 +44,10 @@ interface SystemStoreInstance {
   systemStore: Store<string, SystemState, SystemGetters>;
   isSubscribed: Ref<boolean>;
   cleanup: () => void;
+  /** Get the current team ID (handles both team and team_id fields) */
+  getTeamId: () => string | null;
+  /** Check if user has a team */
+  hasTeam: () => boolean;
 }
 // Singleton instance to prevent multiple listener setups
 let systemStoreInstance: SystemStoreInstance | null = null;
@@ -67,9 +79,8 @@ export function useSystemStoreWithSupabase(): SystemStoreInstance {
   };
   // Computed reference to the system document - passed as ref for reactivity
   const systemFilter = computed(() => {
-    const filter = $supabase.user.loggedIn && $supabase.user.id
-      ? `user_id=eq.${$supabase.user.id}`
-      : undefined;
+    const filter =
+      $supabase.user.loggedIn && $supabase.user.id ? `user_id=eq.${$supabase.user.id}` : undefined;
     logger.debug('[SystemStore] systemFilter computed:', filter);
     return filter;
   });
@@ -107,11 +118,20 @@ export function useSystemStoreWithSupabase(): SystemStoreInstance {
       logger.debug('[SystemStore] userTeam getter changed:', { oldTeam, newTeam });
     }
   );
+  // Helper functions that provide properly typed access to team state
+  const getTeamId = (): string | null => {
+    return getTeamIdFromState(systemStore.$state);
+  };
+  const hasTeam = (): boolean => {
+    return hasTeamInState(systemStore.$state);
+  };
   // Cache the instance
-  const instance = {
+  const instance: SystemStoreInstance = {
     systemStore,
     isSubscribed,
     cleanup,
+    getTeamId,
+    hasTeam,
   };
   systemStoreInstance = instance;
   return instance;

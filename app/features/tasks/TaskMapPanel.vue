@@ -25,7 +25,7 @@
       </template>
       <template #content>
         <div class="bg-gray-900/50 p-4">
-          <tarkov-map v-if="selectedMap" :map="selectedMap" :marks="visibleMarks" />
+          <TarkovMapComponent v-if="selectedMap" :map="selectedMap" :marks="visibleMarks" />
           <UAlert
             v-else
             icon="i-mdi-alert-circle"
@@ -40,9 +40,9 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent } from 'vue';
-  import type { TarkovMap } from '~/types/tarkov';
-  import { useTarkovTime } from '~/composables/useTarkovTime';
-  const TarkovMap = defineAsyncComponent(() => import('~/features/maps/TarkovMap.vue'));
+  import { useTarkovTime } from '@/composables/useTarkovTime';
+  import type { TarkovMap } from '@/types/tarkov';
+  const TarkovMapComponent = defineAsyncComponent(() => import('@/features/maps/TarkovMap.vue'));
   // Use structural types compatible with TarkovMap's expectations
   interface Props {
     show: boolean;

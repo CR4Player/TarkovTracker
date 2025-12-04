@@ -1,44 +1,44 @@
 import { defineStore } from 'pinia';
 import { markRaw, ref } from 'vue';
+import { extractLanguageCode, useSafeLocale } from '@/composables/i18nHelpers';
 import { useGraphBuilder } from '@/composables/useGraphBuilder';
-import { extractLanguageCode, useSafeLocale } from '@/composables/utils/i18nHelpers';
 import mapsData from '@/data/maps.json';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type {
-    HideoutModule,
-    HideoutStation,
-    NeededItemHideoutModule,
-    NeededItemTaskObjective,
-    ObjectiveGPSInfo,
-    ObjectiveMapInfo,
-    PlayerLevel,
-    StaticMapData,
-    TarkovDataQueryResult,
-    TarkovHideoutQueryResult,
-    TarkovItem,
-    TarkovItemsQueryResult,
-    TarkovMap,
-    Task,
-    TaskObjective,
-    Trader,
+  HideoutModule,
+  HideoutStation,
+  NeededItemHideoutModule,
+  NeededItemTaskObjective,
+  ObjectiveGPSInfo,
+  ObjectiveMapInfo,
+  PlayerLevel,
+  StaticMapData,
+  TarkovDataQueryResult,
+  TarkovHideoutQueryResult,
+  TarkovItem,
+  TarkovItemsQueryResult,
+  TarkovMap,
+  Task,
+  TaskObjective,
+  Trader,
 } from '@/types/tarkov';
 import {
-    API_GAME_MODES,
-    API_SUPPORTED_LANGUAGES,
-    EXCLUDED_SCAV_KARMA_TASKS,
-    GAME_MODES,
-    LOCALE_TO_API_MAPPING,
-    MAP_NAME_MAPPING,
-    TRADER_ORDER,
+  API_GAME_MODES,
+  API_SUPPORTED_LANGUAGES,
+  EXCLUDED_SCAV_KARMA_TASKS,
+  GAME_MODES,
+  LOCALE_TO_API_MAPPING,
+  MAP_NAME_MAPPING,
+  TRADER_ORDER,
 } from '@/utils/constants';
 import { createGraph } from '@/utils/graphHelpers';
 import { logger } from '@/utils/logger';
 import {
-    CACHE_CONFIG,
-    type CacheType,
-    cleanupExpiredCache,
-    getCachedData,
-    setCachedData,
+  CACHE_CONFIG,
+  type CacheType,
+  cleanupExpiredCache,
+  getCachedData,
+  setCachedData,
 } from '@/utils/tarkovCache';
 import type { AbstractGraph } from 'graphology-types';
 // Initialization guard to prevent race conditions
@@ -134,7 +134,9 @@ export const useMetadataStore = defineStore('metadata', {
             svg: staticData.svg,
           };
         } else {
-          logger.warn(`[MetadataStore] Static SVG data not found for map: ${map.name} (lookup key: ${mapKey})`);
+          logger.warn(
+            `[MetadataStore] Static SVG data not found for map: ${map.name} (lookup key: ${mapKey})`
+          );
           return map;
         }
       });
@@ -265,7 +267,9 @@ export const useMetadataStore = defineStore('metadata', {
     async fetchAllData(forceRefresh = false) {
       // Run cleanup once per session
       if (typeof window !== 'undefined') {
-        cleanupExpiredCache().catch((err) => logger.error('[MetadataStore] Error during cache cleanup:', err));
+        cleanupExpiredCache().catch((err) =>
+          logger.error('[MetadataStore] Error during cache cleanup:', err)
+        );
       }
       await Promise.all([this.fetchTasksData(forceRefresh), this.fetchHideoutData(forceRefresh)]);
     },

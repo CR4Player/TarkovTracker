@@ -1,21 +1,21 @@
 import type {
-    HideoutModule,
-    HideoutStation,
-    NeededItemHideoutModule,
-    NeededItemTaskObjective,
-    ObjectiveGPSInfo,
-    ObjectiveMapInfo,
-    Task,
-    TaskRequirement,
+  HideoutModule,
+  HideoutStation,
+  NeededItemHideoutModule,
+  NeededItemTaskObjective,
+  ObjectiveGPSInfo,
+  ObjectiveMapInfo,
+  Task,
+  TaskRequirement,
 } from '@/types/tarkov';
 import {
-    createGraph,
-    getChildren,
-    getParents,
-    getPredecessors,
-    getSuccessors,
-    safeAddEdge,
-    safeAddNode,
+  createGraph,
+  getChildren,
+  getParents,
+  getPredecessors,
+  getSuccessors,
+  safeAddEdge,
+  safeAddNode,
 } from '@/utils/graphHelpers';
 import { logger } from '@/utils/logger';
 import type { AbstractGraph } from 'graphology-types';

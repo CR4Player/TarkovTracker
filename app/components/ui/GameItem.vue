@@ -19,7 +19,7 @@
       <div
         v-else
         :class="[
-          'flex h-full w-full items-center justify-center rounded bg-surface-800',
+          'bg-surface-800 flex h-full w-full items-center justify-center rounded',
           imageClasses,
         ]"
       >
@@ -269,10 +269,11 @@
   const imageClasses = computed(() => {
     const classes: string[] = ['rounded'];
     const bgColor = (
-      props.backgroundColor || props.imageItem?.backgroundColor || 'default'
+      props.backgroundColor ||
+      props.imageItem?.backgroundColor ||
+      'default'
     ).toLowerCase() as BackgroundKey;
-    const backgroundClass: string =
-      backgroundClassMap[bgColor] ?? backgroundClassMap.default;
+    const backgroundClass: string = backgroundClassMap[bgColor] ?? backgroundClassMap.default;
     classes.push(backgroundClass);
     return classes;
   });

@@ -4,10 +4,10 @@
  */
 import type { UpdateProgressPayload } from '@/types/api';
 import type {
-    CreateTeamResponse,
-    JoinTeamResponse,
-    KickMemberResponse,
-    LeaveTeamResponse,
+  CreateTeamResponse,
+  JoinTeamResponse,
+  KickMemberResponse,
+  LeaveTeamResponse,
 } from '@/types/team';
 import { logger } from '@/utils/logger';
 type GameMode = 'pvp' | 'pve';
@@ -54,7 +54,10 @@ export const useEdgeFunctions = () => {
       throw error;
     }
   };
-  const callTokenGateway = async <T>(action: 'revoke' | 'create', body: Record<string, unknown>) => {
+  const callTokenGateway = async <T>(
+    action: 'revoke' | 'create',
+    body: Record<string, unknown>
+  ): Promise<T> => {
     if (!tokenGatewayUrl) {
       throw new Error('Token gateway URL not configured');
     }
@@ -87,23 +90,26 @@ export const useEdgeFunctions = () => {
     teamId: string
   ): Promise<{
     members: string[];
-    profiles?: Record<string, { displayName: string | null; level: number | null; tasksCompleted: number | null }>;
+    profiles?: Record<
+      string,
+      { displayName: string | null; level: number | null; tasksCompleted: number | null }
+    >;
   }> => {
     // Call Nuxt server route which uses service role and validates membership
     const token = await getAuthToken();
     const result = await $fetch<{
       members: string[];
-      profiles?: Record<string, { displayName: string | null; level: number | null; tasksCompleted: number | null }>;
-    }>(
-      `/api/team/members`,
-      {
-        method: 'GET',
-        query: { teamId },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+      profiles?: Record<
+        string,
+        { displayName: string | null; level: number | null; tasksCompleted: number | null }
+      >;
+    }>(`/api/team/members`, {
+      method: 'GET',
+      query: { teamId },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return result;
   };
   const preferGateway = async <T>(action: string, body: Record<string, unknown>): Promise<T> => {
@@ -180,7 +186,10 @@ export const useEdgeFunctions = () => {
   const kickTeamMember = async (teamId: string, memberId: string): Promise<KickMemberResponse> => {
     return await preferGateway<KickMemberResponse>('kick', { teamId, memberId });
   };
-  const preferTokenGateway = async <T>(action: 'revoke' | 'create', body: Record<string, unknown>) => {
+  const preferTokenGateway = async <T>(
+    action: 'revoke' | 'create',
+    body: Record<string, unknown>
+  ): Promise<T> => {
     if (tokenGatewayUrl) {
       try {
         return await callTokenGateway<T>(action, body);
@@ -218,9 +227,12 @@ export const useEdgeFunctions = () => {
           .delete()
           .eq('token_id', tokenId);
         if (deleteError) throw deleteError;
-        return { success: true } as unknown;
+        return { success: true } as const;
       } catch (innerError) {
-        logger.error('[EdgeFunctions] Token revocation failed after all fallbacks:', innerError || error);
+        logger.error(
+          '[EdgeFunctions] Token revocation failed after all fallbacks:',
+          innerError || error
+        );
         throw innerError || error;
       }
     }

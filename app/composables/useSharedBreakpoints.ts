@@ -1,10 +1,46 @@
 import { useBreakpoints } from '@vueuse/core';
-import { computed } from 'vue';
-// Shared breakpoints composable to avoid per-component listeners
-const breakpoints = useBreakpoints({ mobile: 0, sm: 600 });
-const xsRef = breakpoints.smaller('sm');
-export function useSharedBreakpoints() {
-  // return as readonly/computed to avoid accidental mutation
-  const xs = computed(() => xsRef.value);
-  return { xs };
+import type { ComputedRef } from 'vue';
+/**
+ * Shared breakpoints composable to avoid per-component listeners
+ *
+ * Using a singleton pattern: breakpoint listeners are created once at module load,
+ * and all components share the same reactive refs. This prevents N components
+ * from creating N separate resize listeners.
+ *
+ * Breakpoints:
+ * - sm: 600px (mobile/tablet boundary)
+ * - md: 960px (tablet/desktop boundary)
+ */
+const breakpoints = useBreakpoints({
+  sm: 600,
+  md: 960,
+});
+// VueUse's smaller() and greaterOrEqual() already return ComputedRef<boolean>
+// so no additional computed() wrapper is needed
+const xs = breakpoints.smaller('sm'); // < 600px
+const smAndUp = breakpoints.greaterOrEqual('sm'); // >= 600px
+const belowMd = breakpoints.smaller('md'); // < 960px
+const mdAndUp = breakpoints.greaterOrEqual('md'); // >= 960px
+export interface SharedBreakpoints {
+  /** Extra small: < 600px (mobile) */
+  xs: ComputedRef<boolean>;
+  /** Small and up: >= 600px */
+  smAndUp: ComputedRef<boolean>;
+  /** Below medium: < 960px (mobile + tablet) */
+  belowMd: ComputedRef<boolean>;
+  /** Medium and up: >= 960px (desktop) */
+  mdAndUp: ComputedRef<boolean>;
+}
+/**
+ * Returns shared breakpoint computed refs.
+ * All callers receive the same singleton ComputedRef instances from VueUse,
+ * avoiding the overhead of creating new computed refs per call.
+ */
+export function useSharedBreakpoints(): SharedBreakpoints {
+  return {
+    xs,
+    smAndUp,
+    belowMd,
+    mdAndUp,
+  };
 }

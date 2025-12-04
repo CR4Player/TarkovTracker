@@ -291,10 +291,144 @@ app/
 │   ├── team/                        # Team-related components
 │   └── ...
 ├── components/                      # Generic reusable components
-└── composables/
-    ├── useAppInitialization.ts      # App startup logic
-    └── ...
+├── composables/
+│   ├── api/                         # API-related composables
+│   │   ├── useEdgeFunctions.ts      # Supabase edge function calls
+│   │   └── useTarkovCache.ts        # Cache management composable
+│   ├── supabase/                    # Supabase sync utilities
+│   │   ├── useSupabaseSync.ts       # Store-to-Supabase sync
+│   │   └── useSupabaseListener.ts   # Real-time listeners
+│   ├── i18nHelpers.ts               # Locale utilities
+│   ├── useAppInitialization.ts      # App startup logic
+│   ├── useGraphBuilder.ts           # Task/hideout graph construction
+│   └── ...
+└── utils/
+    ├── constants.ts                 # Game constants, mappings
+    ├── dataMigrationService.ts      # Migration + validation (consolidated)
+    ├── graphHelpers.ts              # Pure graph functions
+    ├── helpers.ts                   # Generic utilities (debounce, get, set)
+    ├── logger.ts                    # Logging + dev utilities
+    ├── storeHelpers.ts              # Pinia store utilities
+    └── tarkovCache.ts               # IndexedDB cache (low-level)
 ```
+
+---
+
+## File Size Guidelines
+
+**Target file sizes:**
+
+- **Minimum**: Consolidate files under 50 LOC unless reused in multiple places
+- **Maximum**: Break down files over 500 LOC into logical units when possible
+
+### When to Consolidate (<50 LOC)
+
+✅ **Do consolidate** when:
+
+- A file contains a single small utility function
+- The file is only used in one place
+- Related utilities are scattered across multiple tiny files
+
+❌ **Don't consolidate** when:
+
+- The small file is imported by 3+ other files
+- It's a type definition file (keep types isolated)
+- It represents a distinct, reusable concept
+
+**Example**: `dataValidationUtils.ts` (unused, 90 LOC) was merged into `dataMigrationService.ts` since they're tightly coupled.
+
+### When to Split (>500 LOC)
+
+✅ **Do split** when:
+
+- The file has clearly separable concerns
+- Different parts have different dependencies
+- Testing would benefit from isolation
+
+❌ **Don't split** when:
+
+- The code is cohesive and interdependent
+- Splitting would require passing many parameters between files
+- The file is a store with related state/actions/getters
+
+**Example**: `useGraphBuilder.ts` was extracted from `useMetadata.ts` because graph algorithms are independent of data fetching.
+
+### Single-File Folders
+
+**Always flatten single-file folders:**
+
+```
+❌ composables/utils/i18nHelpers.ts  (unnecessary nesting)
+✅ composables/i18nHelpers.ts        (flat structure)
+```
+
+### Singleton Composables for Performance
+
+**Testing Implications for Singletons:**
+
+Singleton composables persist state across test runs, which can lead to test pollution. To ensure test isolation, either expose a reset function to clear state or use module resetting to recreate the singleton for each test.
+
+**Example: Isolation with `vi.resetModules()`**
+
+```typescript
+import { beforeEach, vi } from 'vitest';
+
+describe('Singleton Composable', () => {
+  beforeEach(() => {
+    // Clears module cache so the singleton is recreated on next import
+    vi.resetModules();
+  });
+
+  test('starts with fresh state', async () => {
+    // Dynamically import the composable to trigger re-initialization
+    const { useSharedBreakpoints } = await import('~/composables/useSharedBreakpoints');
+    // ... assertions
+  });
+});
+```
+
+**Use singleton patterns for shared browser APIs:**
+
+When multiple components need the same browser API (resize observers, breakpoints, etc.), create a singleton composable to avoid N components creating N listeners.
+
+**Example: Shared Breakpoints**
+
+```typescript
+// composables/useSharedBreakpoints.ts
+import { useBreakpoints } from '@vueuse/core';
+import { computed } from 'vue';
+
+// Create listeners ONCE at module load (singleton)
+const breakpoints = useBreakpoints({ mobile: 0, sm: 600, md: 960 });
+const xsRef = breakpoints.smaller('sm');
+const belowMdRef = breakpoints.smaller('md');
+
+export function useSharedBreakpoints() {
+  // Return readonly computed refs wrapping the singletons
+  return {
+    xs: computed(() => xsRef.value),
+    belowMd: computed(() => belowMdRef.value),
+  };
+}
+```
+
+**Usage:**
+
+```typescript
+// Instead of creating new breakpoint listeners per component:
+❌ const breakpoints = useBreakpoints({ mobile: 0, md: 960 });
+❌ const belowMd = breakpoints.smaller('md');
+
+// Use the shared singleton:
+✅ const { belowMd } = useSharedBreakpoints();
+```
+
+**When to use this pattern:**
+
+- Breakpoint/viewport detection
+- Shared scroll position tracking
+- Browser feature detection
+- Any browser API where many components need the same data
 
 ---
 
@@ -306,6 +440,8 @@ app/
 4. **Extract complex logic** - Use composables for initialization/setup
 5. **Avoid over-abstraction** - Don't create layers without clear benefit
 6. **Semantic organization** - Files should live where developers expect them
+7. **Right-size files** - Consolidate <50 LOC, split >500 LOC when logical
+8. **Flatten single-file folders** - Move file up, delete empty folder
 
 ---
 
@@ -316,5 +452,9 @@ Consider refactoring when:
 - ✅ You have 3+ similar layouts → Extract common shell components
 - ✅ `app.vue` exceeds 20 lines → Extract logic to composables
 - ✅ Components are hard to find → Review folder organization
+- ✅ A file exceeds 500 LOC → Look for separable concerns
+- ✅ Multiple tiny related files → Consolidate if not widely reused
+- ✅ Single file in a subfolder → Flatten the structure
 - ❌ "Just in case" → Don't abstract until you need it
-  **Remember:** Premature abstraction is worse than a bit of duplication. Refactor when the pain is real, not hypothetical.
+
+**Remember:** Premature abstraction is worse than a bit of duplication. Refactor when the pain is real, not hypothetical.

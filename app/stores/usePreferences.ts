@@ -395,7 +395,10 @@ if (import.meta.client) {
                 });
               }
             } catch (_error) {
-              logger.error('[PreferencesStore] Error in preferencesStore watch for user.loggedIn:', _error);
+              logger.error(
+                '[PreferencesStore] Error in preferencesStore watch for user.loggedIn:',
+                _error
+              );
             }
           },
           { immediate: true }

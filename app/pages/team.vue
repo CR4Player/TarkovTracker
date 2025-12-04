@@ -25,20 +25,17 @@
   const TeamOptions = defineAsyncComponent(() => import('@/features/team/TeamOptions.vue'));
   const MyTeam = defineAsyncComponent(() => import('@/features/team/MyTeam.vue'));
   const TeamInvite = defineAsyncComponent(() => import('@/features/team/TeamInvite.vue'));
-  const { systemStore } = useSystemStoreWithSupabase();
+  const { systemStore, hasTeam, getTeamId } = useSystemStoreWithSupabase();
   const route = useRoute();
   logger.debug('[TeamPage] Initial systemStore state:', systemStore.$state);
   logger.debug('[TeamPage] systemStore.userTeam:', systemStore.userTeam);
-  const userHasTeam = computed(() => {
-    const state = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    return !!(state.team ?? state.team_id);
-  });
+  // Use helper function for properly typed team access
+  const userHasTeam = computed(() => hasTeam());
   watch(
     () => userHasTeam.value,
-    (hasTeam, hadTeam) => {
-      logger.debug('[TeamPage] userHasTeam changed:', { hadTeam, hasTeam });
-      const state = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-      logger.debug('[TeamPage] Current team ID:', state.team ?? state.team_id);
+    (hasTeamNow, hadTeam) => {
+      logger.debug('[TeamPage] userHasTeam changed:', { hadTeam, hasTeam: hasTeamNow });
+      logger.debug('[TeamPage] Current team ID:', getTeamId());
     }
   );
 </script>

@@ -124,7 +124,7 @@ export async function getCachedData<T>(
 ): Promise<T | null> {
   try {
     const cacheKey = generateCacheKey(type, gameMode, lang);
-    return executeDatabaseTransaction<CachedData<T> | undefined>('readonly', (store) => 
+    return executeDatabaseTransaction<CachedData<T> | undefined>('readonly', (store) =>
       store.get(cacheKey)
     ).then((cachedResult) => {
       if (!cachedResult) {
@@ -140,9 +140,7 @@ export async function getCachedData<T>(
         );
         return null;
       }
-      logger.debug(
-        `[TarkovCache] Cache HIT: ${cacheKey} (age: ${Math.round(age / 1000 / 60)}min)`
-      );
+      logger.debug(`[TarkovCache] Cache HIT: ${cacheKey} (age: ${Math.round(age / 1000 / 60)}min)`);
       return cachedResult.data;
     });
   } catch (error) {
@@ -171,9 +169,7 @@ export async function setCachedData<T>(
       lang,
       version: CACHE_CONFIG.DB_VERSION,
     };
-    await executeDatabaseTransaction<undefined>('readwrite', (store) => 
-      store.put(cacheEntry)
-    );
+    await executeDatabaseTransaction<undefined>('readwrite', (store) => store.put(cacheEntry));
     logger.debug(`[TarkovCache] Cache STORED: ${cacheKey}`);
   } catch (error) {
     logger.error('[TarkovCache] Error storing cached data:', error);
@@ -190,9 +186,7 @@ export async function clearCacheEntry(
 ): Promise<void> {
   try {
     const cacheKey = generateCacheKey(type, gameMode, lang);
-    await executeDatabaseTransaction<undefined>('readwrite', (store) => 
-      store.delete(cacheKey)
-    );
+    await executeDatabaseTransaction<undefined>('readwrite', (store) => store.delete(cacheKey));
     logger.debug(`[TarkovCache] Cache DELETED: ${cacheKey}`);
   } catch (error) {
     logger.error('[TarkovCache] Error deleting cache entry:', error);

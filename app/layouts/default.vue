@@ -31,19 +31,15 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useBreakpoints } from '@vueuse/core';
   import { computed, defineAsyncComponent } from 'vue';
+  import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
   const appStore = useAppStore();
-  // Define breakpoints (md breakpoint at 960px)
-  const breakpoints = useBreakpoints({
-    mobile: 0,
-    md: 960,
-  });
-  const mdAndDown = breakpoints.smaller('md');
+  // Use shared breakpoints to avoid duplicate listeners
+  const { belowMd } = useSharedBreakpoints();
   // Calculate margin-left based on sidebar state
   const mainMarginLeft = computed(() => {
-    if (mdAndDown.value) return '56px'; // Rail width on mobile
+    if (belowMd.value) return '56px'; // Rail width on mobile
     return appStore.drawerRail ? '56px' : '224px';
   });
   // Lazy-load shell components

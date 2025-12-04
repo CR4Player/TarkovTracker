@@ -97,7 +97,7 @@
       </div>
       <!-- Section 2: Player/Team view buttons - grows to fill space -->
       <div
-        class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3 overflow-x-auto"
+        class="flex flex-1 items-center justify-center gap-2 overflow-x-auto rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3"
       >
         <!-- Self button with display name -->
         <UButton
@@ -224,12 +224,12 @@
 </template>
 <script setup lang="ts">
   import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useTaskFiltering } from '@/composables/useTaskFiltering';
-import { useMetadataStore } from '@/stores/useMetadata';
-import { usePreferencesStore } from '@/stores/usePreferences';
-import { useProgressStore } from '@/stores/useProgress';
-import { useTeamStore } from '@/stores/useTeamStore';
+  import { useI18n } from 'vue-i18n';
+  import { useTaskFiltering } from '@/composables/useTaskFiltering';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useProgressStore } from '@/stores/useProgress';
+  import { useTeamStore } from '@/stores/useTeamStore';
   const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();

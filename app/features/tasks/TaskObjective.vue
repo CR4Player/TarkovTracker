@@ -42,7 +42,10 @@
       "
       class="mt-px mb-px flex items-center text-xs"
     >
-      <div v-if="fullObjective && itemObjectiveTypes.includes(fullObjective.type ?? '')" class="w-full">
+      <div
+        v-if="fullObjective && itemObjectiveTypes.includes(fullObjective.type ?? '')"
+        class="w-full"
+      >
         <div
           class="mb-2 rounded p-1 transition-colors duration-200"
           :class="
@@ -115,8 +118,7 @@
   const activeUserView = computed(() => preferencesStore.getTaskUserView);
   // Computed property to check if user has a team (for reactivity)
   const userHasTeam = computed(() => {
-    const systemState = systemStore.$state as unknown as { team?: string | null; team_id?: string | null };
-    return !!(systemState.team ?? systemState.team_id);
+    return !!systemStore.userTeam;
   });
   const tasks = computed(() => metadataStore.tasks);
   const isComplete = computed(() => {
@@ -165,16 +167,14 @@
     if (!taskId) return needingUsers;
     const unlocked = progressStore.unlockedTasks[taskId];
     if (!unlocked) return needingUsers;
-    Object.entries(unlocked).forEach(
-      ([teamId, isUnlocked]) => {
-        if (
-          isUnlocked &&
-          progressStore.objectiveCompletions?.[props.objective.id]?.[teamId] == false
-        ) {
-          needingUsers.push(teamId);
-        }
+    Object.entries(unlocked).forEach(([teamId, isUnlocked]) => {
+      if (
+        isUnlocked &&
+        progressStore.objectiveCompletions?.[props.objective.id]?.[teamId] === false
+      ) {
+        needingUsers.push(teamId);
       }
-    );
+    });
     return needingUsers;
   });
   const isHovered = ref(false);

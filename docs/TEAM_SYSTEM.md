@@ -69,6 +69,7 @@ Team member display names, levels, and progress data are fetched via a server-si
 **Problem**: Initially, the app tried to create dynamic Pinia stores for each teammate that would subscribe to `user_progress` via Supabase realtime. However, this hit RLS permission errors (406) because users don't have direct SELECT permission on other users' progress rows.
 
 **Solution**: Fetch teammate profiles through a Nuxt server route (`app/server/api/team/members.ts`) that:
+
 1. Uses **service role** credentials to bypass RLS
 2. Validates the requesting user is actually a team member
 3. Returns a snapshot of display names, levels, and task counts for all team members
@@ -139,6 +140,7 @@ Team member display names, levels, and progress data are fetched via a server-si
 **Critical Detail**: The Supabase `user_progress` table uses **snake_case** column names, but the client-side Pinia stores use **camelCase** property names. A transform function handles the conversion.
 
 #### Database Columns (Supabase)
+
 ```typescript
 {
   user_id: string;
@@ -155,6 +157,7 @@ Team member display names, levels, and progress data are fetched via a server-si
 ```
 
 #### Client Store (Pinia)
+
 ```typescript
 {
   currentGameMode: 'pvp' | 'pve';
@@ -172,16 +175,17 @@ Team member display names, levels, and progress data are fetched via a server-si
 #### Transform Function (app/stores/useTarkov.ts:404-411)
 
 When saving to Supabase:
+
 ```typescript
 useSupabaseSync({
   store: tarkovStore,
   table: 'user_progress',
   transform: (state: UserState) => ({
     user_id: $supabase.user.id,
-    current_game_mode: state.currentGameMode,  // camelCase → snake_case
+    current_game_mode: state.currentGameMode, // camelCase → snake_case
     game_edition: state.gameEdition,
-    pvp_data: state.pvp,                       // pvp → pvp_data
-    pve_data: state.pve,                       // pve → pve_data
+    pvp_data: state.pvp, // pvp → pvp_data
+    pve_data: state.pve, // pve → pve_data
   }),
 });
 ```
@@ -201,15 +205,14 @@ useSupabaseSync({
 const query = `user_progress?select=user_id,current_game_mode,pvp_data,pve_data&user_id=in.(${idsParam})`;
 
 // Data access (note the _data suffix)
-const mode = p.current_game_mode || 'pvp';  // default to pvp
-const data = p[`${mode}_data`];              // pvp_data or pve_data
+const mode = p.current_game_mode || 'pvp'; // default to pvp
+const data = p[`${mode}_data`]; // pvp_data or pve_data
 
 // Extract profile data from the mode-specific object
 profileMap[userId] = {
   displayName: data?.displayName ?? null,
   level: data?.level ?? null,
-  tasksCompleted: Object.values(data?.taskCompletions || {})
-    .filter(t => t?.complete).length
+  tasksCompleted: Object.values(data?.taskCompletions || {}).filter((t) => t?.complete).length,
 };
 ```
 
@@ -222,6 +225,7 @@ profileMap[userId] = {
 **Key Functions**:
 
 **`refreshMembers()`** - Fetches team member profiles
+
 ```typescript
 const refreshMembers = async () => {
   const currentTeamId = systemStore.$state.team_id;
@@ -238,6 +242,7 @@ const refreshMembers = async () => {
 ```
 
 **`setupMembershipSubscription()`** - Listens for team membership changes
+
 - Subscribes to `team_memberships` table via Supabase realtime
 - Calls `refreshMembers()` when members join/leave
 - Ensures profiles are always up-to-date
@@ -247,6 +252,7 @@ const refreshMembers = async () => {
 #### File: `app/features/team/TeamMemberCard.vue`
 
 **Display Name Fallback Chain**:
+
 ```typescript
 const displayName = computed(() => {
   // 1. Try memberProfiles (from server API)
@@ -261,6 +267,7 @@ const displayName = computed(() => {
 ```
 
 **Level Fallback Chain**:
+
 ```typescript
 const level = computed(() => {
   // 1. Try memberProfiles (from server API)
@@ -274,6 +281,7 @@ const level = computed(() => {
 ```
 
 **Task Completion Count**:
+
 ```typescript
 const completedTaskCount = computed(() => {
   // 1. Try cached count from memberProfiles
@@ -281,9 +289,8 @@ const completedTaskCount = computed(() => {
   if (profileCount != null) return profileCount;
 
   // 2. Calculate from progressStore (less efficient)
-  return tasks.value.filter(task =>
-    progressStore.tasksCompletions?.[task.id]?.[storeId] === true
-  ).length;
+  return tasks.value.filter((task) => progressStore.tasksCompletions?.[task.id]?.[storeId] === true)
+    .length;
 });
 ```
 
@@ -292,6 +299,7 @@ const completedTaskCount = computed(() => {
 #### Issue: Display Names Showing as Truncated User IDs
 
 **Symptoms**:
+
 - Display names appeared as "OWNER_PVP" for one user but "c19186" (truncated UUID) for another
 - Task completion counts were incorrect
 - `teamStore.memberProfiles` was always empty
@@ -300,6 +308,7 @@ const completedTaskCount = computed(() => {
 The server API was initially written with **camelCase** column names (`currentGameMode`, `pvp`, `pve`), but the database actually uses **snake_case** names (`current_game_mode`, `pvp_data`, `pve_data`). This mismatch caused the query to return no data.
 
 **Initial (Incorrect) Implementation**:
+
 ```typescript
 // ❌ WRONG - database doesn't have these columns
 const query = `user_progress?select=user_id,currentGameMode,pvp,pve&user_id=in.(${idsParam})`;
@@ -307,6 +316,7 @@ const data = p[mode]; // Looking for p.pvp or p.pve (doesn't exist)
 ```
 
 **Fixed Implementation**:
+
 ```typescript
 // ✅ CORRECT - matches actual database schema
 const query = `user_progress?select=user_id,current_game_mode,pvp_data,pve_data&user_id=in.(${idsParam})`;
@@ -314,12 +324,14 @@ const data = p[`${mode}_data`]; // Looking for p.pvp_data or p.pve_data (exists!
 ```
 
 **Files Changed**:
+
 - `app/server/api/team/members.ts` - Fixed query and data access to use snake_case
 - `app/stores/useTeamStore.ts` - Added debug logging, fixed TypeScript errors
 - `app/features/team/TeamMemberCard.vue` - Added debug logging for display name/level lookup
 
 **Testing**:
 Set `VITE_LOG_LEVEL=debug` in `.env` to see detailed logs:
+
 ```
 [TeamStore] Got team members: {memberCount: 2, profileCount: 2, profiles: {...}}
 [TeamMemberCard] Display name lookup: {userId: '...', fromProfile: 'OWNER_PVP', ...}
@@ -355,6 +367,7 @@ Vue reactivity triggers UI update
 #### Implementation (app/stores/useTeamStore.ts:171-195)
 
 **Setting up the channel**:
+
 ```typescript
 teamChannel.value = $supabase.client
   .channel(`team:${currentTeamId}`)
@@ -391,13 +404,15 @@ teamChannel.value = $supabase.client
 ```
 
 **Broadcasting updates** (app/stores/useTeamStore.ts:213-244):
+
 ```typescript
 // Compute local user's progress snapshot
 const localProgressSnapshot = computed(() => {
   const mode = tarkovStore.$state.currentGameMode || 'pvp';
   const modeState = tarkovStore.$state[mode];
-  const completed = Object.values(modeState?.taskCompletions || {})
-    .filter(t => t?.complete).length;
+  const completed = Object.values(modeState?.taskCompletions || {}).filter(
+    (t) => t?.complete
+  ).length;
 
   return {
     mode,
@@ -452,17 +467,20 @@ watch(
 #### Performance Characteristics
 
 **Latency**:
+
 - Typical broadcast latency: 50-200ms
 - No database polling required
 - Updates appear nearly instant to all teammates
 
 **Scalability**:
+
 - Supabase handles broadcast fan-out
 - Each team member maintains one websocket connection
 - Broadcasts are ephemeral (not persisted to database)
 - Works efficiently with teams up to 10 members
 
 **Fallback Strategy**:
+
 - Initial load: Fetches profiles via server API (`/api/team/members`)
 - Real-time: Updates via broadcasts
 - Membership changes: Re-fetches all profiles
@@ -479,6 +497,7 @@ To verify the broadcast system is working:
 5. **Observe Window 2**: Task count should update within ~100ms
 
 **Debug Logs** (set `VITE_LOG_LEVEL=debug` in `.env`):
+
 ```
 [TeamStore] Progress snapshot changed: {mode: 'pvp', tasksCompleted: 14, ...}
 [TeamStore] Broadcasting progress to team: {userId: '...', tasksCompleted: 14}
@@ -492,12 +511,14 @@ To verify the broadcast system is working:
 ### Performance Considerations
 
 **Why Broadcast Instead of Database Polling?**
+
 - ⚡ **Instant updates** - No polling delay (typically 100-200ms vs 5-30 seconds)
 - 💰 **Cost effective** - No repeated database queries
 - 🔋 **Battery friendly** - No constant polling on mobile devices
 - 🎯 **Precise** - Only updates when data actually changes
 
 **Why Server API for Initial Load?**
+
 - RLS policies prevent users from SELECT-ing other users' `user_progress` rows directly
 - Service role credentials required to query teammates' data
 - Server API called only on:
@@ -506,6 +527,7 @@ To verify the broadcast system is working:
   - Manual refresh (if needed)
 
 **Hybrid Approach Benefits**:
+
 - Initial load: Authoritative data from database (via server API)
 - Updates: Real-time broadcasts (millisecond latency)
 - Membership changes: Re-sync from database
@@ -514,6 +536,7 @@ To verify the broadcast system is working:
 ### Debugging Tips
 
 1. **Enable Debug Logs**:
+
    ```bash
    # Add to .env
    VITE_LOG_LEVEL=debug
@@ -526,6 +549,7 @@ To verify the broadcast system is working:
    Look for `[TeamStore]` and `[TeamMemberCard]` prefixes
 
 4. **Verify Database Column Names**:
+
    ```sql
    SELECT column_name, data_type
    FROM information_schema.columns

@@ -22,7 +22,9 @@
                 variant="link"
                 icon="i-mdi-eye"
                 :padded="false"
-                @click="migration.showToken && (migration.showToken.value = !migration.showToken.value)"
+                @click="
+                  migration.showToken && (migration.showToken.value = !migration.showToken.value)
+                "
               />
             </template>
           </UInput>
@@ -42,7 +44,7 @@
             <UButton
               color="primary"
               :loading="migration.fetchingApi?.value"
-              :disabled="!(migration.apiToken?.value) || migration.fetchingApi?.value"
+              :disabled="!migration.apiToken?.value || migration.fetchingApi?.value"
               class="px-4"
               @click="migration.fetchWithApiToken"
             >
@@ -85,9 +87,7 @@
         </template>
         <template #footer="{ close }">
           <div class="flex justify-end">
-            <UButton color="primary" variant="solid" @click="close">
-              Close
-            </UButton>
+            <UButton color="primary" variant="solid" @click="close">Close</UButton>
           </div>
         </template>
       </UModal>
@@ -125,9 +125,7 @@
         </template>
         <template #footer="{ close }">
           <div class="flex justify-end">
-            <UButton color="primary" variant="solid" @click="close">
-              Close
-            </UButton>
+            <UButton color="primary" variant="solid" @click="close">Close</UButton>
           </div>
         </template>
       </UModal>

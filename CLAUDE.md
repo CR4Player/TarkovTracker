@@ -15,6 +15,12 @@ TarkovTracker is a Nuxt 3-based web application for tracking progress in Escape 
 - Don't speculate about future needs - refactor when duplication becomes painful
 - Code should be easy to find and trace without excessive indirection
 
+**File size guidelines:**
+
+- **Consolidate files under 50 LOC** unless reused in multiple places
+- **Break down files over 500 LOC** into logical units when possible
+- Single-file folders should be flattened (move file up, delete empty folder)
+
 See `docs/APP_STRUCTURE.md` for detailed examples and anti-patterns.
 
 ## Key Commands
@@ -88,7 +94,8 @@ The app supports **two separate game modes** (PvP and PvE) with independent prog
 
 **Migration System**:
 
-- `useDataMigration.ts`: Handles legacy data structure migrations
+- `useDataMigration.ts`: Vue composable for migration UI state and user-facing migration flow
+- `dataMigrationService.ts`: Service class with migration logic AND validation utilities (consolidated)
 - `migrateToGameModeStructure()` in `shared_state.ts`: Converts old single-mode state to separate PvP/PvE structure
 
 ### External Data Sources
@@ -96,15 +103,15 @@ The app supports **two separate game modes** (PvP and PvE) with independent prog
 **API Data Fetching** (tarkov.dev):
 
 - Nuxt server-side routes in `app/server/api/tarkov/` act as a proxy to the `tarkov.dev` GraphQL API.
-- Client-side composables like `useSharedTarkovDataQuery` use `$fetch` to call these server routes.
+- Client-side composables in `app/composables/api/` use `$fetch` to call these server routes.
 - This architecture provides caching, cleaner client-side code, and a single source of truth for data fetching.
 - Fetches: tasks, hideout stations, maps, traders, player levels
-- Data processing in `app/composables/data/` (useTaskData, useHideoutData, useMapData)
 
 **Tarkov Data System**:
 
-- `app/composables/tarkovdata.ts`: Central composable that initializes and exports all game data
+- `app/stores/useMetadata.ts`: Central store that fetches, processes, and caches all game data
 - Uses graph structures (via `graphology`) for task dependencies
+- Graph building logic extracted to `app/composables/useGraphBuilder.ts`
 - Filters Scav Karma tasks via `EXCLUDED_SCAV_KARMA_TASKS` constant (tasks excluded until Fence Rep system is implemented)
 - Exports: tasks, objectives, hideoutStations, maps, traders, etc.
 
@@ -333,3 +340,38 @@ Required for Supabase integration:
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 
 These are accessed via `import.meta.env` in client-side code.
+
+## Utility Files Reference
+
+### `app/utils/` Directory
+
+| File | Purpose |
+|------|---------|
+| `constants.ts` | Game constants, mode mappings, API configurations |
+| `dataMigrationService.ts` | Data migration logic + validation utilities (consolidated) |
+| `graphHelpers.ts` | Pure graph utility functions (used by `useGraphBuilder`) |
+| `helpers.ts` | Generic utilities: `debounce`, `get`, `set` (path operations) |
+| `logger.ts` | Logging utilities including dev-only `devLog`, `devWarn`, `devError` |
+| `storeHelpers.ts` | Pinia store utilities: `clearStaleState`, `safePatchStore`, etc. |
+| `tarkovCache.ts` | IndexedDB cache for API data (low-level operations) |
+
+### `app/composables/` Directory
+
+| File | Purpose |
+|------|---------|
+| `i18nHelpers.ts` | Locale utilities: `useSafeLocale`, `extractLanguageCode` |
+| `useAppInitialization.ts` | One-time app startup logic |
+| `useDataMigration.ts` | Vue composable for migration UI state |
+| `useGraphBuilder.ts` | Task/hideout dependency graph construction |
+| `useInfiniteScroll.ts` | Intersection observer for infinite scroll |
+| `useItemRowIntersection.ts` | Lazy-load visibility detection for item rows |
+| `useSharedBreakpoints.ts` | Singleton breakpoints: `xs`, `smAndDown`, `mdAndUp`, `mdAndDown` (avoids duplicate listeners) |
+| `useTaskFiltering.ts` | Task list filtering logic |
+| `useHideoutFiltering.ts` | Hideout list filtering logic |
+| `useTarkovTime.ts` | In-game time calculations |
+| `useDashboardStats.ts` | Dashboard statistics aggregation |
+
+### Subfolders
+
+- `composables/api/` - API-related composables (`useEdgeFunctions`, `useTarkovCache`)
+- `composables/supabase/` - Supabase sync utilities (`useSupabaseSync`, `useSupabaseListener`)
