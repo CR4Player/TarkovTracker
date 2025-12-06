@@ -7,7 +7,7 @@
     },
   },
   common: {
-    refreshbutton: 'Rafraîchir',
+    refreshbutton: 'Actualiser',
   },
   menu: {
     language: 'Langue',
@@ -20,8 +20,8 @@
       title: 'Tableau de bord',
       hero: {
         overall: 'Global',
-        welcome: 'Bon retour, Opérateur',
-        subtitle: 'Suivez votre progression dans les rues de Tarkov',
+        welcome: 'Bon retour, soldat',
+        subtitle: 'Suivez votre progression dans votre évasion de Tarkov',
         tasksComplete: 'Quêtes terminées',
         available: 'Disponibles',
         failed: 'Échouées',
@@ -33,10 +33,10 @@
         objectives: 'Objectifs',
         items: 'Objets de quête',
         kappa: 'Quêtes Kappa',
-        lightkeeper: 'Gardien du phare',
+        lightkeeper: 'Lightkeeper',
       },
       milestones: {
-        title: 'Jalons',
+        title: 'Progression',
         starter: 'Premiers pas',
         halfway: 'À mi-chemin',
         veteran: 'Presque terminé',
@@ -45,7 +45,7 @@
           subtitle: 'Conteneur obtenu',
         },
         lightkeeper: {
-          title: 'Gardien du phare',
+          title: 'Lightkeeper',
           subtitle: 'Marchand débloqué',
         },
       },
