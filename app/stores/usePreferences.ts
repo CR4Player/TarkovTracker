@@ -276,9 +276,6 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
   actions: {
     setStreamerMode(mode: boolean) {
       this.streamerMode = mode;
-      // Persistence handled automatically by plugin
-      this.saving = this.saving ?? { ...initialSavingState };
-      this.saving.streamerMode = true;
     },
     toggleHidden(teamId: string) {
       if (!this.teamHide) {

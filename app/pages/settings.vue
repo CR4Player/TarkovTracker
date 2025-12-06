@@ -34,16 +34,8 @@
             <div class="flex items-center gap-3">
               <UCheckbox
                 v-model="streamerMode"
-                :disabled="
-                  !user.loggedIn ||
-                  Boolean(preferencesStore.saving && preferencesStore.saving.streamerMode)
-                "
+                :disabled="!user.loggedIn || streamerModeCooldown"
                 label=""
-              />
-              <UIcon
-                v-if="preferencesStore.saving && preferencesStore.saving.streamerMode"
-                name="i-heroicons-arrow-path"
-                class="text-primary-500 h-4 w-4 animate-spin"
               />
               <span class="text-surface-400 text-xs">
                 {{
@@ -403,17 +395,23 @@
   const showResetPvPDialog = ref(false);
   const showResetPvEDialog = ref(false);
   const showResetAllDialog = ref(false);
+  const streamerModeCooldown = ref(false);
   // Computed properties
   const user = computed(() => ({
     loggedIn: Boolean($supabase?.user?.loggedIn),
   }));
-  // Streamer mode
+  // Streamer mode with cooldown to prevent spam
   const streamerMode = computed({
     get() {
       return preferencesStore.getStreamerMode;
     },
     set(newValue) {
+      if (streamerModeCooldown.value) return;
       preferencesStore.setStreamerMode(newValue);
+      streamerModeCooldown.value = true;
+      setTimeout(() => {
+        streamerModeCooldown.value = false;
+      }, 500);
     },
   });
   // Game edition
