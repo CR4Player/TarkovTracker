@@ -25,6 +25,17 @@ interface PreferencesState {
   neededitemsStyle: string | null;
   hideoutPrimaryView?: string | null;
   localeOverride: string | null;
+  // Task filter settings
+  showNonSpecialTasks: boolean;
+  showEodTasks: boolean;
+  showLightkeeperTasks: boolean;
+  // Task appearance settings
+  showRequiredLabels: boolean;
+  showNotRequiredLabels: boolean;
+  showExperienceRewards: boolean;
+  showTaskIds: boolean;
+  showNextQuests: boolean;
+  showPreviousQuests: boolean;
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -53,6 +64,17 @@ export const preferencesDefaultState: PreferencesState = {
   neededitemsStyle: null,
   hideoutPrimaryView: null,
   localeOverride: null,
+  // Task filter settings (all shown by default)
+  showNonSpecialTasks: true,
+  showEodTasks: true,
+  showLightkeeperTasks: true,
+  // Task appearance settings
+  showRequiredLabels: true,
+  showNotRequiredLabels: true,
+  showExperienceRewards: false,
+  showTaskIds: true,
+  showNextQuests: true,
+  showPreviousQuests: true,
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -88,6 +110,17 @@ type PreferencesGetters = {
   getNeededItemsStyle: (state: PreferencesState) => string;
   getHideoutPrimaryView: (state: PreferencesState) => string;
   getLocaleOverride: (state: PreferencesState) => string | null;
+  // Task filter getters
+  getShowNonSpecialTasks: (state: PreferencesState) => boolean;
+  getShowEodTasks: (state: PreferencesState) => boolean;
+  getShowLightkeeperTasks: (state: PreferencesState) => boolean;
+  // Task appearance getters
+  getShowRequiredLabels: (state: PreferencesState) => boolean;
+  getShowNotRequiredLabels: (state: PreferencesState) => boolean;
+  getShowExperienceRewards: (state: PreferencesState) => boolean;
+  getShowTaskIds: (state: PreferencesState) => boolean;
+  getShowNextQuests: (state: PreferencesState) => boolean;
+  getShowPreviousQuests: (state: PreferencesState) => boolean;
 };
 // Define action types
 type PreferencesActions = {
@@ -110,6 +143,17 @@ type PreferencesActions = {
   setNeededItemsStyle(style: string): void;
   setHideoutPrimaryView(view: string): void;
   setLocaleOverride(locale: string | null): void;
+  // Task filter actions
+  setShowNonSpecialTasks(show: boolean): void;
+  setShowEodTasks(show: boolean): void;
+  setShowLightkeeperTasks(show: boolean): void;
+  // Task appearance actions
+  setShowRequiredLabels(show: boolean): void;
+  setShowNotRequiredLabels(show: boolean): void;
+  setShowExperienceRewards(show: boolean): void;
+  setShowTaskIds(show: boolean): void;
+  setShowNextQuests(show: boolean): void;
+  setShowPreviousQuests(show: boolean): void;
 };
 // Define the store type
 type PreferencesStoreDefinition = StoreDefinition<
@@ -199,6 +243,35 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
     getLocaleOverride: (state) => {
       return state.localeOverride ?? null;
     },
+    // Task filter getters
+    getShowNonSpecialTasks: (state) => {
+      return state.showNonSpecialTasks ?? true;
+    },
+    getShowEodTasks: (state) => {
+      return state.showEodTasks ?? true;
+    },
+    getShowLightkeeperTasks: (state) => {
+      return state.showLightkeeperTasks ?? true;
+    },
+    // Task appearance getters
+    getShowRequiredLabels: (state) => {
+      return state.showRequiredLabels ?? true;
+    },
+    getShowNotRequiredLabels: (state) => {
+      return state.showNotRequiredLabels ?? true;
+    },
+    getShowExperienceRewards: (state) => {
+      return state.showExperienceRewards ?? false;
+    },
+    getShowTaskIds: (state) => {
+      return state.showTaskIds ?? true;
+    },
+    getShowNextQuests: (state) => {
+      return state.showNextQuests ?? true;
+    },
+    getShowPreviousQuests: (state) => {
+      return state.showPreviousQuests ?? true;
+    },
   },
   actions: {
     setStreamerMode(mode: boolean) {
@@ -273,6 +346,35 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
     setLocaleOverride(locale: string | null) {
       this.localeOverride = locale;
     },
+    // Task filter actions
+    setShowNonSpecialTasks(show: boolean) {
+      this.showNonSpecialTasks = show;
+    },
+    setShowEodTasks(show: boolean) {
+      this.showEodTasks = show;
+    },
+    setShowLightkeeperTasks(show: boolean) {
+      this.showLightkeeperTasks = show;
+    },
+    // Task appearance actions
+    setShowRequiredLabels(show: boolean) {
+      this.showRequiredLabels = show;
+    },
+    setShowNotRequiredLabels(show: boolean) {
+      this.showNotRequiredLabels = show;
+    },
+    setShowExperienceRewards(show: boolean) {
+      this.showExperienceRewards = show;
+    },
+    setShowTaskIds(show: boolean) {
+      this.showTaskIds = show;
+    },
+    setShowNextQuests(show: boolean) {
+      this.showNextQuests = show;
+    },
+    setShowPreviousQuests(show: boolean) {
+      this.showPreviousQuests = show;
+    },
   },
   // Enable automatic localStorage persistence
   persist: {
@@ -304,6 +406,17 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
       'neededitemsStyle',
       'hideoutPrimaryView',
       'localeOverride',
+      // Task filter settings
+      'showNonSpecialTasks',
+      'showEodTasks',
+      'showLightkeeperTasks',
+      // Task appearance settings
+      'showRequiredLabels',
+      'showNotRequiredLabels',
+      'showExperienceRewards',
+      'showTaskIds',
+      'showNextQuests',
+      'showPreviousQuests',
     ],
   },
 }) as PreferencesStoreDefinition;

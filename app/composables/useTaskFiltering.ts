@@ -1,5 +1,6 @@
 import { ref, shallowRef } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import type { Task } from '@/types/tarkov';
 import { EXCLUDED_SCAV_KARMA_TASKS } from '@/utils/constants';
@@ -11,6 +12,7 @@ interface MergedMap {
 export function useTaskFiltering() {
   const progressStore = useProgressStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const reloadingTasks = ref(false);
   const visibleTasks = shallowRef<Task[]>([]);
   const mapObjectiveTypes = [
@@ -195,6 +197,31 @@ export function useTaskFiltering() {
     return withFaction;
   };
   /**
+   * Filter tasks by type settings (Kappa, Lightkeeper, EOD, non-special)
+   * Uses OR logic: show task if it matches ANY enabled category
+   */
+  const filterTasksByTypeSettings = (taskList: Task[]): Task[] => {
+    const showKappa = !preferencesStore.getHideNonKappaTasks; // Show Kappa Required tasks
+    const showLightkeeper = preferencesStore.getShowLightkeeperTasks;
+    const showNonSpecial = preferencesStore.getShowNonSpecialTasks;
+    // EOD filter stored for future use when EOD task data is available
+    const _showEod = preferencesStore.getShowEodTasks;
+    return taskList.filter((task) => {
+      // Skip excluded tasks (Scav Karma)
+      if (EXCLUDED_SCAV_KARMA_TASKS.includes(task.id)) return false;
+      const isKappaRequired = task.kappaRequired === true;
+      const isLightkeeperRequired = task.lightkeeperRequired === true;
+      const isNonSpecial = !isKappaRequired && !isLightkeeperRequired;
+      // OR logic: show if task matches ANY enabled filter
+      // A task can be both Kappa and Lightkeeper required - show if either filter is on
+      if (isKappaRequired && showKappa) return true;
+      if (isLightkeeperRequired && showLightkeeper) return true;
+      if (isNonSpecial && showNonSpecial) return true;
+      // Task doesn't match any enabled filter
+      return false;
+    });
+  };
+  /**
    * Helper to extract all map locations from a task
    */
   const extractTaskLocations = (task: Task): string[] => {
@@ -302,6 +329,8 @@ export function useTaskFiltering() {
     reloadingTasks.value = true;
     try {
       let visibleTaskList = JSON.parse(JSON.stringify(metadataStore.tasks));
+      // Apply task type filters (Kappa, Lightkeeper, Non-special)
+      visibleTaskList = filterTasksByTypeSettings(visibleTaskList);
       // Apply primary view filter
       visibleTaskList = filterTasksByView(
         visibleTaskList,

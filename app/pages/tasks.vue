@@ -90,6 +90,10 @@
     getTaskUserView,
     getTaskMapView,
     getTaskTraderView,
+    getHideNonKappaTasks,
+    getShowNonSpecialTasks,
+    getShowLightkeeperTasks,
+    getShowEodTasks,
   } = storeToRefs(preferencesStore);
   const metadataStore = useMetadataStore();
   const { tasks, maps, loading: tasksLoading } = storeToRefs(metadataStore);
@@ -133,6 +137,10 @@
       getTaskUserView,
       getTaskMapView,
       getTaskTraderView,
+      getHideNonKappaTasks,
+      getShowNonSpecialTasks,
+      getShowLightkeeperTasks,
+      getShowEodTasks,
       tasksLoading,
       tasks,
       maps,

@@ -191,10 +191,7 @@
       </div>
       <!-- Section 3: Settings button - fixed width -->
       <div class="flex w-auto items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
-        <UButton :variant="'ghost'" :color="'neutral'" size="sm">
-          <UIcon name="i-mdi-tune" class="mr-1 h-4 w-4" />
-          TASK SETTINGS
-        </UButton>
+        <TaskSettingsModal />
       </div>
     </div>
     <!-- Map selector (shown when MAPS is selected) -->
@@ -254,6 +251,7 @@
   import { computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
+  import TaskSettingsModal from '@/features/tasks/TaskSettingsModal.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';

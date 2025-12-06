@@ -56,13 +56,23 @@
         />
       </div>
     </template>
+    <!-- Experience rewards -->
+    <div
+      v-if="preferencesStore.getShowExperienceRewards && task.experience"
+      class="mt-2 flex items-center justify-end gap-1 text-sm text-gray-400"
+    >
+      <UIcon name="i-mdi-star" class="h-4 w-4 text-yellow-500" />
+      <span>{{ task.experience.toLocaleString() }} XP</span>
+    </div>
   </div>
 </template>
 <script setup>
   import { defineAsyncComponent } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   const ActionButton = defineAsyncComponent(() => import('./ActionButton'));
   const AlternativesList = defineAsyncComponent(() => import('./AlternativesList'));
+  const preferencesStore = usePreferencesStore();
   const completeButtonUi = {
     base: 'bg-success-500 hover:bg-success-600 active:bg-success-700 text-white border border-success-700',
   };

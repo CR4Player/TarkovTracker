@@ -14,8 +14,9 @@
             </i18n-t>
           </InfoRow>
         </UTooltip>
+        <!-- Previous quests (locked before) -->
         <InfoRow
-          v-if="task?.predecessors?.length"
+          v-if="preferencesStore.getShowPreviousQuests && task?.predecessors?.length"
           icon="mdi-lock-open-outline"
           class="mb-1 text-sm text-gray-400"
         >
@@ -23,18 +24,71 @@
             <template #count>{{ lockedBefore }}</template>
           </i18n-t>
         </InfoRow>
-        <InfoRow v-if="task?.successors?.length" icon="mdi-lock" class="mb-1 text-sm text-gray-400">
+        <!-- Previous Task(s) links (immediate parents only) -->
+        <div v-if="preferencesStore.getShowPreviousQuests && parentTasks.length" class="mb-1">
+          <div class="flex items-start text-sm text-gray-400">
+            <UIcon name="i-mdi-arrow-left" class="mr-1 mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <span class="text-gray-500">{{ t('page.tasks.questcard.previoustasks', 'Previous Task(s):') }}</span>
+              <div class="flex flex-col">
+                <router-link
+                  v-for="parent in parentTasks"
+                  :key="parent.id"
+                  :to="`/tasks?task=${parent.id}`"
+                  class="text-primary-400 hover:text-primary-300"
+                >
+                  {{ parent.name }}
+                </router-link>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Next quests (locked behind) -->
+        <InfoRow
+          v-if="preferencesStore.getShowNextQuests && task?.successors?.length"
+          icon="mdi-lock"
+          class="mb-1 text-sm text-gray-400"
+        >
           <i18n-t keypath="page.tasks.questcard.lockedbehind" scope="global">
             <template #count>{{ lockedBehind }}</template>
           </i18n-t>
         </InfoRow>
+        <!-- Next Quest(s) links (immediate children only) -->
+        <div v-if="preferencesStore.getShowNextQuests && childTasks.length" class="mb-1">
+          <div class="flex items-start text-sm text-gray-400">
+            <UIcon name="i-mdi-arrow-right" class="mr-1 mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <span class="text-gray-500">{{ t('page.tasks.questcard.nexttasks', 'Next Task(s):') }}</span>
+              <div class="flex flex-col">
+                <router-link
+                  v-for="child in childTasks"
+                  :key="child.id"
+                  :to="`/tasks?task=${child.id}`"
+                  class="text-primary-400 hover:text-primary-300"
+                >
+                  {{ child.name }}
+                </router-link>
+              </div>
+            </div>
+          </div>
+        </div>
         <InfoRow v-if="task?.factionName != 'Any'" class="mb-1 text-sm text-gray-400">
           <template #icon>
             <img :src="factionImage" class="mx-1 h-6 w-6 invert" />
           </template>
           {{ task.factionName }}
         </InfoRow>
-        <div v-if="nonKappa" class="mb-1 flex">
+        <!-- Required labels (Kappa, Lightkeeper) -->
+        <div v-if="preferencesStore.getShowRequiredLabels" class="mb-1 flex flex-wrap gap-1">
+          <UBadge v-if="task.kappaRequired" size="xs" color="primary" variant="solid">
+            {{ t('page.tasks.questcard.kapparequired', 'KAPPA REQUIRED') }}
+          </UBadge>
+          <UBadge v-if="task.lightkeeperRequired" size="xs" color="info" variant="solid">
+            {{ t('page.tasks.questcard.lightkeeperrequired', 'LIGHTKEEPER REQUIRED') }}
+          </UBadge>
+        </div>
+        <!-- Not Required label (Non-Kappa) -->
+        <div v-if="preferencesStore.getShowNotRequiredLabels && nonKappa" class="mb-1 flex">
           <div class="mr-1">
             <UBadge size="xs" color="error" variant="outline">
               {{ t('page.tasks.questcard.nonkappa') }}
@@ -50,6 +104,10 @@
             <template #names>{{ neededBy.join(', ') }}</template>
           </i18n-t>
         </InfoRow>
+        <!-- Task ID -->
+        <div v-if="preferencesStore.getShowTaskIds" class="mt-2 text-xs text-gray-600">
+          ID: {{ task.id }}
+        </div>
       </div>
     </template>
     <template v-else>
@@ -58,11 +116,14 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { computed } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import type { Task } from '@/types/tarkov';
   import InfoRow from './InfoRow.vue';
   import TaskLink from './TaskLink.vue';
-  defineProps<{
+  const props = defineProps<{
     task: Task;
     xs: boolean;
     lockedBefore: number;
@@ -73,4 +134,20 @@
     activeUserView: string;
   }>();
   const { t } = useI18n({ useScope: 'global' });
+  const preferencesStore = usePreferencesStore();
+  const metadataStore = useMetadataStore();
+  // Get immediate parent task objects (direct previous quests) for display
+  const parentTasks = computed(() => {
+    if (!props.task?.parents?.length) return [];
+    return props.task.parents
+      .map((id) => metadataStore.tasks.find((t) => t.id === id))
+      .filter((t): t is Task => t !== undefined);
+  });
+  // Get immediate child task objects (direct next quests) for display
+  const childTasks = computed(() => {
+    if (!props.task?.children?.length) return [];
+    return props.task.children
+      .map((id) => metadataStore.tasks.find((t) => t.id === id))
+      .filter((t): t is Task => t !== undefined);
+  });
 </script>
