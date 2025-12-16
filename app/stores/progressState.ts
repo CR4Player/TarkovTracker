@@ -44,12 +44,15 @@ export interface UserProgressData {
   level: number;
   pmcFaction: 'USEC' | 'BEAR';
   displayName: string | null;
+  xpOffset: number;
   taskObjectives: { [objectiveId: string]: TaskObjective };
   taskCompletions: { [taskId: string]: TaskCompletion };
   hideoutParts: { [objectiveId: string]: HideoutPart };
   hideoutModules: { [hideoutId: string]: HideoutModule };
   traders: { [traderId: string]: TraderProgress };
   skills: { [skillName: string]: number };
+  prestigeLevel: number; // 0-6, default 0
+  skillOffsets: { [skillName: string]: number }; // manual adjustments per skill
 }
 export interface UserState {
   currentGameMode: GameMode;
@@ -61,12 +64,15 @@ const defaultProgressData: UserProgressData = {
   level: 1,
   pmcFaction: 'USEC',
   displayName: null,
+  xpOffset: 0,
   taskObjectives: {},
   taskCompletions: {},
   hideoutParts: {},
   hideoutModules: {},
   traders: {},
   skills: {},
+  prestigeLevel: 0,
+  skillOffsets: {},
 };
 export const defaultState: UserState = {
   currentGameMode: GAME_MODES.PVP,
@@ -114,12 +120,15 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
       level: (data.level as number) || defaultProgressData.level,
       pmcFaction: (data.pmcFaction as 'USEC' | 'BEAR') || defaultProgressData.pmcFaction,
       displayName: (data.displayName as string) || defaultProgressData.displayName,
+      xpOffset: (data.xpOffset as number) || defaultProgressData.xpOffset,
       taskCompletions: (data.taskCompletions as UserProgressData['taskCompletions']) || {},
       taskObjectives: (data.taskObjectives as UserProgressData['taskObjectives']) || {},
       hideoutParts: (data.hideoutParts as UserProgressData['hideoutParts']) || {},
       hideoutModules: (data.hideoutModules as UserProgressData['hideoutModules']) || {},
       traders: (data.traders as UserProgressData['traders']) || {},
       skills: (data.skills as UserProgressData['skills']) || {},
+      prestigeLevel: (data.prestigeLevel as number) || defaultProgressData.prestigeLevel,
+      skillOffsets: (data.skillOffsets as UserProgressData['skillOffsets']) || {},
     };
     return {
       currentGameMode: data.currentGameMode as GameMode,
@@ -134,12 +143,15 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
     level: (data.level as number) || defaultProgressData.level,
     pmcFaction: (data.pmcFaction as 'USEC' | 'BEAR') || defaultProgressData.pmcFaction,
     displayName: (data.displayName as string) || defaultProgressData.displayName,
+    xpOffset: (data.xpOffset as number) || defaultProgressData.xpOffset,
     taskCompletions: (data.taskCompletions as UserProgressData['taskCompletions']) || {},
     taskObjectives: (data.taskObjectives as UserProgressData['taskObjectives']) || {},
     hideoutParts: (data.hideoutParts as UserProgressData['hideoutParts']) || {},
     hideoutModules: (data.hideoutModules as UserProgressData['hideoutModules']) || {},
     traders: (data.traders as UserProgressData['traders']) || {},
     skills: (data.skills as UserProgressData['skills']) || {},
+    prestigeLevel: (data.prestigeLevel as number) || defaultProgressData.prestigeLevel,
+    skillOffsets: (data.skillOffsets as UserProgressData['skillOffsets']) || {},
   };
   return {
     currentGameMode: GAME_MODES.PVP, // Default to PvP for existing users
@@ -166,12 +178,15 @@ const getCurrentData = (state: UserState): UserProgressData => {
       level: 1,
       pmcFaction: 'USEC',
       displayName: null,
+      xpOffset: 0,
       taskCompletions: {},
       taskObjectives: {},
       hideoutParts: {},
       hideoutModules: {},
       traders: {},
       skills: {},
+      prestigeLevel: 0,
+      skillOffsets: {},
     };
   }
   return state[state.currentGameMode];
@@ -209,6 +224,11 @@ export const getters = {
     getCurrentData(state)?.traders?.[traderId]?.reputation ?? 0,
   getSkillLevel: (state: UserState) => (skillName: string) =>
     getCurrentData(state)?.skills?.[skillName] ?? 0,
+  getXpOffset: (state: UserState) => () => getCurrentData(state)?.xpOffset ?? 0,
+  getPrestigeLevel: (state: UserState) => () => getCurrentData(state)?.prestigeLevel ?? 0,
+  getSkillOffset: (state: UserState) => (skillName: string) =>
+    getCurrentData(state)?.skillOffsets?.[skillName] ?? 0,
+  getAllSkillOffsets: (state: UserState) => () => getCurrentData(state)?.skillOffsets ?? {},
 } as const satisfies _GettersTree<UserState>;
 // Helper functions for common operations
 const createCompletion = (complete: boolean, failed = false) => ({
@@ -261,6 +281,28 @@ export const actions = {
   setDisplayName(this: UserState, name: string | null) {
     const currentData = getCurrentData(this);
     currentData.displayName = typeof name === 'string' ? name : null;
+  },
+  setXpOffset(this: UserState, offset: number) {
+    const currentData = getCurrentData(this);
+    currentData.xpOffset = Number.isFinite(offset) ? Math.trunc(offset) : 0;
+  },
+  setPrestigeLevel(this: UserState, level: number) {
+    const currentData = getCurrentData(this);
+    currentData.prestigeLevel = Math.max(0, Math.min(6, level)); // Clamp 0-6
+  },
+  setSkillOffset(this: UserState, skillName: string, offset: number) {
+    const currentData = getCurrentData(this);
+    if (!currentData.skillOffsets) {
+      currentData.skillOffsets = {};
+    }
+    currentData.skillOffsets[skillName] = Number.isFinite(offset) ? Math.trunc(offset) : 0;
+  },
+  resetSkillOffset(this: UserState, skillName: string) {
+    const currentData = getCurrentData(this);
+    if (currentData.skillOffsets) {
+      const { [skillName]: _, ...rest } = currentData.skillOffsets;
+      currentData.skillOffsets = rest;
+    }
   },
   setObjectiveCount(this: UserState, objectiveId: string, count: number) {
     updateObjective(this, 'taskObjectives', objectiveId, {

@@ -186,10 +186,10 @@
   };
   // Setup infinite scroll
   const infiniteScrollEnabled = computed(() => displayCount.value < filteredTasks.value.length);
-  const { stop: stopInfiniteScroll, start: startInfiniteScroll } = useInfiniteScroll(
+  const { stop: _stopInfiniteScroll, start: _startInfiniteScroll } = useInfiniteScroll(
     tasksSentinel,
     loadMoreTasks,
-    { rootMargin: '200px', threshold: 0.1, enabled: infiniteScrollEnabled.value }
+    { rootMargin: '200px', threshold: 0.1, enabled: infiniteScrollEnabled }
   );
   // Reset pagination and clear focused task when filters or search changes
   watch(
@@ -199,11 +199,6 @@
       focusedTaskId.value = null;
     }
   );
-  // Handle infinite scroll state changes
-  watch(infiniteScrollEnabled, (newEnabled) => {
-    if (newEnabled) startInfiniteScroll();
-    else stopInfiniteScroll();
-  });
   // Handle deep linking to a specific task via ?task=taskId query param
   const getTaskStatus = (taskId: string): 'available' | 'locked' | 'completed' => {
     const isCompleted = tasksCompletions.value?.[taskId]?.['self'] ?? false;
@@ -232,9 +227,19 @@
           if (taskElement) {
             taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             // Add a brief highlight effect
-            taskElement.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2', 'ring-offset-surface-900');
+            taskElement.classList.add(
+              'ring-2',
+              'ring-primary-500',
+              'ring-offset-2',
+              'ring-offset-surface-900'
+            );
             setTimeout(() => {
-              taskElement.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2', 'ring-offset-surface-900');
+              taskElement.classList.remove(
+                'ring-2',
+                'ring-primary-500',
+                'ring-offset-2',
+                'ring-offset-surface-900'
+              );
             }, 2000);
           }
         }, 100);

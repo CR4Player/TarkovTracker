@@ -1,0 +1,187 @@
+<template>
+  <GenericCard
+    icon="mdi-brain"
+    icon-color="cyan-400"
+    highlight-color="blue"
+    :fill-height="false"
+    :title="$t('settings.skills.title', 'Skills Management')"
+    title-classes="text-lg font-semibold"
+  >
+    <template #content>
+      <div class="space-y-4 px-4 py-4">
+        <!-- Explanation -->
+        <UAlert icon="i-mdi-information" color="info" variant="soft" class="text-sm">
+          <template #description>
+            {{
+              $t(
+                'settings.skills.explanation',
+                'All skills from game data are shown below. Quest rewards are auto-calculated. Use offsets to add skills gained through gameplay.'
+              )
+            }}
+          </template>
+        </UAlert>
+        <!-- Skills Grid -->
+        <div
+          v-if="allGameSkills.length > 0"
+          class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        >
+          <div
+            v-for="skill in allGameSkills"
+            :key="skill.name"
+            class="border-surface-700 bg-surface-800/30 rounded-lg border p-3"
+          >
+            <!-- Skill Header -->
+            <div class="mb-2 flex items-center gap-3">
+              <!-- Skill Icon with Hover Pop-out -->
+              <div class="group relative shrink-0">
+                <img
+                  v-if="skill.imageLink"
+                  :src="skill.imageLink"
+                  :alt="skill.name"
+                  class="skill-icon h-10 w-10 rounded object-contain transition-transform duration-200 ease-out"
+                  loading="lazy"
+                />
+                <!-- Fallback placeholder if no image -->
+                <div
+                  v-else
+                  class="bg-surface-700 flex h-10 w-10 items-center justify-center rounded text-xs text-gray-400"
+                >
+                  ?
+                </div>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-surface-100 truncate text-base font-semibold">
+                    {{ formatSkillName(skill.name) }}
+                  </span>
+                  <!-- Required Badge -->
+                  <span
+                    v-if="skill.requiredByTasks.length > 0"
+                    :title="`Required for: ${skill.requiredByTasks.join(', ')}`"
+                    class="shrink-0 rounded bg-orange-500/20 px-1.5 py-0.5 text-xs text-orange-400"
+                  >
+                    Req
+                  </span>
+                  <!-- Required Levels Badge -->
+                  <span
+                    v-if="skill.requiredLevels.length > 0"
+                    :title="`Required levels: ${skill.requiredLevels.join(', ')}`"
+                    class="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-400"
+                  >
+                    Lv {{ formatRequiredLevels(skill.requiredLevels) }}
+                  </span>
+                </div>
+                <!-- Skill Info -->
+                <div class="text-surface-500 truncate text-xs">
+                  <span v-if="skill.requiredByTasks.length > 0">
+                    Req: {{ skill.requiredByTasks.length }}
+                  </span>
+                  <span
+                    v-if="skill.requiredByTasks.length > 0 && skill.rewardedByTasks.length > 0"
+                    class="mx-1"
+                  >
+                    •
+                  </span>
+                  <span v-if="skill.rewardedByTasks.length > 0">
+                    Reward: {{ skill.rewardedByTasks.length }}
+                  </span>
+                </div>
+              </div>
+              <!-- Total Level -->
+              <span class="text-primary-400 shrink-0 text-base font-bold">
+                {{ getSkillLevel(skill.name) }}
+              </span>
+            </div>
+            <!-- Breakdown -->
+            <div class="mb-2 flex gap-3 text-xs">
+              <div class="text-surface-400 flex-1">
+                Quest:
+                <span class="text-surface-200 font-medium">
+                  {{ getQuestSkillLevel(skill.name) }}
+                </span>
+              </div>
+              <div class="text-surface-400 flex-1">
+                Offset:
+                <span class="text-surface-200 font-medium">{{ getSkillOffset(skill.name) }}</span>
+              </div>
+            </div>
+            <!-- Offset Input -->
+            <div class="flex items-center gap-2">
+              <UInput
+                :model-value="getSkillOffset(skill.name)"
+                type="number"
+                :min="0"
+                placeholder="0"
+                size="sm"
+                class="flex-1"
+                @update:model-value="(value) => updateSkillOffset(skill.name, value)"
+              />
+              <UButton
+                icon="i-mdi-refresh"
+                size="sm"
+                variant="soft"
+                color="neutral"
+                :disabled="getSkillOffset(skill.name) === 0"
+                @click="resetOffset(skill.name)"
+              />
+            </div>
+          </div>
+        </div>
+        <!-- No Skills State -->
+        <div v-else class="text-surface-400 py-6 text-center text-sm">
+          {{ $t('settings.skills.no_skills', 'No skills found in game data.') }}
+        </div>
+      </div>
+    </template>
+  </GenericCard>
+</template>
+<script setup lang="ts">
+  import { computed } from 'vue';
+  import GenericCard from '@/components/ui/GenericCard.vue';
+  import { useSkillCalculation } from '@/composables/useSkillCalculation';
+  const skillCalculation = useSkillCalculation();
+  // All game skills with metadata
+  const allGameSkills = computed(() => skillCalculation.allGameSkills.value);
+  // Helper: Format skill name (capitalize, handle special cases)
+  const formatSkillName = (skillName: string): string => {
+    return skillName
+      .split(/(?=[A-Z])/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+  // Helper: Format required levels for display
+  const formatRequiredLevels = (levels: number[]): string => {
+    if (levels.length === 0) return '';
+    if (levels.length === 1) return String(levels[0]);
+    // Show all levels as milestones (e.g., "5,10,15")
+    return levels.join(',');
+  };
+  // Get skill levels from composable
+  const getSkillLevel = (skillName: string) => skillCalculation.getSkillLevel(skillName);
+  const getQuestSkillLevel = (skillName: string) => skillCalculation.getQuestSkillLevel(skillName);
+  const getSkillOffset = (skillName: string) => skillCalculation.getSkillOffset(skillName);
+  // Update skill offset
+  const updateSkillOffset = (skillName: string, value: string | number) => {
+    const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
+    if (!isNaN(numValue) && numValue >= 0) {
+      skillCalculation.setSkillOffset(skillName, numValue);
+    }
+  };
+  // Reset skill offset to 0
+  const resetOffset = (skillName: string) => {
+    skillCalculation.resetSkillOffset(skillName);
+  };
+</script>
+<style scoped>
+  /* Hover pop-out effect for skill icons */
+  .skill-icon {
+    position: relative;
+    z-index: 1;
+  }
+  .group:hover .skill-icon {
+    transform: scale(2.5);
+    z-index: 50;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-radius: 0.375rem;
+  }
+</style>

@@ -39,7 +39,7 @@
           :wiki-link="item.wikiLink"
           :dev-link="item.link"
           :task-wiki-link="relatedTask?.wikiLink"
-          size="large"
+          size="small"
           simple-mode
           fill
           class="h-full w-full"

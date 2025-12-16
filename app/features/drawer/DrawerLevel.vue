@@ -77,6 +77,22 @@
             </template>
           </span>
         </div>
+        <!-- XP Progress Display -->
+        <div
+          class="mt-2 cursor-pointer rounded border border-white/5 bg-white/[0.02] px-2 py-1.5 transition-all hover:border-primary/30 hover:bg-white/[0.04]"
+          @click="navigateToSettings"
+        >
+          <div class="mb-1 flex items-center justify-between text-[0.65em]">
+            <span class="text-gray-400">{{ formatNumber(xpCalculation.totalXP.value) }} XP</span>
+            <span class="text-gray-500">{{ formatNumber(xpCalculation.xpToNextLevel.value) }} needed</span>
+          </div>
+          <div class="h-1 overflow-hidden rounded-full bg-gray-800">
+            <div
+              class="bg-primary-500 h-full transition-all duration-300"
+              :style="{ width: `${xpCalculation.xpProgress.value}%` }"
+            ></div>
+          </div>
+        </div>
       </div>
     </template>
   </div>
@@ -84,9 +100,12 @@
 <script setup>
   import { computed, nextTick, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useRouter } from 'vue-router';
+  import { useXpCalculation } from '@/composables/useXpCalculation';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
   const { t } = useI18n({ useScope: 'global' });
+  const router = useRouter();
   defineProps({
     isCollapsed: {
       type: Boolean,
@@ -95,6 +114,7 @@
   });
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const xpCalculation = useXpCalculation();
   const minPlayerLevel = computed(() => metadataStore.minPlayerLevel);
   const maxPlayerLevel = computed(() => metadataStore.maxPlayerLevel);
   const playerLevels = computed(() => metadataStore.playerLevels);
@@ -139,6 +159,14 @@
     if (tarkovStore.playerLevel() > minPlayerLevel.value) {
       tarkovStore.setLevel(tarkovStore.playerLevel() - 1);
     }
+  }
+  // Navigate to settings page
+  function navigateToSettings() {
+    router.push('/settings');
+  }
+  // Format number with commas
+  function formatNumber(num) {
+    return num.toLocaleString('en-US');
   }
 </script>
 <style>

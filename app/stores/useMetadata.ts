@@ -12,12 +12,14 @@ import type {
   ObjectiveGPSInfo,
   ObjectiveMapInfo,
   PlayerLevel,
+  PrestigeLevel,
   StaticMapData,
   TarkovDataQueryResult,
   TarkovHideoutQueryResult,
   TarkovItem,
   TarkovItemsQueryResult,
   TarkovMap,
+  TarkovPrestigeQueryResult,
   Task,
   TaskObjective,
   Trader,
@@ -49,9 +51,11 @@ interface MetadataState {
   loading: boolean;
   hideoutLoading: boolean;
   itemsLoading: boolean;
+  prestigeLoading: boolean;
   error: Error | null;
   hideoutError: Error | null;
   itemsError: Error | null;
+  prestigeError: Error | null;
   // Raw data from API
   tasks: Task[];
   hideoutStations: HideoutStation[];
@@ -59,6 +63,7 @@ interface MetadataState {
   traders: Trader[];
   playerLevels: PlayerLevel[];
   items: TarkovItem[];
+  prestigeLevels: PrestigeLevel[];
   staticMapData: StaticMapData | null;
   // Processed data
   taskGraph: AbstractGraph;
@@ -80,15 +85,18 @@ export const useMetadataStore = defineStore('metadata', {
     loading: false,
     hideoutLoading: false,
     itemsLoading: false,
+    prestigeLoading: false,
     error: null,
     hideoutError: null,
     itemsError: null,
+    prestigeError: null,
     tasks: [],
     hideoutStations: [],
     maps: [],
     traders: [],
     playerLevels: [],
     items: [],
+    prestigeLevels: [],
     staticMapData: null,
     taskGraph: markRaw(createGraph()),
     hideoutGraph: markRaw(createGraph()),
@@ -201,6 +209,17 @@ export const useMetadataStore = defineStore('metadata', {
     isItemsLoaded: (state): boolean => {
       return !state.itemsLoading && state.items.length > 0;
     },
+    // Prestige getters
+    isPrestigeLoaded: (state): boolean => {
+      return !state.prestigeLoading && state.prestigeLevels.length > 0;
+    },
+    getPrestigeByLevel:
+      (state) =>
+      (level: number): PrestigeLevel | undefined => {
+        return state.prestigeLevels.find(
+          (prestige: PrestigeLevel) => prestige.prestigeLevel === level
+        );
+      },
   },
   actions: {
     async initialize() {
@@ -261,7 +280,11 @@ export const useMetadataStore = defineStore('metadata', {
           logger.error('[MetadataStore] Error during cache cleanup:', err)
         );
       }
-      await Promise.all([this.fetchTasksData(forceRefresh), this.fetchHideoutData(forceRefresh)]);
+      await Promise.all([
+        this.fetchTasksData(forceRefresh),
+        this.fetchHideoutData(forceRefresh),
+        this.fetchPrestigeData(forceRefresh),
+      ]);
     },
     /**
      * Fetch tasks, maps, traders, and player levels data
@@ -453,6 +476,64 @@ export const useMetadataStore = defineStore('metadata', {
       }
     },
     /**
+     * Fetch prestige data
+     * Uses IndexedDB cache for client-side persistence
+     * Prestige is language-specific but NOT game-mode specific
+     */
+    async fetchPrestigeData(forceRefresh = false) {
+      this.prestigeLoading = true;
+      this.prestigeError = null;
+      try {
+        // Step 1: Check IndexedDB cache (unless forcing refresh)
+        if (!forceRefresh && typeof window !== 'undefined') {
+          const cached = await getCachedData<TarkovPrestigeQueryResult>(
+            'prestige' as CacheType,
+            'all',
+            this.languageCode
+          );
+          if (cached) {
+            logger.debug(`[MetadataStore] Prestige loaded from cache: ${this.languageCode}`);
+            this.prestigeLevels = cached.prestige || [];
+            this.prestigeLoading = false;
+            return;
+          }
+        }
+        // Step 2: Fetch from server API
+        logger.debug(`[MetadataStore] Fetching prestige from server: ${this.languageCode}`);
+        const response = (await $fetch<{
+          data: TarkovPrestigeQueryResult;
+        }>('/api/tarkov/prestige', {
+          query: {
+            lang: this.languageCode,
+          },
+        })) as { data: TarkovPrestigeQueryResult; error?: unknown };
+        if (response.error) {
+          throw new Error(response.error as string);
+        }
+        if (response?.data?.prestige) {
+          this.prestigeLevels = response.data.prestige;
+          // Step 3: Store in IndexedDB for future visits (24 hour TTL)
+          if (typeof window !== 'undefined') {
+            setCachedData(
+              'prestige' as CacheType,
+              'all',
+              this.languageCode,
+              response.data,
+              CACHE_CONFIG.MAX_TTL
+            ).catch((err) => logger.error('[MetadataStore] Error caching prestige data:', err));
+          }
+        } else {
+          this.prestigeLevels = [];
+        }
+      } catch (err) {
+        logger.error('[MetadataStore] Error fetching prestige data:', err);
+        this.prestigeError = err as Error;
+        this.prestigeLevels = [];
+      } finally {
+        this.prestigeLoading = false;
+      }
+    },
+    /**
      * Process tasks data and build derived structures using the graph builder composable
      */
     processTasksData(data: TarkovDataQueryResult) {
@@ -462,7 +543,7 @@ export const useMetadataStore = defineStore('metadata', {
       this.tasks = allTasks.filter((task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id));
       this.maps = data.maps || [];
       this.traders = data.traders || [];
-      this.playerLevels = data.playerLevels || [];
+      this.playerLevels = this.convertToCumulativeXP(data.playerLevels || []);
       if (this.tasks.length > 0) {
         const graphBuilder = useGraphBuilder();
         const processedData = graphBuilder.processTaskData(this.tasks);
@@ -491,6 +572,22 @@ export const useMetadataStore = defineStore('metadata', {
       } else {
         this.resetHideoutData();
       }
+    },
+    /**
+     * Converts player level XP from per-level increments to cumulative totals
+     * The API returns exp as XP needed from previous level (incremental)
+     * We need cumulative XP from level 1 for proper level calculations
+     */
+    convertToCumulativeXP(levels: PlayerLevel[]): PlayerLevel[] {
+      if (!levels || levels.length === 0) return [];
+      let cumulativeXP = 0;
+      return levels.map((level) => {
+        cumulativeXP += level.exp;
+        return {
+          ...level,
+          exp: cumulativeXP,
+        };
+      });
     },
     /**
      * Reset tasks data to empty state

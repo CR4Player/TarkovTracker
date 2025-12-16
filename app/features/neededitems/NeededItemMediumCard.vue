@@ -7,7 +7,7 @@
         :image-item="imageItem"
         :src="imageItem.image512pxLink"
         :is-visible="true"
-        size="large"
+        size="small"
         simple-mode
         fill
         class="h-full w-full"

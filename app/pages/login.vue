@@ -106,6 +106,7 @@
         if (event.origin === window.location.origin && event.data?.type === 'OAUTH_SUCCESS') {
           loading.value[provider] = false;
           cleanup();
+          navigateTo('/', { replace: true });
         }
       };
       const pollTimer = setInterval(() => {

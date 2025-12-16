@@ -53,10 +53,16 @@ export interface StationLevelRequirement {
   station: { id: string; name: string };
   level: number;
 }
+export interface Skill {
+  id: string;
+  name: string;
+  imageLink?: string;
+}
 export interface SkillRequirement {
   id: string;
   name: string;
   level: number;
+  skill?: Skill;
 }
 export interface TraderRequirement {
   id: string;
@@ -117,6 +123,36 @@ export interface TaskRequirement {
   task: { id: string; name?: string };
   status?: string[];
 }
+export interface TraderStandingReward {
+  trader: { id: string; name: string };
+  standing: number;
+}
+export interface ItemReward {
+  count: number;
+  item: TarkovItem;
+}
+export interface OfferUnlockReward {
+  id: string;
+  trader: { id: string; name: string };
+  level: number;
+  item: TarkovItem;
+}
+export interface SkillLevelReward {
+  name: string;
+  level: number;
+  skill?: Skill;
+}
+export interface TraderUnlock {
+  id: string;
+  name: string;
+}
+export interface FinishRewards {
+  traderStanding?: TraderStandingReward[];
+  items?: ItemReward[];
+  offerUnlock?: OfferUnlockReward[];
+  skillLevelReward?: SkillLevelReward[];
+  traderUnlock?: TraderUnlock;
+}
 export interface FinishReward {
   __typename?: string;
   status?: string;
@@ -142,7 +178,7 @@ export interface Task {
   failedRequirements?: TaskRequirement[];
   traderLevelRequirements?: TaskTraderLevelRequirement[];
   factionName?: string;
-  finishRewards?: FinishReward[];
+  finishRewards?: FinishRewards;
   traderIcon?: string;
   predecessors?: string[];
   successors?: string[];
@@ -174,10 +210,30 @@ export interface Trader {
   normalizedName?: string;
   imageLink?: string;
 }
+/**
+ * Player level data with XP thresholds
+ * Note: exp values are converted to cumulative totals by the metadata store
+ * API returns per-level increments, but we store cumulative values for calculations
+ */
 export interface PlayerLevel {
-  level: number;
-  exp: number;
+  level: number; // Level number (1-79)
+  exp: number; // Cumulative XP required to reach this level (transformed from API)
   levelBadgeImageLink: string;
+}
+// Prestige System Types
+export interface PrestigeLevel {
+  id: string;
+  level: number; // 0-6
+  name?: string;
+  prestigeLevel?: number;
+  imageLink?: string;
+  iconLink?: string;
+  conditions?: TaskObjective[];
+  rewards?: unknown;
+  transferSettings?: unknown[];
+}
+export interface TarkovPrestigeQueryResult {
+  prestige: PrestigeLevel[];
 }
 export interface MemberProfile {
   displayName: string | null;

@@ -14,7 +14,7 @@
                 :wiki-link="item.wikiLink"
                 :dev-link="item.link"
                 :task-wiki-link="relatedTask?.wikiLink"
-                size="medium"
+                size="small"
                 simple-mode
               />
             </span>

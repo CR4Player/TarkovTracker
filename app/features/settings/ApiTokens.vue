@@ -62,7 +62,15 @@
                 </span>
               </div>
               <div class="flex flex-wrap gap-2 text-xs">
-                <UBadge color="primary" variant="solid" size="xs">
+                <UBadge
+                  :color="token.gameMode === 'pve' ? 'info' : 'warning'"
+                  variant="solid"
+                  size="xs"
+                >
+                  <UIcon
+                    :name="token.gameMode === 'pve' ? 'i-mdi-account-group' : 'i-mdi-sword-cross'"
+                    class="mr-1 h-3 w-3"
+                  />
                   {{ formatGameMode(token.gameMode) }}
                 </UBadge>
                 <UBadge
@@ -172,11 +180,44 @@
       </template>
       <template #body>
         <div class="space-y-4">
-          <div class="space-y-2">
+          <div class="space-y-3">
             <p class="text-surface-200 text-sm font-semibold">
               {{ t('page.settings.card.apitokens.form.gamemode_title') }}
+              <span class="text-red-400">*</span>
             </p>
-            <URadioGroup v-model="selectedGameMode" :options="gameModes" />
+            <div class="flex gap-3">
+              <div
+                v-for="mode in gameModes"
+                :key="mode.value"
+                class="flex-1 cursor-pointer rounded-lg border p-3 transition-all"
+                :class="
+                  selectedGameMode === mode.value
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                "
+                @click="selectedGameMode = mode.value"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2"
+                    :class="
+                      selectedGameMode === mode.value
+                        ? 'border-primary-500 bg-primary-500'
+                        : 'border-gray-600'
+                    "
+                  >
+                    <div
+                      v-if="selectedGameMode === mode.value"
+                      class="h-2 w-2 rounded-full bg-white"
+                    />
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-medium text-white">{{ mode.label }}</div>
+                    <div class="text-xs text-gray-400">{{ mode.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="space-y-2">
             <p class="text-surface-200 text-sm font-semibold">
@@ -310,10 +351,11 @@
       description: value.description,
     }))
   );
-  const gameModes = GAME_MODE_OPTIONS.map((mode) => ({
+  const gameModes = computed(() => GAME_MODE_OPTIONS.map((mode) => ({
     label: mode.label,
     value: mode.value as GameMode,
-  }));
+    description: mode.description,
+  })));
   const canSubmit = computed(
     () => userLoggedIn.value && selectedPermissions.value.length > 0 && !!selectedGameMode.value
   );

@@ -25,7 +25,7 @@
         </UAlert>
       </template>
       <template #content>
-        <div class="grid gap-6 px-4 py-4 md:grid-cols-2">
+        <div class="grid gap-6 px-4 py-4 md:grid-cols-2 lg:grid-cols-3">
           <!-- Privacy Mode -->
           <div class="space-y-2">
             <p class="text-surface-200 text-sm font-semibold">
@@ -65,9 +65,41 @@
               </template>
             </USelectMenu>
           </div>
+          <!-- Prestige Level -->
+          <div class="space-y-2">
+            <p class="text-surface-200 text-sm font-semibold">
+              {{ $t('settings.prestige.current_level', 'Current Prestige Level') }}
+            </p>
+            <USelectMenu
+              v-model="currentPrestige"
+              :items="prestigeOptions"
+              value-key="value"
+              :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
+              :ui="selectUi"
+              :ui-menu="selectMenuUi"
+            >
+              <template #leading>
+                <UIcon name="i-mdi-trophy" class="text-gold-400 h-4 w-4" />
+              </template>
+            </USelectMenu>
+            <p class="text-surface-400 text-xs">
+              {{
+                $t(
+                  'settings.prestige.hint',
+                  'Select your current prestige level. This is display-only and does not affect game progression.'
+                )
+              }}
+            </p>
+          </div>
         </div>
       </template>
     </GenericCard>
+    <!-- Section 1.5: Display Name -->
+    <DisplayNameCard />
+    <!-- Section 2: Experience -->
+    <ExperienceCard />
+    <!-- Section 3: Skills (Full Width) -->
+    <SkillsCard />
     <!-- Section 3: Data Management -->
     <GenericCard
       icon="mdi-database"
@@ -362,6 +394,9 @@
   import GenericCard from '@/components/ui/GenericCard.vue';
   import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
   import ApiTokens from '@/features/settings/ApiTokens.vue';
+  import DisplayNameCard from '@/features/settings/DisplayNameCard.vue';
+  import ExperienceCard from '@/features/settings/ExperienceCard.vue';
+  import SkillsCard from '@/features/settings/SkillsCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { GAME_EDITIONS } from '@/utils/constants';
@@ -427,6 +462,21 @@
     },
     set(newValue: number) {
       tarkovStore.setGameEdition(newValue || 1);
+    },
+  });
+  // Prestige level
+  const prestigeOptions = computed(() => {
+    return Array.from({ length: 7 }, (_, i) => ({
+      label: i === 0 ? 'No Prestige' : `Prestige ${i}`,
+      value: i,
+    }));
+  });
+  const currentPrestige = computed({
+    get(): number {
+      return tarkovStore.getPrestigeLevel();
+    },
+    set(newValue: number) {
+      tarkovStore.setPrestigeLevel(newValue);
     },
   });
   // Methods

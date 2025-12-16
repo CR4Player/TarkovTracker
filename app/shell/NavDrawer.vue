@@ -210,7 +210,14 @@
     router.push('/settings');
   }
   const userDisplayName = computed(() => {
-    return preferencesStore.getStreamerMode ? 'User' : $supabase.user.displayName || 'User';
+    if (preferencesStore.getStreamerMode) return 'User';
+    // Prefer Display Name from tarkov store (current game mode)
+    const displayName = tarkovStore.getDisplayName();
+    if (displayName && displayName.trim() !== '') {
+      return displayName;
+    }
+    // Fallback to auth username or 'User'
+    return $supabase.user.displayName || 'User';
   });
   function logout() {
     $supabase.signOut();

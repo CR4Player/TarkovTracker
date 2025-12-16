@@ -2,8 +2,6 @@
   <div
     class="group relative cursor-default"
     :class="[containerClasses, { 'h-full w-full': size !== 'small' }]"
-    @mouseenter="linkHover = true"
-    @mouseleave="linkHover = false"
     @click="handleClick"
     @contextmenu="handleContextMenu"
   >
@@ -39,10 +37,9 @@
     <!-- Full item display mode (for TarkovItem compatibility) -->
     <div
       v-else
-      class="flex h-full w-full items-center justify-start transition-all duration-200"
-      :class="{ 'opacity-50': linkHover && showActions }"
+      class="flex h-full w-full items-center justify-start"
     >
-      <div class="mr-2 flex items-center justify-center">
+      <div class="relative mr-2 flex items-center justify-center">
         <img
           :width="imageSize"
           :height="imageSize"
@@ -52,6 +49,34 @@
           alt="Item Icon"
           @error="handleImgError"
         />
+        <!-- Hover action buttons -->
+        <div
+          v-if="showActions && (props.devLink || props.wikiLink)"
+          class="absolute inset-0 flex items-center justify-center gap-1 rounded bg-black/70 opacity-0 transition-opacity group-hover:opacity-100"
+        >
+          <a
+            v-if="props.devLink"
+            :href="props.devLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded p-1 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            title="View on tarkov.dev"
+            @click.stop
+          >
+            <UIcon name="i-mdi-open-in-new" class="h-4 w-4" />
+          </a>
+          <a
+            v-if="props.wikiLink"
+            :href="props.wikiLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded p-1 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            title="View on Wiki"
+            @click.stop
+          >
+            <UIcon name="i-mdi-wikipedia" class="h-4 w-4" />
+          </a>
+        </div>
       </div>
       <!-- Counter controls for multi-item objectives -->
       <div v-if="showCounter" class="mr-2" @click.stop>
@@ -74,8 +99,6 @@
         {{ props.itemName }}
       </div>
     </div>
-    <!-- Hover actions (only in full mode) -->
-    <!-- Removed hover overlay as per request -->
     <!-- Context Menu -->
     <ContextMenu ref="contextMenu">
       <template #default="{ close }">
@@ -237,7 +260,6 @@
     default: 'bg-transparent',
   } as const;
   type BackgroundKey = keyof typeof backgroundClassMap;
-  const linkHover = ref(false);
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
   // Compute image source based on available props
   const computedImageSrc = computed(() => {

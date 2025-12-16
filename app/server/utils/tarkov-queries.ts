@@ -234,6 +234,11 @@ export const TARKOV_DATA_QUERY = `
           skillLevel {
             name
             level
+            skill {
+              id
+              name
+              imageLink
+            }
           }
         }
         ... on TaskObjectiveTaskStatus {
@@ -300,6 +305,11 @@ export const TARKOV_DATA_QUERY = `
         skillLevelReward {
           name
           level
+          skill {
+            id
+            name
+            imageLink
+          }
         }
         traderUnlock {
           id
@@ -346,6 +356,11 @@ export const TARKOV_DATA_QUERY = `
         skillLevelReward {
           name
           level
+          skill {
+            id
+            name
+            imageLink
+          }
         }
         traderUnlock {
           id
@@ -423,6 +438,35 @@ export const TARKOV_ITEMS_QUERY = `
         id
         name
         normalizedName
+      }
+    }
+  }
+`;
+// Query to fetch prestige levels and requirements
+export const TARKOV_PRESTIGE_QUERY = `
+  query TarkovPrestige {
+    prestige {
+      id
+      name
+      prestigeLevel
+      imageLink
+      iconLink
+      conditions {
+        id
+        description
+        __typename
+      }
+      rewards {
+        traderStanding {
+          trader {
+            id
+            name
+          }
+          standing
+        }
+      }
+      transferSettings {
+        __typename
       }
     }
   }

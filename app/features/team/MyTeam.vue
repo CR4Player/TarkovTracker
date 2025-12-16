@@ -12,35 +12,6 @@
         {{ $t('page.team.card.myteam.no_team') }}
       </div>
       <div v-else class="space-y-4 p-4">
-        <!-- Display Name Input -->
-        <div class="space-y-2">
-          <label class="text-sm font-medium">
-            {{ $t('page.team.card.myteam.display_name_label') }}
-          </label>
-          <div class="flex items-center gap-2">
-            <UInput
-              v-model="displayName"
-              :maxlength="displayNameMaxLength"
-              :placeholder="$t('page.team.card.myteam.display_name_placeholder')"
-              class="flex-1"
-              @blur="saveDisplayName"
-              @keyup.enter="saveDisplayName"
-            />
-            <UButton
-              icon="i-mdi-check"
-              color="primary"
-              variant="ghost"
-              size="xs"
-              :disabled="!displayNameChanged"
-              @click="saveDisplayName"
-            >
-              {{ $t('page.team.card.myteam.save') }}
-            </UButton>
-          </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            {{ $t('page.team.card.myteam.display_name_hint') }}
-          </p>
-        </div>
         <!-- Team Invite URL -->
         <div class="flex items-center justify-between">
           <label class="text-sm font-medium">
@@ -118,7 +89,7 @@
   </GenericCard>
 </template>
 <script setup lang="ts">
-  import { computed, nextTick, ref, watch } from 'vue';
+  import { computed, nextTick, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
@@ -152,31 +123,6 @@
   const { createTeam, leaveTeam } = useEdgeFunctions();
   const isLoggedIn = computed(() => $supabase.user.loggedIn);
   const linkVisible = ref(false);
-  const displayNameMaxLength = LIMITS.DISPLAY_NAME_MAX_LENGTH;
-  // Display name management
-  const displayName = ref(tarkovStore.getDisplayName() || '');
-  const initialDisplayName = ref(tarkovStore.getDisplayName() || '');
-  const displayNameChanged = computed(() => {
-    return displayName.value !== initialDisplayName.value && displayName.value.trim() !== '';
-  });
-  const saveDisplayName = () => {
-    if (displayName.value.trim() === '') return;
-    const trimmedName = displayName.value.trim().substring(0, LIMITS.DISPLAY_NAME_MAX_LENGTH);
-    tarkovStore.setDisplayName(trimmedName);
-    initialDisplayName.value = trimmedName;
-    displayName.value = trimmedName;
-    showNotification(t('page.team.card.myteam.display_name_saved'));
-  };
-  // Watch for changes to the store's display name (e.g., from sync)
-  watch(
-    () => tarkovStore.getDisplayName(),
-    (newName) => {
-      if (newName && newName !== displayName.value) {
-        displayName.value = newName;
-        initialDisplayName.value = newName;
-      }
-    }
-  );
   const generateRandomName = (length: number = LIMITS.RANDOM_NAME_LENGTH) =>
     Array.from({ length }, () =>
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(
@@ -329,9 +275,12 @@
         throw new Error(t('page.team.card.myteam.create_team_error_ui_update'));
       }
       await nextTick();
-      // Generate random display name for team owner
+      // Set default display name for team owner if not already set
       if (result.team.ownerId === $supabase.user.id) {
-        tarkovStore.setDisplayName(generateRandomName());
+        if (!tarkovStore.getDisplayName()) {
+          const defaultName = `${tarkovStore.getCurrentGameMode().toUpperCase()}-PMC`;
+          tarkovStore.setDisplayName(defaultName);
+        }
       }
       showNotification(t('page.team.card.myteam.create_team_success'));
     } catch (error: unknown) {
