@@ -16,14 +16,28 @@
               <h3 class="text-lg font-semibold">
                 {{ t('page.tasks.settings.title', 'Task Settings') }}
               </h3>
-              <div class="mt-1 flex gap-4 text-sm text-gray-400">
+              <div
+                class="mt-1 flex gap-4 text-sm text-gray-400"
+                role="tablist"
+                :aria-label="t('page.tasks.settings.tabs.label', 'Task settings sections')"
+              >
                 <button
+                  :id="filtersTabId"
+                  type="button"
+                  role="tab"
+                  :aria-selected="activeTab === 'filters'"
+                  :aria-controls="filtersPanelId"
                   :class="['hover:text-white', activeTab === 'filters' ? 'text-primary-400' : '']"
                   @click="activeTab = 'filters'"
                 >
                   {{ t('page.tasks.settings.tabs.filters', 'TASK FILTERS') }}
                 </button>
                 <button
+                  :id="appearanceTabId"
+                  type="button"
+                  role="tab"
+                  :aria-selected="activeTab === 'appearance'"
+                  :aria-controls="appearancePanelId"
                   :class="[
                     'hover:text-white',
                     activeTab === 'appearance' ? 'text-primary-400' : '',
@@ -39,12 +53,20 @@
               color="neutral"
               icon="i-mdi-close"
               size="sm"
+              :aria-label="t('page.tasks.filters.close', 'Close')"
               @click="isOpen = false"
             />
           </div>
         </template>
         <!-- TASK FILTERS Section -->
-        <div v-show="activeTab === 'filters'" class="space-y-2">
+        <div
+          v-show="activeTab === 'filters'"
+          :id="filtersPanelId"
+          role="tabpanel"
+          :aria-labelledby="filtersTabId"
+          tabindex="0"
+          class="space-y-2"
+        >
           <p class="text-primary-400 mb-3 text-xs font-semibold tracking-wide uppercase">
             {{ t('page.tasks.settings.tabs.filters', 'TASK FILTERS') }}
           </p>
@@ -77,7 +99,14 @@
           />
         </div>
         <!-- APPEARANCE Section -->
-        <div v-show="activeTab === 'appearance'" class="space-y-2">
+        <div
+          v-show="activeTab === 'appearance'"
+          :id="appearancePanelId"
+          role="tabpanel"
+          :aria-labelledby="appearanceTabId"
+          tabindex="0"
+          class="space-y-2"
+        >
           <p class="text-primary-400 mb-3 text-xs font-semibold tracking-wide uppercase">
             {{ t('page.tasks.settings.tabs.appearance', 'APPEARANCE') }}
           </p>
@@ -157,6 +186,10 @@
   const preferencesStore = usePreferencesStore();
   const isOpen = ref(false);
   const activeTab = ref<'filters' | 'appearance'>('filters');
+  const filtersTabId = 'task-settings-tab-filters';
+  const appearanceTabId = 'task-settings-tab-appearance';
+  const filtersPanelId = 'task-settings-panel-filters';
+  const appearancePanelId = 'task-settings-panel-appearance';
   // Labels and tooltips (defined in script to avoid template quoting issues)
   const labelShowGlobalTasks = computed(() =>
     t('page.tasks.settings.filters.showGlobalTasks', 'Show global tasks on map view')

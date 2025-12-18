@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group flex w-full cursor-pointer items-start gap-4 rounded-md px-2 py-2 transition-colors"
+    class="group flex w-full cursor-pointer items-start gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 focus-within:ring-offset-surface-900"
     :class="isComplete ? 'bg-success-500/10' : 'hover:bg-white/5'"
     @click="handleRowClick"
     @mouseenter="objectiveMouseEnter()"
@@ -8,6 +8,7 @@
   >
     <UIcon
       :name="objectiveIcon.startsWith('mdi-') ? `i-${objectiveIcon}` : objectiveIcon"
+      aria-hidden="true"
       class="mt-0.5 h-4 w-4 shrink-0"
       :class="isComplete ? 'text-success-300' : 'text-gray-400 group-hover:text-gray-300'"
     />
@@ -21,7 +22,7 @@
           class="mt-1 inline-flex items-center gap-1 text-[11px] text-gray-500"
           :title="userNeedsTitle"
         >
-          <UIcon name="i-mdi-account-multiple-outline" class="h-3.5 w-3.5" />
+          <UIcon name="i-mdi-account-multiple-outline" aria-hidden="true" class="h-3.5 w-3.5" />
           <span>{{ userNeeds.length }}</span>
         </div>
       </div>
@@ -37,7 +38,9 @@
         <button
           v-else
           type="button"
-          class="flex h-7 w-7 items-center justify-center rounded-md border transition-colors"
+          class="flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+          :aria-label="toggleObjectiveLabel"
+          :aria-pressed="isComplete"
           :class="
             isComplete
               ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
@@ -50,7 +53,11 @@
           "
           @click="toggleObjectiveCompletion()"
         >
-          <UIcon :name="isComplete ? 'i-mdi-check' : 'i-mdi-circle-outline'" class="h-4 w-4" />
+          <UIcon
+            :name="isComplete ? 'i-mdi-check' : 'i-mdi-circle-outline'"
+            aria-hidden="true"
+            class="h-4 w-4"
+          />
         </button>
       </div>
     </div>
@@ -84,6 +91,15 @@
   });
   const isComplete = computed(() => {
     return tarkovStore.isTaskObjectiveComplete(props.objective.id);
+  });
+  const objectiveLabel = computed(() => {
+    return props.objective.description || t('page.tasks.questcard.objective', 'Objective');
+  });
+  const toggleObjectiveLabel = computed(() => {
+    const actionLabel = isComplete.value
+      ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
+      : t('page.tasks.questcard.complete', 'Complete');
+    return `${actionLabel}: ${objectiveLabel.value}`;
   });
   const fullObjective = computed(() => {
     return objectives.value.find((o) => o.id == props.objective.id);

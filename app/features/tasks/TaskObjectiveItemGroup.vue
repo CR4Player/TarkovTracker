@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-2">
     <div class="grid grid-cols-[16px_1fr] items-start gap-2">
-      <UIcon :name="`i-${iconName}`" class="mt-0.5 h-4 w-4 text-gray-400" />
+      <UIcon :name="`i-${iconName}`" aria-hidden="true" class="mt-0.5 h-4 w-4 text-gray-400" />
       <div class="min-w-0">
         <div class="text-sm font-medium text-gray-100">{{ title }}</div>
       </div>
@@ -15,6 +15,7 @@
         <img
           v-if="row.meta.itemIcon"
           :src="row.meta.itemIcon"
+          :alt="row.meta.itemName"
           class="h-16 w-16 shrink-0 rounded-sm object-contain"
         />
         <span
@@ -40,7 +41,13 @@
         <button
           v-else
           type="button"
-          class="flex h-7 w-7 items-center justify-center rounded-md border transition-colors"
+          class="flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+          :aria-label="
+            isObjectiveComplete(row.objective.id)
+              ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
+              : t('page.tasks.questcard.complete', 'Complete')
+          "
+          :aria-pressed="isObjectiveComplete(row.objective.id)"
           :class="
             isObjectiveComplete(row.objective.id)
               ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
@@ -55,6 +62,7 @@
         >
           <UIcon
             :name="isObjectiveComplete(row.objective.id) ? 'i-mdi-check' : 'i-mdi-circle-outline'"
+            aria-hidden="true"
             class="h-4 w-4"
           />
         </button>

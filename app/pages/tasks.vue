@@ -13,8 +13,6 @@
             v-for="task in paginatedTasks"
             :key="task.id"
             :task="task"
-            :active-user-view="activeUserView"
-            :needed-by="task.neededBy ?? []"
             @on-task-action="onTaskAction"
           />
           <!-- Sentinel for infinite scroll -->
@@ -37,7 +35,9 @@
         >
           <UCard class="bg-surface-900/95 w-full max-w-xl border border-white/10 shadow-2xl">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span class="text-sm sm:text-base">{{ taskStatus }}</span>
+              <span class="text-sm sm:text-base" role="status" aria-live="polite" aria-atomic="true">
+                {{ taskStatus }}
+              </span>
               <div class="flex flex-1 justify-end gap-2">
                 <UButton
                   v-if="showUndoButton"
@@ -154,7 +154,6 @@
     { immediate: true }
   );
   const isLoading = computed(() => tasksLoading.value || reloadingTasks.value);
-  const activeUserView = computed(() => getTaskUserView.value);
   // Search state
   const searchQuery = ref('');
   // Filter tasks by search query

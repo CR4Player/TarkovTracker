@@ -24,24 +24,22 @@
       <!-- Complete Checkmark Overlay -->
       <div
         v-if="isComplete"
-        class="absolute inset-0 flex items-center justify-center rounded bg-success-500/40"
+        class="bg-success-500/40 absolute inset-0 flex items-center justify-center rounded"
       >
-        <UIcon name="i-mdi-check-circle" class="h-8 w-8 text-success-300" />
+        <UIcon name="i-mdi-check-circle" class="text-success-300 h-8 w-8" />
       </div>
       <!-- FiR Badge -->
       <div
         v-if="isFoundInRaid"
-        class="absolute -right-1 -top-1 rounded bg-yellow-500/90 p-0.5"
+        class="absolute -top-1 -right-1 rounded bg-yellow-500/90 p-0.5"
         :title="'Found in Raid required'"
       >
         <UIcon name="i-mdi-checkbox-marked-circle-outline" class="h-3 w-3 text-yellow-900" />
       </div>
       <!-- Count Badge for multi-count items -->
-      <div
-        v-if="requiredCount > 1"
-        class="absolute -bottom-1 left-0 right-0 flex justify-center"
-      >
-        <div class="rounded bg-gray-900/90 px-1.5 py-0.5 text-[10px] font-bold border border-gray-700"
+      <div v-if="requiredCount > 1" class="absolute right-0 -bottom-1 left-0 flex justify-center">
+        <div
+          class="rounded border border-gray-700 bg-gray-900/90 px-1.5 py-0.5 text-[10px] font-bold"
           :class="isComplete ? 'text-success-400' : 'text-gray-300'"
         >
           {{ currentCount.toLocaleString() }}/{{ requiredCount.toLocaleString() }}
@@ -49,15 +47,14 @@
       </div>
     </div>
     <!-- Item Name -->
-    <div class="w-full text-center text-xs font-medium leading-tight text-gray-200 line-clamp-2">
+    <div class="line-clamp-2 w-full text-center text-xs leading-tight font-medium text-gray-200">
       {{ requirement.item.name }}
     </div>
   </div>
-
   <!-- Context Menu for Manual Count Adjustment -->
   <ContextMenu ref="contextMenu">
     <template #default="{ close }">
-      <div class="px-2 py-1 text-xs font-medium text-gray-400 border-b border-gray-700">
+      <div class="border-b border-gray-700 px-2 py-1 text-xs font-medium text-gray-400">
         {{ requirement.item.name }}
       </div>
       <ContextMenuItem
@@ -80,7 +77,7 @@
       />
       <div v-if="requiredCount > 1" class="my-1 border-t border-gray-700" />
       <template v-if="requiredCount > 1">
-        <div class="px-3 py-2 space-y-2">
+        <div class="space-y-2 px-3 py-2">
           <div class="text-xs text-gray-400">Set Custom Amount:</div>
           <div class="flex items-center gap-2">
             <UButton
@@ -153,7 +150,6 @@
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import GameItem from '@/components/ui/GameItem.vue';
   import { useTarkovStore } from '@/stores/useTarkov';
-
   interface Props {
     requirement: {
       id: string;
@@ -173,18 +169,14 @@
     stationId: string;
     level: number;
   }
-
   const props = defineProps<Props>();
   const tarkovStore = useTarkovStore();
-
   const requirementId = computed(() => props.requirement.id);
   const requiredCount = computed(() => props.requirement.count);
-
   // Context menu
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
   const inputRef = ref<HTMLInputElement | null>(null);
   const editValue = ref(0);
-
   // Check if item requires Found in Raid status
   const isFoundInRaid = computed(() => {
     const firAttribute = props.requirement.attributes?.find(
@@ -192,7 +184,6 @@
     );
     return firAttribute?.value === 'true';
   });
-
   // Get current count from store (synced with needed items page)
   const currentCount = computed(() => {
     const storeCount = tarkovStore.getHideoutPartCount(requirementId.value);
@@ -202,16 +193,16 @@
     }
     return storeCount;
   });
-
   const isComplete = computed(() => currentCount.value >= requiredCount.value);
-
   // Watch current count to update edit value
-  watch(currentCount, (newCount) => {
-    editValue.value = newCount;
-  }, { immediate: true });
-
+  watch(
+    currentCount,
+    (newCount) => {
+      editValue.value = newCount;
+    },
+    { immediate: true }
+  );
   const clampCount = (value: number) => Math.max(0, Math.min(value, requiredCount.value));
-
   const setCount = (value: number): void => {
     const clampedValue = clampCount(value);
     tarkovStore.setHideoutPartCount(requirementId.value, clampedValue);
@@ -221,15 +212,12 @@
       tarkovStore.setHideoutPartUncomplete(requirementId.value);
     }
   };
-
   const incrementCount = (): void => {
     editValue.value = Math.min(editValue.value + 1, requiredCount.value);
   };
-
   const decrementCount = (): void => {
     editValue.value = Math.max(editValue.value - 1, 0);
   };
-
   const handleInput = (): void => {
     // Clamp the value as user types
     if (editValue.value > requiredCount.value) {
@@ -238,11 +226,9 @@
       editValue.value = 0;
     }
   };
-
   const applyCustomCount = (): void => {
     setCount(editValue.value);
   };
-
   // Simple toggle between 0% and 100% completion (click on card)
   const toggleComplete = (): void => {
     if (isComplete.value) {
@@ -253,26 +239,21 @@
       setCount(requiredCount.value);
     }
   };
-
   const markComplete = (): void => {
     setCount(requiredCount.value);
   };
-
   const markIncomplete = (): void => {
     setCount(0);
   };
-
   const openContextMenu = (event: MouseEvent): void => {
     editValue.value = currentCount.value;
     contextMenu.value?.open(event);
   };
-
   const openTarkovDev = (): void => {
     if (props.requirement.item.link) {
       window.open(props.requirement.item.link, '_blank');
     }
   };
-
   const openWiki = (): void => {
     if (props.requirement.item.wikiLink) {
       window.open(props.requirement.item.wikiLink, '_blank');

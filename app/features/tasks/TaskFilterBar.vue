@@ -6,6 +6,7 @@
         :variant="'ghost'"
         :color="'neutral'"
         size="md"
+        :aria-pressed="primaryView === 'all'"
         :class="{
           'border-primary-500 rounded-none border-b-2': primaryView === 'all',
         }"
@@ -18,6 +19,7 @@
         :variant="'ghost'"
         :color="'neutral'"
         size="md"
+        :aria-pressed="primaryView === 'maps'"
         :class="{
           'border-primary-500 rounded-none border-b-2': primaryView === 'maps',
         }"
@@ -30,6 +32,7 @@
         :variant="'ghost'"
         :color="'neutral'"
         size="md"
+        :aria-pressed="primaryView === 'traders'"
         :class="{
           'border-primary-500 rounded-none border-b-2': primaryView === 'traders',
         }"
@@ -46,6 +49,7 @@
         <UInput
           :model-value="searchQuery"
           :placeholder="t('page.tasks.search.placeholder', 'Search tasks...')"
+          :aria-label="t('page.tasks.search.ariaLabel', 'Search tasks')"
           icon="i-mdi-magnify"
           clearable
           class="w-full"
@@ -61,6 +65,7 @@
           :color="'neutral'"
           size="sm"
           class="shrink-0"
+          :aria-pressed="secondaryView === 'all'"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'all',
           }"
@@ -81,6 +86,7 @@
           :color="'neutral'"
           size="sm"
           class="shrink-0"
+          :aria-pressed="secondaryView === 'available'"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'available',
           }"
@@ -101,6 +107,7 @@
           :color="'neutral'"
           size="sm"
           class="shrink-0"
+          :aria-pressed="secondaryView === 'locked'"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'locked',
           }"
@@ -121,6 +128,7 @@
           :color="'neutral'"
           size="sm"
           class="shrink-0"
+          :aria-pressed="secondaryView === 'completed'"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'completed',
           }"
@@ -146,6 +154,7 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          :aria-pressed="preferencesStore.getTaskUserView === 'self'"
           :class="{
             'border-primary-500 rounded-none border-b-2':
               preferencesStore.getTaskUserView === 'self',
@@ -168,6 +177,7 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          :aria-pressed="preferencesStore.getTaskUserView === teamId"
           :class="{
             'border-primary-500 rounded-none border-b-2':
               preferencesStore.getTaskUserView === teamId,
@@ -188,6 +198,7 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          :aria-pressed="preferencesStore.getTaskUserView === 'all'"
           :class="{
             'border-primary-500 rounded-none border-b-2':
               preferencesStore.getTaskUserView === 'all',
@@ -228,6 +239,8 @@
         <button
           v-for="trader in traders"
           :key="trader.id"
+          type="button"
+          :aria-pressed="preferencesStore.getTaskTraderView === trader.id"
           :class="[
             'flex flex-col items-center justify-center gap-2 rounded-lg px-3 py-3 transition-all',
             'relative w-28',
