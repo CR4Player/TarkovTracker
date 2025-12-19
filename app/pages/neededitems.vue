@@ -7,6 +7,7 @@
       v-model:view-mode="viewMode"
       v-model:fir-filter="firFilter"
       v-model:group-by-item="groupByItem"
+      v-model:hide-non-fir-special-equipment="hideNonFirSpecialEquipment"
       v-model:hide-team-items="hideTeamItems"
       :filter-tabs="filterTabsWithCounts"
       :total-count="displayItems.length"
@@ -66,6 +67,7 @@
   import { useI18n } from 'vue-i18n';
   import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
   import NeededItem from '@/features/neededitems/NeededItem.vue';
+  import { isNonFirSpecialEquipment } from '@/features/neededitems/neededItemFilters';
   import NeededItemGroupedCard from '@/features/neededitems/NeededItemGroupedCard.vue';
   import NeededItemsFilterBar from '@/features/neededitems/NeededItemsFilterBar.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
@@ -87,6 +89,7 @@
   const search = ref('');
   const firFilter = ref<FirFilter>('all');
   const groupByItem = ref(false);
+  const hideNonFirSpecialEquipment = ref(false);
   // Team filter preferences (two-way binding with preferences store)
   const hideTeamItems = computed({
     get: () => preferencesStore.itemsTeamAllHidden,
@@ -230,6 +233,13 @@
     } else if (firFilter.value === 'non-fir') {
       items = items.filter((item) => !item.foundInRaid);
     }
+    // Filter out noisy "special equipment" items that are non-FIR (e.g., MS2000 Markers, Wi-Fi Cameras)
+    items = items.filter(
+      (need) =>
+        need.needType !== 'taskObjective' ||
+        !hideNonFirSpecialEquipment.value ||
+        !isNonFirSpecialEquipment(need as NeededItemTaskObjective)
+    );
     // Filter by search - searches item name, task name, and hideout station name
     if (search.value) {
       const searchLower = search.value.toLowerCase();
@@ -321,7 +331,13 @@
     }
     return filteredItems.value;
   });
-  const visibleCount = ref(20);
+  const initialVisibleCount = computed(() => {
+    if (groupByItem.value) {
+      return 20;
+    }
+    return viewMode.value === 'list' ? 50 : 20;
+  });
+  const visibleCount = ref(initialVisibleCount.value);
   // Separate computed for grouped items to ensure proper typing
   const visibleGroupedItems = computed(() => {
     return groupedItems.value.slice(0, visibleCount.value);
@@ -332,7 +348,7 @@
   });
   const loadMore = () => {
     if (visibleCount.value < displayItems.value.length) {
-      visibleCount.value += 20;
+      visibleCount.value += viewMode.value === 'list' ? 50 : 20;
     }
   };
   // Sentinel refs for infinite scroll
@@ -354,7 +370,10 @@
     enabled: infiniteScrollEnabled,
   });
   // Reset visible count when search or filter changes
-  watch([search, activeFilter, firFilter, groupByItem], () => {
-    visibleCount.value = 20;
+  const resetVisibleCount = () => {
+    visibleCount.value = initialVisibleCount.value;
+  };
+  watch([search, activeFilter, firFilter, groupByItem, hideNonFirSpecialEquipment, viewMode], () => {
+    resetVisibleCount();
   });
 </script>

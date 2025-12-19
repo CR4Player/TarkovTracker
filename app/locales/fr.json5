@@ -189,6 +189,21 @@
       title: 'Items requis',
       loading: 'Chargement des données des items requis',
       searchplaceholder: 'Rechercher des items...',
+      items: 'articles',
+      filters: {
+        label: 'Filtres',
+        sections: {
+          items: 'ARTICLES',
+          team: 'ÉQUIPE',
+        },
+        fir: 'TER',
+        non_fir: 'NON-TER',
+        hide_non_fir_special_equipment_title: 'Masquer le matériel spécial non‑TER (par ex. marqueurs MS2000, caméras Wi‑Fi)',
+        no_special: 'NON SPÉCIAL',
+        special: 'SPÉCIAL',
+        hide_team_needs: "MASQUER LES BESOINS DE L'ÉQUIPE",
+        show_team_needs: "AFFICHER LES BESOINS DE L'ÉQUIPE",
+      },
       neededviews: {
         all: 'Tous',
         tasks: 'Quêtes',

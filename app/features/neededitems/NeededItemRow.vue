@@ -21,10 +21,12 @@
             <span class="ml-3 flex min-w-0 flex-1 flex-col overflow-hidden">
               <span class="flex items-center truncate text-base font-semibold">
                 <span class="truncate">{{ item.name }}</span>
-                <UIcon
-                  v-if="props.need.foundInRaid"
-                  name="i-mdi-checkbox-marked-circle-outline"
-                  class="ml-1 h-5 w-5"
+                <ItemIndicators
+                  :found-in-raid="props.need.foundInRaid"
+                  :is-craftable="isCraftable"
+                  :craftable-title="craftableTitle"
+                  :craftable-icon-class="craftableIconClass"
+                  @craft="goToCraftStation"
                 />
               </span>
               <span class="mt-1">
@@ -44,9 +46,18 @@
                 variant="ghost"
                 color="gray"
                 class="m-0 p-0 px-1"
-                @click="smallDialog = true"
+                @click="isSingleItem ? $emit('toggleCount') : (smallDialog = true)"
               >
-                {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+                <template v-if="isSingleItem">
+                  <UIcon
+                    name="i-mdi-check-circle"
+                    class="h-5 w-5"
+                    :class="isCollected ? 'text-success-400' : 'text-gray-300'"
+                  />
+                </template>
+                <template v-else>
+                  {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+                </template>
               </UButton>
               <UModal v-model="smallDialog" :ui="{ width: 'w-11/12' }">
                 <UCard>
@@ -70,10 +81,14 @@
                       <div class="px-2 text-center">
                         {{ item.name }}
                       </div>
-                      <UIcon
-                        v-if="props.need.foundInRaid"
-                        name="i-mdi-checkbox-marked-circle-outline"
-                        class="ml-1 h-4 w-4"
+                      <ItemIndicators
+                        :found-in-raid="props.need.foundInRaid"
+                        fir-icon-class="ml-1 h-4 w-4"
+                        :is-craftable="isCraftable"
+                        :craftable-title="craftableTitle"
+                        craftable-icon-base-class="ml-1 h-4 w-4"
+                        :craftable-icon-class="craftableIconClass"
+                        @craft="goToCraftStation"
                       />
                     </div>
                     <!-- Item need details -->
@@ -116,14 +131,30 @@
                       v-if="!selfCompletedNeed"
                       class="mx-2 mt-2 mb-2 flex h-full flex-col items-center justify-center self-stretch"
                     >
-                      <ItemCountControls
-                        :current-count="currentCount"
-                        :needed-count="neededCount"
-                        @decrease="$emit('decreaseCount')"
-                        @increase="$emit('increaseCount')"
-                        @toggle="$emit('toggleCount')"
-                        @set-count="(count) => $emit('setCount', count)"
-                      />
+                      <template v-if="!isSingleItem">
+                        <ItemCountControls
+                          :current-count="currentCount"
+                          :needed-count="neededCount"
+                          @decrease="$emit('decreaseCount')"
+                          @increase="$emit('increaseCount')"
+                          @toggle="$emit('toggleCount')"
+                          @set-count="(count) => $emit('setCount', count)"
+                        />
+                      </template>
+                      <template v-else>
+                        <CollectedToggleButton
+                          :is-collected="isCollected"
+                          class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
+                          :class="
+                            isCollected
+                              ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
+                              : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
+                          "
+                          :title="isCollected ? 'Collected' : 'Mark as collected'"
+                          icon-class="h-6 w-6"
+                          @toggle="$emit('toggleCount')"
+                        />
+                      </template>
                       <!-- Show team needs alongside controls -->
                       <TeamNeedsDisplay
                         v-if="teamNeeds.length > 0"
@@ -167,14 +198,30 @@
                 </template>
               </div>
               <div v-if="!selfCompletedNeed" class="mr-2 flex items-center gap-3 self-center">
-                <ItemCountControls
-                  :current-count="currentCount"
-                  :needed-count="neededCount"
-                  @decrease="$emit('decreaseCount')"
-                  @increase="$emit('increaseCount')"
-                  @toggle="$emit('toggleCount')"
-                  @set-count="(count) => $emit('setCount', count)"
-                />
+                <template v-if="!isSingleItem">
+                  <ItemCountControls
+                    :current-count="currentCount"
+                    :needed-count="neededCount"
+                    @decrease="$emit('decreaseCount')"
+                    @increase="$emit('increaseCount')"
+                    @toggle="$emit('toggleCount')"
+                    @set-count="(count) => $emit('setCount', count)"
+                  />
+                </template>
+                <template v-else>
+                  <CollectedToggleButton
+                    :is-collected="isCollected"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
+                    :class="
+                      isCollected
+                        ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
+                        : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
+                    "
+                    :title="isCollected ? 'Collected' : 'Mark as collected'"
+                    icon-class="h-6 w-6"
+                    @toggle="$emit('toggleCount')"
+                  />
+                </template>
                 <!-- Show team needs alongside controls -->
                 <TeamNeedsDisplay
                   v-if="teamNeeds.length > 0"
@@ -199,6 +246,10 @@
   import { computed, defineAsyncComponent, inject, ref } from 'vue';
   import { useItemRowIntersection } from '@/composables/useItemRowIntersection';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
+  import {
+    createDefaultNeededItemContext,
+    neededItemKey,
+  } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
   import ItemCountControls from './ItemCountControls.vue';
   import RequirementInfo from './RequirementInfo.vue';
@@ -219,14 +270,18 @@
     selfCompletedNeed,
     relatedTask,
     relatedStation,
+    craftableIconClass,
+    craftableTitle,
+    goToCraftStation,
     lockedBefore,
     neededCount,
     currentCount,
+    isCraftable,
     levelRequired,
     item,
     teamNeeds,
     imageItem,
-  } = inject('neededitem');
+  } = inject(neededItemKey, createDefaultNeededItemContext());
   // Intersection observer for lazy loading
   const cardRef = ref(null);
   const { isVisible } = useItemRowIntersection(cardRef);
@@ -237,5 +292,7 @@
       'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
     };
   });
+  const isSingleItem = computed(() => neededCount.value === 1);
+  const isCollected = computed(() => currentCount.value >= neededCount.value);
   defineEmits(['decreaseCount', 'increaseCount', 'toggleCount', 'setCount']);
 </script>

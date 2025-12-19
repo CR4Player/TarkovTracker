@@ -188,6 +188,21 @@
       title: 'Необхідні Предмети',
       loading: 'Завантажуємо дані завдань та притулку',
       searchplaceholder: 'Пошук предметів...',
+      items: 'предмети',
+      filters: {
+        label: 'Фільтри',
+        sections: {
+          items: 'ПРЕДМЕТИ',
+          team: 'КОМАНДА',
+        },
+        fir: 'ЗВР',
+        non_fir: 'НЕ-ЗВР',
+        hide_non_fir_special_equipment_title: 'Приховати не-ЗВР спеціальне обладнання (наприклад, маркери MS2000, Wi‑Fi камери)',
+        no_special: 'БЕЗ-СПЕЦ',
+        special: 'СПЕЦІАЛЬНЕ',
+        hide_team_needs: 'ПРИХОВАТИ ПОТРЕБИ КОМАНДИ',
+        show_team_needs: 'ПОКАЗАТИ ПОТРЕБИ КОМАНДИ',
+      },
       neededviews: {
         all: 'Усі',
         tasks: 'Завдання',

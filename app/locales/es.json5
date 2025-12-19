@@ -166,6 +166,21 @@
       title: 'Objetos Necesarios',
       loading: 'Cargando datos de tareas y escondite',
       searchplaceholder: 'Buscar objetos...',
+      items: 'artículos',
+      filters: {
+        label: 'Filtros',
+        sections: {
+          items: 'ARTÍCULOS',
+          team: 'EQUIPO',
+        },
+        fir: 'FIR',
+        non_fir: 'NO-FIR',
+        hide_non_fir_special_equipment_title: 'Ocultar equipo especial no-FIR (p. ej., marcadores MS2000, cámaras Wi-Fi)',
+        no_special: 'SIN-ESPECIAL',
+        special: 'ESPECIAL',
+        hide_team_needs: 'OCULTAR NECESIDADES DEL EQUIPO',
+        show_team_needs: 'MOSTRAR NECESIDADES DEL EQUIPO',
+      },
       neededviews: {
         all: 'Todos',
         tasks: 'Tareas',

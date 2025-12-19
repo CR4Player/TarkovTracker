@@ -246,6 +246,21 @@
       title: 'Needed Items',
       loading: 'Loading task and hideout data',
       searchplaceholder: 'Search items, tasks, or hideout stations...',
+      items: 'items',
+      filters: {
+        label: 'Filters',
+        sections: {
+          items: 'ITEMS',
+          team: 'TEAM',
+        },
+        fir: 'FIR',
+        non_fir: 'NON-FIR',
+        hide_non_fir_special_equipment_title: 'Hide non-FIR special equipment (e.g., MS2000 Markers, Wi-Fi Cameras)',
+        no_special: 'NO-SPECIAL',
+        special: 'SPECIAL',
+        hide_team_needs: 'HIDE TEAM NEEDS',
+        show_team_needs: 'SHOW TEAM NEEDS',
+      },
       neededviews: {
         all: 'All',
         tasks: 'Tasks',

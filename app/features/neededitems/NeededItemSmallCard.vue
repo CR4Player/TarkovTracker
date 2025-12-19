@@ -5,7 +5,7 @@
       :class="[
         itemCardClasses,
         {
-          'cursor-pointer transition-all hover:ring-2 hover:ring-primary-400 hover:ring-opacity-50 active:scale-[0.98]':
+          'hover:ring-primary-400 hover:ring-opacity-50 cursor-pointer transition-all hover:ring-2 active:scale-[0.98]':
             isSingleItem && !selfCompletedNeed,
         },
       ]"
@@ -19,17 +19,23 @@
       @click="isSingleItem && !selfCompletedNeed ? $emit('toggleCount') : null"
     >
       <!-- Item image with count badge -->
-      <div class="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-lg">
+      <div
+        class="relative z-0 aspect-[4/3] w-full shrink-0 origin-bottom overflow-hidden rounded-t-lg transition-transform duration-150 ease-out will-change-transform hover:z-20 hover:-translate-y-1 hover:scale-[1.08] hover:shadow-2xl hover:ring-1 hover:ring-white/10"
+      >
         <div class="absolute top-0 left-0 z-10">
           <div
             class="flex items-center gap-1 rounded-br-lg px-2 py-1 text-sm font-bold shadow-lg"
             :class="itemCountTagClasses"
           >
             {{ currentCount }}/{{ neededCount }}
-            <UIcon
-              v-if="props.need.foundInRaid"
-              name="i-mdi-checkbox-marked-circle-outline"
-              class="h-4 w-4"
+            <ItemIndicators
+              :found-in-raid="props.need.foundInRaid"
+              fir-icon-class="h-4 w-4"
+              :is-craftable="isCraftable"
+              :craftable-title="craftableTitle"
+              craftable-icon-base-class="h-4 w-4 opacity-90"
+              :craftable-icon-class="craftableIconClass"
+              @craft="goToCraftStation"
             />
           </div>
         </div>
@@ -42,6 +48,7 @@
           :wiki-link="item.wikiLink"
           :dev-link="item.link"
           :task-wiki-link="relatedTask?.wikiLink"
+          :background-color="imageItem.backgroundColor || 'grey'"
           size="small"
           simple-mode
           fill
@@ -117,6 +124,10 @@
 </template>
 <script setup>
   import { computed, defineAsyncComponent, inject } from 'vue';
+  import {
+    createDefaultNeededItemContext,
+    neededItemKey,
+  } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
   import ItemCountControls from './ItemCountControls.vue';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink'));
@@ -133,13 +144,17 @@
     selfCompletedNeed,
     relatedTask,
     relatedStation,
+    craftableIconClass,
+    craftableTitle,
+    goToCraftStation,
     neededCount,
     currentCount,
+    isCraftable,
     levelRequired,
     lockedBefore,
     item,
     imageItem,
-  } = inject('neededitem');
+  } = inject(neededItemKey, createDefaultNeededItemContext());
   // Simplified UI for single-quantity items
   const isSingleItem = computed(() => neededCount.value === 1);
   const itemCardClasses = computed(() => {

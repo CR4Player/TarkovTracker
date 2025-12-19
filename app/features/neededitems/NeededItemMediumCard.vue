@@ -7,6 +7,7 @@
         :image-item="imageItem"
         :src="imageItem.image512pxLink"
         :is-visible="true"
+        :background-color="imageItem?.backgroundColor || 'grey'"
         size="small"
         simple-mode
         fill
@@ -17,18 +18,35 @@
     <div v-if="item" class="flex h-12 shrink-0 items-center justify-center px-2 pt-2">
       <div class="line-clamp-2 text-center text-sm leading-tight">
         {{ item.name }}
-        <UIcon
-          v-if="props.need.foundInRaid"
-          name="i-mdi-checkbox-marked-circle-outline"
-          class="ml-0.5 inline-block h-3.5 w-3.5"
-        />
+        <UTooltip v-if="props.need.foundInRaid" text="Found in Raid required">
+          <UIcon
+            name="i-mdi-checkbox-marked-circle-outline"
+            class="ml-0.5 inline-block h-3.5 w-3.5"
+          />
+        </UTooltip>
+        <UTooltip v-if="isCraftable" :text="craftableTitle">
+          <button
+            type="button"
+            class="ml-0.5 inline-flex"
+            :aria-label="craftableTitle"
+            @click.stop="goToCraftStation"
+          >
+            <UIcon
+              name="i-mdi-hammer-wrench"
+              class="h-3.5 w-3.5 opacity-90"
+              :class="craftableIconClass"
+              aria-hidden="true"
+            />
+          </button>
+        </UTooltip>
       </div>
     </div>
     <!-- Task/Station info - fixed height with line clamp -->
     <div class="flex h-10 shrink-0 items-center justify-center px-2">
       <template v-if="props.need.needType == 'taskObjective'">
         <div class="line-clamp-2 text-center">
-          <task-link :task="relatedTask" />
+          <task-link v-if="relatedTask" :task="relatedTask" />
+          <span v-else class="text-sm text-gray-300">Unknown task</span>
         </div>
       </template>
       <template v-else-if="props.need.needType == 'hideoutModule'">
@@ -72,14 +90,18 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
   import { computed, defineAsyncComponent, inject } from 'vue';
+  import {
+    createDefaultNeededItemContext,
+    neededItemKey,
+  } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
   import ItemCountControls from './ItemCountControls.vue';
   import RequirementInfo from './RequirementInfo.vue';
   import TeamNeedsDisplay from './TeamNeedsDisplay.vue';
-  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink'));
-  const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink'));
+  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
+  const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
   const props = defineProps({
     need: {
       type: Object,
@@ -92,14 +114,18 @@
     selfCompletedNeed,
     relatedTask,
     relatedStation,
+    craftableIconClass,
+    craftableTitle,
+    goToCraftStation,
     lockedBefore,
     neededCount,
     currentCount,
+    isCraftable,
     levelRequired,
     item,
     teamNeeds,
     imageItem,
-  } = inject('neededitem');
+  } = inject(neededItemKey, createDefaultNeededItemContext());
   const itemCardClasses = computed(() => {
     return {
       'bg-gradient-to-t from-complete to-surface':

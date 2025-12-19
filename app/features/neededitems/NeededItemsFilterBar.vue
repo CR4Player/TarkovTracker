@@ -43,51 +43,93 @@
           @update:model-value="$emit('update:search', $event)"
         />
       </div>
-      <!-- Section 2: Item Filters -->
-      <div class="flex items-center gap-3 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
-        <span class="text-surface-400 mr-1 text-xs font-medium">FILTER:</span>
-        <UButton
-          :variant="firFilter === 'fir' ? 'soft' : 'ghost'"
-          :color="firFilter === 'fir' ? 'success' : 'neutral'"
-          size="sm"
-          @click="$emit('update:firFilter', firFilter === 'fir' ? 'all' : 'fir')"
-        >
-          <UIcon name="i-mdi-checkbox-marked-circle" class="mr-1 h-4 w-4" />
-          FIR
-        </UButton>
-        <UButton
-          :variant="firFilter === 'non-fir' ? 'soft' : 'ghost'"
-          :color="firFilter === 'non-fir' ? 'warning' : 'neutral'"
-          size="sm"
-          @click="$emit('update:firFilter', firFilter === 'non-fir' ? 'all' : 'non-fir')"
-        >
-          <UIcon name="i-mdi-checkbox-blank-circle-outline" class="mr-1 h-4 w-4" />
-          NON-FIR
-        </UButton>
-        <div class="border-l border-white/10 pl-3">
+      <!-- Section 2: Filters (Popover) -->
+      <div class="flex items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+        <UPopover>
           <UButton
-            :variant="groupByItem ? 'soft' : 'ghost'"
-            :color="groupByItem ? 'primary' : 'neutral'"
+            icon="i-mdi-filter-variant"
+            color="neutral"
+            variant="ghost"
             size="sm"
-            @click="$emit('update:groupByItem', !groupByItem)"
+            class="shrink-0"
           >
-            <UIcon name="i-mdi-group" class="mr-1 h-4 w-4" />
-            GROUP
+            <span>{{ $t('page.neededitems.filters.label', 'Filters') }}</span>
+            <UBadge
+              v-if="activeFiltersCount > 0"
+              color="primary"
+              variant="soft"
+              size="sm"
+              class="ml-2 px-2 py-0.5"
+            >
+              {{ activeFiltersCount }}
+            </UBadge>
           </UButton>
-        </div>
-      </div>
-      <!-- Section 3: Team Filters -->
-      <div class="flex items-center gap-3 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
-        <span class="text-surface-400 mr-1 text-xs font-medium">TEAM:</span>
-        <UButton
-          :variant="hideTeamItems ? 'soft' : 'ghost'"
-          :color="hideTeamItems ? 'error' : 'neutral'"
-          size="sm"
-          @click="$emit('update:hideTeamItems', !hideTeamItems)"
-        >
-          <UIcon name="i-mdi-account-group-outline" class="mr-1 h-4 w-4" />
-          {{ hideTeamItems ? 'HIDDEN' : 'SHOW' }}
-        </UButton>
+          <template #content>
+            <div class="w-80 space-y-3 p-3">
+              <div class="text-surface-400 text-xs font-medium">
+                {{ $t('page.neededitems.filters.sections.items', 'ITEMS') }}
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <UButton
+                  :variant="firFilter === 'fir' ? 'soft' : 'ghost'"
+                  :color="firFilter === 'fir' ? 'success' : 'neutral'"
+                  size="sm"
+                  @click="$emit('update:firFilter', firFilter === 'fir' ? 'all' : 'fir')"
+                >
+                  <UIcon name="i-mdi-checkbox-marked-circle" class="mr-1 h-4 w-4" />
+                  {{ $t('page.neededitems.filters.fir', 'FIR') }}
+                </UButton>
+                <UButton
+                  :variant="firFilter === 'non-fir' ? 'soft' : 'ghost'"
+                  :color="firFilter === 'non-fir' ? 'warning' : 'neutral'"
+                  size="sm"
+                  @click="$emit('update:firFilter', firFilter === 'non-fir' ? 'all' : 'non-fir')"
+                >
+                  <UIcon name="i-mdi-checkbox-blank-circle-outline" class="mr-1 h-4 w-4" />
+                  {{ $t('page.neededitems.filters.non_fir', 'NON-FIR') }}
+                </UButton>
+                <UButton
+                  :variant="hideNonFirSpecialEquipment ? 'soft' : 'ghost'"
+                  :color="hideNonFirSpecialEquipment ? 'primary' : 'neutral'"
+                  size="sm"
+                  :title="
+                    $t(
+                      'page.neededitems.filters.hide_non_fir_special_equipment_title',
+                      'Hide non-FIR special equipment (e.g., MS2000 Markers, Wi-Fi Cameras)'
+                    )
+                  "
+                  @click="$emit('update:hideNonFirSpecialEquipment', !hideNonFirSpecialEquipment)"
+                >
+                  <UIcon name="i-mdi-briefcase-outline" class="mr-1 h-4 w-4" />
+                  {{
+                    hideNonFirSpecialEquipment
+                      ? $t('page.neededitems.filters.no_special', 'NO-SPECIAL')
+                      : $t('page.neededitems.filters.special', 'SPECIAL')
+                  }}
+                </UButton>
+              </div>
+              <div class="border-t border-white/10 pt-3">
+                <div class="text-surface-400 mb-2 text-xs font-medium">
+                  {{ $t('page.neededitems.filters.sections.team', 'TEAM') }}
+                </div>
+                <UButton
+                  :variant="hideTeamItems ? 'soft' : 'ghost'"
+                  :color="hideTeamItems ? 'error' : 'neutral'"
+                  size="sm"
+                  class="w-full justify-start"
+                  @click="$emit('update:hideTeamItems', !hideTeamItems)"
+                >
+                  <UIcon name="i-mdi-account-group-outline" class="mr-1 h-4 w-4" />
+                  {{
+                    hideTeamItems
+                      ? $t('page.neededitems.filters.hide_team_needs', 'HIDE TEAM NEEDS')
+                      : $t('page.neededitems.filters.show_team_needs', 'SHOW TEAM NEEDS')
+                  }}
+                </UButton>
+              </div>
+            </div>
+          </template>
+        </UPopover>
       </div>
       <!-- Section 3: View Mode & Item Count -->
       <div class="flex items-center gap-3 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
@@ -100,17 +142,24 @@
         <div class="flex gap-1 border-l border-white/10 pl-3">
           <UButton
             icon="i-mdi-view-list"
-            :color="viewMode === 'list' ? 'primary' : 'neutral'"
-            :variant="viewMode === 'list' ? 'soft' : 'ghost'"
+            :color="!groupByItem && viewMode === 'list' ? 'primary' : 'neutral'"
+            :variant="!groupByItem && viewMode === 'list' ? 'soft' : 'ghost'"
             size="sm"
-            @click="$emit('update:viewMode', 'list')"
+            @click="setViewMode('list')"
           />
           <UButton
             icon="i-mdi-view-grid"
-            :color="viewMode === 'grid' ? 'primary' : 'neutral'"
-            :variant="viewMode === 'grid' ? 'soft' : 'ghost'"
+            :color="!groupByItem && viewMode === 'grid' ? 'primary' : 'neutral'"
+            :variant="!groupByItem && viewMode === 'grid' ? 'soft' : 'ghost'"
             size="sm"
-            @click="$emit('update:viewMode', 'grid')"
+            @click="setViewMode('grid')"
+          />
+          <UButton
+            icon="i-mdi-group"
+            :color="groupByItem ? 'primary' : 'neutral'"
+            :variant="groupByItem ? 'soft' : 'ghost'"
+            size="sm"
+            @click="setGroupedView"
           />
         </div>
       </div>
@@ -127,7 +176,7 @@
     icon: string;
     count: number;
   }
-  defineProps<{
+  const props = defineProps<{
     modelValue: FilterType;
     search: string;
     viewMode: ViewMode;
@@ -137,13 +186,35 @@
     firFilter: FirFilter;
     groupByItem: boolean;
     hideTeamItems: boolean;
+    hideNonFirSpecialEquipment: boolean;
   }>();
-  defineEmits<{
+  const emit = defineEmits<{
     'update:modelValue': [value: FilterType];
     'update:search': [value: string];
     'update:viewMode': [value: ViewMode];
     'update:firFilter': [value: FirFilter];
     'update:groupByItem': [value: boolean];
     'update:hideTeamItems': [value: boolean];
+    'update:hideNonFirSpecialEquipment': [value: boolean];
   }>();
+  const activeFiltersCount = computed(() => {
+    let count = 0;
+    if (props.firFilter !== 'all') {
+      count += 1;
+    }
+    if (props.hideNonFirSpecialEquipment) {
+      count += 1;
+    }
+    if (props.hideTeamItems) {
+      count += 1;
+    }
+    return count;
+  });
+  const setViewMode = (mode: ViewMode) => {
+    emit('update:groupByItem', false);
+    emit('update:viewMode', mode);
+  };
+  const setGroupedView = () => {
+    emit('update:groupByItem', true);
+  };
 </script>

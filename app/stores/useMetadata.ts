@@ -43,6 +43,8 @@ import {
   setCachedData,
 } from '@/utils/tarkovCache';
 import type { AbstractGraph } from 'graphology-types';
+// Exported type for craft sources used by components
+export type CraftSource = { stationId: string; stationName: string; stationLevel: number };
 // Initialization guard to prevent race conditions
 let initPromise: Promise<void> | null = null;
 const isInitializing = ref(false);
@@ -69,6 +71,7 @@ interface MetadataState {
   taskGraph: AbstractGraph;
   hideoutGraph: AbstractGraph;
   hideoutModules: HideoutModule[];
+  craftSourcesByItemId: Map<string, CraftSource[]>;
   // Derived data structures
   objectiveMaps: { [taskId: string]: ObjectiveMapInfo[] };
   alternativeTasks: { [taskId: string]: string[] };
@@ -101,6 +104,7 @@ export const useMetadataStore = defineStore('metadata', {
     taskGraph: markRaw(createGraph()),
     hideoutGraph: markRaw(createGraph()),
     hideoutModules: [],
+    craftSourcesByItemId: new Map<string, CraftSource[]>(),
     objectiveMaps: {},
     alternativeTasks: {},
     objectiveGPS: {},
@@ -564,6 +568,7 @@ export const useMetadataStore = defineStore('metadata', {
     processHideoutData(data: TarkovHideoutQueryResult) {
       this.hideoutStations = data.hideoutStations || [];
       if (this.hideoutStations.length > 0) {
+        this.craftSourcesByItemId = this.buildCraftSourcesMap(this.hideoutStations);
         const graphBuilder = useGraphBuilder();
         const processedData = graphBuilder.processHideoutData(this.hideoutStations);
         this.hideoutModules = processedData.hideoutModules;
@@ -572,6 +577,35 @@ export const useMetadataStore = defineStore('metadata', {
       } else {
         this.resetHideoutData();
       }
+    },
+    /**
+     * Builds a map of craft sources indexed by item ID from hideout stations.
+     */
+    buildCraftSourcesMap(stations: HideoutStation[]): Map<string, CraftSource[]> {
+      const map = new Map<string, CraftSource[]>();
+      for (const station of stations) {
+        for (const level of station.levels || []) {
+          for (const craft of level.crafts || []) {
+            for (const reward of craft.rewardItems || []) {
+              const itemId = reward.item?.id;
+              if (!itemId) continue;
+              const sources = map.get(itemId) ?? [];
+              const isDuplicate = sources.some(
+                (source) => source.stationId === station.id && source.stationLevel === level.level
+              );
+              if (!isDuplicate) {
+                sources.push({
+                  stationId: station.id,
+                  stationName: station.name,
+                  stationLevel: level.level,
+                });
+                map.set(itemId, sources);
+              }
+            }
+          }
+        }
+      }
+      return map;
     },
     /**
      * Converts player level XP from per-level increments to cumulative totals
@@ -612,6 +646,7 @@ export const useMetadataStore = defineStore('metadata', {
       this.hideoutModules = [];
       this.hideoutGraph = markRaw(createGraph());
       this.neededItemHideoutModules = [];
+      this.craftSourcesByItemId = new Map<string, CraftSource[]>();
     },
     // Task utility functions
     getTaskById(taskId: string): Task | undefined {

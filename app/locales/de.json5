@@ -188,6 +188,21 @@
       title: 'Zu sammelnde Gegenstände',
       loading: 'Lade Aufgaben und Versteckdaten',
       searchplaceholder: 'Suche Gegenstände...',
+      items: 'Gegenstände',
+      filters: {
+        label: 'Filter',
+        sections: {
+          items: 'GEGENSTÄNDE',
+          team: 'TEAM',
+        },
+        fir: 'FIR',
+        non_fir: 'NICHT-FIR',
+        hide_non_fir_special_equipment_title: 'Nicht-FIR Spezialausrüstung ausblenden (z. B. MS2000 Marker, Wi‑Fi Kameras)',
+        no_special: 'NORMAL',
+        special: 'SPEZIAL',
+        hide_team_needs: 'TEAM-BEDARF AUSBLENDEN',
+        show_team_needs: 'TEAM-BEDARF ANZEIGEN',
+      },
     },
     api: {
       title: 'API-Dokumentation',

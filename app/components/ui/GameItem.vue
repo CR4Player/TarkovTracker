@@ -11,7 +11,8 @@
       :class="[
         'relative overflow-hidden',
         imageContainerClasses,
-        { 'flex items-center justify-center': fill },
+        imageTileClasses,
+        fill ? 'flex items-center justify-center p-2 sm:p-3' : '',
       ]"
     >
       <img
@@ -19,7 +20,7 @@
         :src="computedImageSrc"
         :class="[
           fill ? 'max-h-full max-w-full object-contain' : 'h-full w-full object-contain',
-          imageClasses,
+          imageElementClasses,
         ]"
         loading="lazy"
         @error="handleImgError"
@@ -309,15 +310,33 @@
   });
   const imageClasses = computed(() => {
     const classes: string[] = ['rounded'];
+    classes.push(resolvedBackgroundClass.value);
+    return classes;
+  });
+  const resolvedBackgroundClass = computed(() => {
     const bgColor = (
       props.backgroundColor ||
       props.imageItem?.backgroundColor ||
       'default'
     ).toLowerCase() as BackgroundKey;
     const backgroundClass: string = backgroundClassMap[bgColor] ?? backgroundClassMap.default;
-    classes.push(backgroundClass);
+    // In `fill` mode, treat a transparent/default background as grey to preserve visible contrast when
+    // the tile is expanded/filled. This is an intentional visual design decision to avoid invisible fills.
+    if (backgroundClass === backgroundClassMap.default && props.fill) {
+      return backgroundClassMap.grey;
+    }
+    return backgroundClass;
+  });
+  const imageTileClasses = computed(() => {
+    const baseImageClasses = imageClasses.value;
+    const backgroundClass = resolvedBackgroundClass.value;
+    const classes: string[] = baseImageClasses.slice();
+    if (backgroundClass !== backgroundClassMap.default) {
+      classes.push('ring-1', 'ring-white/5', 'shadow-inner');
+    }
     return classes;
   });
+  const imageElementClasses = ['rounded'];
   // Image error handling
   const handleImgError = () => {
     // Log error for debugging if needed

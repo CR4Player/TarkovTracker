@@ -188,6 +188,21 @@
       title: 'Необходимые предметы',
       loading: 'Загружаем данные заданий и убежища',
       searchplaceholder: 'Поиск предметов...',
+      items: 'предметы',
+      filters: {
+        label: 'Фильтры',
+        sections: {
+          items: 'ПРЕДМЕТЫ',
+          team: 'КОМАНДА',
+        },
+        fir: 'НВР',
+        non_fir: 'НЕ-НВР',
+        hide_non_fir_special_equipment_title: 'Скрыть специальное снаряжение без НВР (например, маркеры MS2000, Wi‑Fi камеры)',
+        no_special: 'БЕЗ-СПЕЦ',
+        special: 'СПЕЦ',
+        hide_team_needs: 'СКРЫТЬ НУЖДЫ КОМАНДЫ',
+        show_team_needs: 'ПОКАЗАТЬ НУЖДЫ КОМАНДЫ',
+      },
       neededviews: {
         all: 'Все',
         tasks: 'Задания',
