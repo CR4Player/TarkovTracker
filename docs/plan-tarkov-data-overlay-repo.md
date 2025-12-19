@@ -74,12 +74,12 @@ Minimal metadata that consumers can use to fetch and validate:
   "generatedAt": "2025-12-18T00:00:00Z",
   "dist": {
     "path": "dist/overlay.v1.json",
-    "sha256": "<sha256>"
+    "sha256": "<sha256>",
   },
   "compat": {
     "tarkovDevApi": "https://api.tarkov.dev/graphql",
-    "notes": "Overlay targets post-1.0 data gaps"
-  }
+    "notes": "Overlay targets post-1.0 data gaps",
+  },
 }
 ```
 
@@ -243,4 +243,3 @@ These reflect game data gaps/outdated values:
 - Per-mode overlays (`pvp` vs `pve`) if data diverges meaningfully
 - Locale-specific overrides only when unavoidable
 - A small web diff viewer (base vs patched) for maintainers
-

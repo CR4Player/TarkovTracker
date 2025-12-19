@@ -267,8 +267,12 @@
             }
             // Match station name with level (e.g., "Lavatory 1" or "Lavatory Level 1")
             const stationWithLevel = `${station.name} ${hideoutModule.level}`.toLowerCase();
-            const stationWithLevelText = `${station.name} level ${hideoutModule.level}`.toLowerCase();
-            if (stationWithLevel.includes(searchLower) || stationWithLevelText.includes(searchLower)) {
+            const stationWithLevelText =
+              `${station.name} level ${hideoutModule.level}`.toLowerCase();
+            if (
+              stationWithLevel.includes(searchLower) ||
+              stationWithLevelText.includes(searchLower)
+            ) {
               return true;
             }
           }
@@ -373,7 +377,10 @@
   const resetVisibleCount = () => {
     visibleCount.value = initialVisibleCount.value;
   };
-  watch([search, activeFilter, firFilter, groupByItem, hideNonFirSpecialEquipment, viewMode], () => {
-    resetVisibleCount();
-  });
+  watch(
+    [search, activeFilter, firFilter, groupByItem, hideNonFirSpecialEquipment, viewMode],
+    () => {
+      resetVisibleCount();
+    }
+  );
 </script>

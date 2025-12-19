@@ -67,7 +67,12 @@
               :aria-label="t('page.tasks.questcard.viewOnTarkovDev', 'View on tarkov.dev')"
               @click.stop
             >
-              <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" aria-hidden="true" class="h-5 w-5" />
+              <img
+                src="/img/logos/tarkovdevlogo.webp"
+                alt="tarkov.dev"
+                aria-hidden="true"
+                class="h-5 w-5"
+              />
             </a>
           </div>
         </div>

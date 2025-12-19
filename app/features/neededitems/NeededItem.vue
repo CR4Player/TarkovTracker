@@ -212,7 +212,9 @@
     if (!isCraftable.value) {
       return '';
     }
-    const prefix = isCraftableAvailable.value ? 'Craftable now' : 'Craftable (station level too low)';
+    const prefix = isCraftableAvailable.value
+      ? 'Craftable now'
+      : 'Craftable (station level too low)';
     const preview = craftSourceStatuses.value
       .slice(0, 3)
       .map((source) => `${source.stationName} ${source.stationLevel} (you ${source.currentLevel})`);

@@ -1,18 +1,28 @@
 <template>
-  <div class="container mx-auto space-y-6 p-4">
-    <div v-if="loading" class="flex justify-center p-12">
-      <UIcon name="i-heroicons-arrow-path" class="text-primary-500 animate-spin text-4xl" />
+  <div class="relative -mx-2 -mb-2 min-h-full">
+    <div class="container mx-auto space-y-6 p-4">
+      <div v-if="loading" class="flex justify-center p-12">
+        <UIcon name="i-heroicons-arrow-path" class="text-primary-500 animate-spin text-4xl" />
+      </div>
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <TraderCard
+          v-for="trader in sortedTraders"
+          :key="trader.id"
+          :trader="trader"
+          :level="tarkovStore.getTraderLevel(trader.id)"
+          :reputation="tarkovStore.getTraderReputation(trader.id)"
+          @update:level="(l) => updateLevel(trader.id, l)"
+          @update:reputation="(r) => updateReputation(trader.id, r)"
+        />
+      </div>
     </div>
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <TraderCard
-        v-for="trader in sortedTraders"
-        :key="trader.id"
-        :trader="trader"
-        :level="tarkovStore.getTraderLevel(trader.id)"
-        :reputation="tarkovStore.getTraderReputation(trader.id)"
-        @update:level="(l) => updateLevel(trader.id, l)"
-        @update:reputation="(r) => updateReputation(trader.id, r)"
-      />
+    <div
+      class="from-primary-500/10 via-primary-500/5 to-primary-500/10 absolute inset-0 z-10 flex items-center justify-center bg-black/15 bg-gradient-to-b text-center backdrop-blur-[2px]"
+    >
+      <div class="rounded-lg bg-black/55 px-4 py-3 shadow-lg shadow-black/40">
+        <div class="text-2xl font-semibold text-white">Work in Progress</div>
+        <div class="mt-1 text-sm text-slate-200">Traders is not ready yet. Check back soon.</div>
+      </div>
     </div>
   </div>
 </template>

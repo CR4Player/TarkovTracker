@@ -32,12 +32,12 @@
       foundInRaidTitle: 'Found in Raid required',
     }
   );
-	  const emit = defineEmits<{
-	    craft: [];
-	  }>();
-	  // Parents may pass an empty/whitespace string; trim so tooltip/aria-label are never blank.
-	  const craftableTitleText = computed(() => {
-	    const title = props.craftableTitle?.trim();
-	    return title && title.length > 0 ? title : 'Craftable';
-	  });
+  const emit = defineEmits<{
+    craft: [];
+  }>();
+  // Parents may pass an empty/whitespace string; trim so tooltip/aria-label are never blank.
+  const craftableTitleText = computed(() => {
+    const title = props.craftableTitle?.trim();
+    return title && title.length > 0 ? title : 'Craftable';
+  });
 </script>

@@ -36,7 +36,9 @@
       <div class="flex min-w-[250px] flex-1 items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
         <UInput
           :model-value="search"
-          :placeholder="$t('page.neededitems.searchplaceholder', 'Search items, tasks, or hideout stations...')"
+          :placeholder="
+            $t('page.neededitems.searchplaceholder', 'Search items, tasks, or hideout stations...')
+          "
           icon="i-mdi-magnify"
           clearable
           class="w-full"

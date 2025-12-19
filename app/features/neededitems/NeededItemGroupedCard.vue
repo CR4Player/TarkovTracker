@@ -166,14 +166,18 @@
     if (!isCraftable.value) {
       return '';
     }
-	    const prefix = isCraftableAvailable.value ? 'Craftable now' : 'Craftable (station level too low)';
-	    const preview = craftSourceStatuses.value
-	      .slice(0, 3)
-	      .map((source) => `${source.stationName} ${source.stationLevel} (you: ${source.currentLevel})`);
-	    const remainingCount = craftSourceStatuses.value.length - preview.length;
-	    const remainingText = remainingCount > 0 ? ` +${remainingCount} more` : '';
-	    return `${prefix}: ${preview.join(', ')}${remainingText}`;
-	  });
+    const prefix = isCraftableAvailable.value
+      ? 'Craftable now'
+      : 'Craftable (station level too low)';
+    const preview = craftSourceStatuses.value
+      .slice(0, 3)
+      .map(
+        (source) => `${source.stationName} ${source.stationLevel} (you: ${source.currentLevel})`
+      );
+    const remainingCount = craftSourceStatuses.value.length - preview.length;
+    const remainingText = remainingCount > 0 ? ` +${remainingCount} more` : '';
+    return `${prefix}: ${preview.join(', ')}${remainingText}`;
+  });
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${Math.round(num / 1000)}k`;
