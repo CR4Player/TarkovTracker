@@ -33,28 +33,23 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
   import { computed } from 'vue';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
-
   const appStore = useAppStore();
   const { belowMd } = useSharedBreakpoints();
-
   // Match the drawer margin from the layout
   const marginLeft = computed(() => {
     if (belowMd.value) return '56px';
     return appStore.drawerRail ? '56px' : '224px';
   });
-
   interface Light {
     colorClass: string;
     glowColor: string;
     delay: number;
     drop: number;
   }
-
   const lightColors = [
     { colorClass: 'bg-red-500', glowColor: '#ef4444' },
     { colorClass: 'bg-green-500', glowColor: '#22c55e' },
@@ -65,34 +60,30 @@
     { colorClass: 'bg-pink-500', glowColor: '#ec4899' },
     { colorClass: 'bg-cyan-400', glowColor: '#22d3ee' },
   ];
-
   const lightCount = 25;
-
   const lights = computed<Light[]>(() => {
+    const fallbackColor = lightColors[0] ?? { colorClass: 'bg-red-500', glowColor: '#ef4444' };
     return Array.from({ length: lightCount }, (_, i) => {
-      const color = lightColors[i % lightColors.length];
+      const color = lightColors[i % lightColors.length] ?? fallbackColor;
       // Create a wave pattern for the drop
       const wavePosition = (i / lightCount) * Math.PI * 4;
       const drop = 4 + Math.sin(wavePosition) * 6;
-
       return {
-        ...color,
+        colorClass: color.colorClass,
+        glowColor: color.glowColor,
         delay: (i % 8) * 0.15,
         drop,
       };
     });
   });
 </script>
-
 <style scoped>
   .light-bulb {
     animation: sway 3s ease-in-out infinite;
   }
-
   .bulb {
     animation: twinkle 2s ease-in-out infinite;
   }
-
   @keyframes sway {
     0%,
     100% {
@@ -102,7 +93,6 @@
       transform: rotate(2deg);
     }
   }
-
   @keyframes twinkle {
     0%,
     100% {

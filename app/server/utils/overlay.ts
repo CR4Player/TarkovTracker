@@ -38,6 +38,9 @@ const OVERLAY_URL =
 /**
  * Deep merge utility that recursively merges objects without mutation
  */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
 function deepMerge<T extends Record<string, unknown>>(
   target: T,
   source: Record<string, unknown>
@@ -46,19 +49,31 @@ function deepMerge<T extends Record<string, unknown>>(
   for (const key in source) {
     const sourceValue = source[key];
     const targetValue = result[key];
-    if (
-      sourceValue &&
-      typeof sourceValue === 'object' &&
-      !Array.isArray(sourceValue) &&
-      targetValue &&
-      typeof targetValue === 'object' &&
-      !Array.isArray(targetValue)
-    ) {
+    if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
       // Recursively merge nested objects
       result[key] = deepMerge(
         targetValue as Record<string, unknown>,
         sourceValue as Record<string, unknown>
       );
+    } else if (
+      // Special case: merge ID-keyed object patches into array of objects
+      isPlainObject(sourceValue) &&
+      Array.isArray(targetValue) &&
+      targetValue.length > 0 &&
+      typeof targetValue[0] === 'object' &&
+      'id' in targetValue[0]
+    ) {
+      // Map over array and merge each element with its corresponding patch from source
+      result[key] = targetValue.map((item) => {
+        if (isPlainObject(item) && 'id' in item) {
+          const itemId = (item as { id: string }).id;
+          const patch = (sourceValue as Record<string, unknown>)[itemId];
+          if (isPlainObject(patch)) {
+            return deepMerge(item as Record<string, unknown>, patch as Record<string, unknown>);
+          }
+        }
+        return item;
+      });
     } else {
       // Replace primitive values, arrays, or when target doesn't have the key
       result[key] = sourceValue;
@@ -185,6 +200,7 @@ type OverlayTargetData = {
   tasks?: Array<{ id: string }>;
   items?: Array<{ id: string }>;
   traders?: Array<{ id: string }>;
+  hideoutStations?: Array<{ id: string }>;
 };
 export async function applyOverlay<T extends { data?: OverlayTargetData }>(data: T): Promise<T> {
   const overlay = await fetchOverlay();
@@ -211,6 +227,13 @@ export async function applyOverlay<T extends { data?: OverlayTargetData }>(data:
     result.data.traders = applyEntityOverlay(
       result.data.traders as Array<{ id: string }>,
       overlay.traders
+    );
+  }
+  // Apply hideout corrections (if present)
+  if (overlay.hideout && Array.isArray(result.data.hideoutStations)) {
+    result.data.hideoutStations = applyEntityOverlay(
+      result.data.hideoutStations as Array<{ id: string }>,
+      overlay.hideout
     );
   }
   return result;

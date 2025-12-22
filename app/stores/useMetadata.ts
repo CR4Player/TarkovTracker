@@ -35,6 +35,7 @@ import {
   sortTradersByGameOrder,
 } from '@/utils/constants';
 import { createGraph } from '@/utils/graphHelpers';
+import { normalizeTaskObjectives } from '@/utils/helpers';
 import { logger } from '@/utils/logger';
 import {
   CACHE_CONFIG,
@@ -131,7 +132,7 @@ export const useMetadataStore = defineStore('metadata', {
       if (!state.tasks.length) return [];
       const allObjectives: TaskObjective[] = [];
       state.tasks.forEach((task) => {
-        task.objectives?.forEach((obj) => {
+        normalizeTaskObjectives<TaskObjective>(task.objectives).forEach((obj) => {
           if (obj) {
             allObjectives.push({ ...obj, taskId: task.id });
           }
@@ -632,7 +633,13 @@ export const useMetadataStore = defineStore('metadata', {
       // Filter out scav karma tasks at the source
       // These tasks require Scav Karma validation which isn't yet implemented
       const allTasks = data.tasks || [];
-      this.tasks = allTasks.filter((task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id));
+      const normalizedTasks = allTasks
+        .filter((task): task is Task => Boolean(task))
+        .map((task) => ({
+          ...task,
+          objectives: normalizeTaskObjectives<TaskObjective>(task.objectives),
+        }));
+      this.tasks = normalizedTasks.filter((task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id));
       this.maps = data.maps || [];
       this.traders = data.traders || [];
       this.playerLevels = this.convertToCumulativeXP(data.playerLevels || []);

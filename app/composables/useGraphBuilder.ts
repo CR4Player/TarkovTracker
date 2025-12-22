@@ -6,6 +6,7 @@ import type {
   ObjectiveGPSInfo,
   ObjectiveMapInfo,
   Task,
+  TaskObjective,
   TaskRequirement,
 } from '@/types/tarkov';
 import {
@@ -17,6 +18,7 @@ import {
   safeAddEdge,
   safeAddNode,
 } from '@/utils/graphHelpers';
+import { normalizeTaskObjectives } from '@/utils/helpers';
 import { logger } from '@/utils/logger';
 import type { AbstractGraph } from 'graphology-types';
 /**
@@ -85,7 +87,7 @@ export function useGraphBuilder() {
         });
       }
       // Process objectives
-      task.objectives?.forEach((objective) => {
+      normalizeTaskObjectives<TaskObjective>(task.objectives).forEach((objective) => {
         // Map and location data
         if (objective?.location?.id) {
           const mapId = objective.location.id;
