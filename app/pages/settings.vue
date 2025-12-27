@@ -397,6 +397,16 @@
     <!-- <DataMigrationCard v-if="user.loggedIn" /> -->
     <!-- Section 6: Account Management -->
     <AccountDeletionCard />
+    <!-- Admin Panel Link (only visible to admins) -->
+    <div v-if="isAdmin" class="flex justify-center pt-4">
+      <NuxtLink
+        to="/admin"
+        class="hover:text-error-400 flex items-center gap-1.5 text-xs text-neutral-500 transition-colors"
+      >
+        <UIcon name="i-mdi-shield-crown" class="size-3.5" />
+        Admin Panel
+      </NuxtLink>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
@@ -409,6 +419,7 @@
   import SkillsCard from '@/features/settings/SkillsCard.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useSystemStore, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { logger } from '@/utils/logger';
   // Page metadata
@@ -422,6 +433,9 @@
   const toast = useToast();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
+  // Get hasInitiallyLoaded from the Supabase-aware wrapper; use the direct Pinia system store.
+  const { hasInitiallyLoaded } = useSystemStoreWithSupabase();
+  const systemStore = useSystemStore(); // Direct Pinia store
   const tarkovStore = useTarkovStore();
   const selectUi = {};
   const selectMenuUi = {
@@ -448,6 +462,12 @@
   const user = computed(() => ({
     loggedIn: Boolean($supabase?.user?.loggedIn),
   }));
+  // Admin status check using the isAdmin getter
+  const isAdmin = computed(() => {
+    // Only show admin button if data has loaded and user is admin
+    if (!hasInitiallyLoaded.value) return false;
+    return systemStore.isAdmin;
+  });
   // Streamer mode with cooldown to prevent spam
   const streamerMode = computed({
     get() {

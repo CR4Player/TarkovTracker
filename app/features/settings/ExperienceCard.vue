@@ -170,9 +170,11 @@
   import { useXpCalculation } from '@/composables/useXpCalculation';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   const tarkovStore = useTarkovStore();
   const preferencesStore = usePreferencesStore();
   const xpCalculation = useXpCalculation();
+  const formatNumber = useLocaleNumberFormatter();
   // Manual XP input
   const manualXPInput = ref<number | null>(null);
   // Check if input is valid
@@ -203,9 +205,5 @@
     if (value) {
       tarkovStore.setLevel(xpCalculation.derivedLevel.value);
     }
-  };
-  // Format number with commas
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString('en-US');
   };
 </script>

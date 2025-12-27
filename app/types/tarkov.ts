@@ -337,6 +337,7 @@ export interface StaticMapData {
 }
 // Store Types
 export interface SystemState extends StateTree {
+  user_id?: string | null;
   tokens?: string[];
   team?: string | null;
   // Keep raw team_id from Supabase for backwards/compat and reactivity
@@ -344,12 +345,15 @@ export interface SystemState extends StateTree {
   // Game-mode-specific team IDs
   pvp_team_id?: string | null;
   pve_team_id?: string | null;
+  // Admin status
+  is_admin?: boolean;
 }
 export interface SystemGetters extends _GettersTree<SystemState> {
   userTokens: (state: SystemState) => string[];
   userTokenCount: (state: SystemState) => number;
   userTeam: (state: SystemState) => string | null;
   userTeamIsOwn: (state: SystemState) => boolean;
+  isAdmin: (state: SystemState) => boolean;
 }
 export interface TeamState extends StateTree {
   owner?: string | null;

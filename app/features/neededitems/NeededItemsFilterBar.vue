@@ -101,25 +101,28 @@
                   <UIcon name="i-mdi-checkbox-blank-circle-outline" class="mr-1 h-4 w-4" />
                   {{ $t('page.neededitems.filters.non_fir', 'NON-FIR') }}
                 </UButton>
-                <UButton
-                  :variant="hideNonFirSpecialEquipment ? 'soft' : 'ghost'"
-                  :color="hideNonFirSpecialEquipment ? 'primary' : 'neutral'"
-                  size="sm"
-                  :title="
+                <AppTooltip
+                  :text="
                     $t(
                       'page.neededitems.filters.hide_non_fir_special_equipment_title',
                       'Hide non-FIR special equipment (e.g., MS2000 Markers, Wi-Fi Cameras)'
                     )
                   "
-                  @click="$emit('update:hideNonFirSpecialEquipment', !hideNonFirSpecialEquipment)"
                 >
-                  <UIcon name="i-mdi-briefcase-outline" class="mr-1 h-4 w-4" />
-                  {{
-                    hideNonFirSpecialEquipment
-                      ? $t('page.neededitems.filters.no_special', 'NO-SPECIAL')
-                      : $t('page.neededitems.filters.special', 'SPECIAL')
-                  }}
-                </UButton>
+                  <UButton
+                    :variant="hideNonFirSpecialEquipment ? 'soft' : 'ghost'"
+                    :color="hideNonFirSpecialEquipment ? 'primary' : 'neutral'"
+                    size="sm"
+                    @click="$emit('update:hideNonFirSpecialEquipment', !hideNonFirSpecialEquipment)"
+                  >
+                    <UIcon name="i-mdi-briefcase-outline" class="mr-1 h-4 w-4" />
+                    {{
+                      hideNonFirSpecialEquipment
+                        ? $t('page.neededitems.filters.no_special', 'NO-SPECIAL')
+                        : $t('page.neededitems.filters.special', 'SPECIAL')
+                    }}
+                  </UButton>
+                </AppTooltip>
               </div>
               <div class="border-t border-white/10 pt-3">
                 <div class="text-surface-400 mb-2 text-xs font-medium">

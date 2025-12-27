@@ -60,7 +60,7 @@
       </div>
       <!-- Simple count display for single items -->
       <div v-else-if="props.count" class="mr-2 text-sm font-medium text-gray-300">
-        {{ props.count.toLocaleString() }}
+        {{ formatNumber(props.count) }}
       </div>
       <div
         v-if="props.itemName"
@@ -73,28 +73,28 @@
         v-if="showActions && (props.devLink || props.wikiLink)"
         class="absolute inset-0 flex items-center justify-center gap-2 rounded bg-black/80 opacity-0 transition-opacity group-hover:opacity-100"
       >
-        <a
-          v-if="props.devLink"
-          :href="props.devLink"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
-          title="View on tarkov.dev"
-          @click.stop
-        >
-          <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" class="h-5 w-5" />
-        </a>
-        <a
-          v-if="props.wikiLink"
-          :href="props.wikiLink"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
-          title="View on Wiki"
-          @click.stop
-        >
-          <img src="/img/logos/wikilogo.webp" alt="Wiki" class="h-5 w-5" />
-        </a>
+        <AppTooltip v-if="props.devLink" text="View on tarkov.dev">
+          <a
+            :href="props.devLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            @click.stop
+          >
+            <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" class="h-5 w-5" />
+          </a>
+        </AppTooltip>
+        <AppTooltip v-if="props.wikiLink" text="View on Wiki">
+          <a
+            :href="props.wikiLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            @click.stop
+          >
+            <img src="/img/logos/wikilogo.webp" alt="Wiki" class="h-5 w-5" />
+          </a>
+        </AppTooltip>
       </div>
     </div>
     <!-- Context Menu -->
@@ -173,6 +173,7 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent, ref } from 'vue';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   import { logger } from '@/utils/logger';
   import ContextMenu from './ContextMenu.vue';
   import ContextMenuItem from './ContextMenuItem.vue';
@@ -246,6 +247,7 @@
     decrease: [];
     toggle: [];
   }>();
+  const formatNumber = useLocaleNumberFormatter();
   const backgroundClassMap = {
     violet: 'bg-brand-900',
     grey: 'bg-surface-900',

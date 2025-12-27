@@ -17,14 +17,15 @@
         <div class="text-sm leading-5 text-gray-100">
           {{ props.objective?.description }}
         </div>
-        <div
+        <AppTooltip
           v-if="userHasTeam && activeUserView === 'all' && userNeeds.length > 0"
-          class="mt-1 inline-flex items-center gap-1 text-[11px] text-gray-500"
-          :title="userNeedsTitle"
+          :text="userNeedsTitle"
         >
-          <UIcon name="i-mdi-account-multiple-outline" aria-hidden="true" class="h-3.5 w-3.5" />
-          <span>{{ userNeeds.length }}</span>
-        </div>
+          <div class="mt-1 inline-flex items-center gap-1 text-[11px] text-gray-500">
+            <UIcon name="i-mdi-account-multiple-outline" aria-hidden="true" class="h-3.5 w-3.5" />
+            <span>{{ userNeeds.length }}</span>
+          </div>
+        </AppTooltip>
       </div>
       <div class="flex items-center gap-2" @click.stop>
         <ObjectiveCountControls
@@ -35,30 +36,33 @@
           @increase="increaseCount"
           @toggle="toggleCount"
         />
-        <button
+        <AppTooltip
           v-else
-          type="button"
-          class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          :aria-label="toggleObjectiveLabel"
-          :aria-pressed="isComplete"
-          :class="
-            isComplete
-              ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
-              : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
-          "
-          :title="
+          :text="
             isComplete
               ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
               : t('page.tasks.questcard.complete', 'Complete')
           "
-          @click="toggleObjectiveCompletion()"
         >
-          <UIcon
-            :name="isComplete ? 'i-mdi-check' : 'i-mdi-circle-outline'"
-            aria-hidden="true"
-            class="h-4 w-4"
-          />
-        </button>
+          <button
+            type="button"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            :aria-label="toggleObjectiveLabel"
+            :aria-pressed="isComplete"
+            :class="
+              isComplete
+                ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
+                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+            "
+            @click="toggleObjectiveCompletion()"
+          >
+            <UIcon
+              :name="isComplete ? 'i-mdi-check' : 'i-mdi-circle-outline'"
+              aria-hidden="true"
+              class="h-4 w-4"
+            />
+          </button>
+        </AppTooltip>
       </div>
     </div>
   </div>

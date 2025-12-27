@@ -12,7 +12,11 @@ import {
 // Library imports
 import { devLog, logger } from '@/utils/logger';
 import { clearStaleState, resetStore, safePatchStore } from '@/utils/storeHelpers';
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type {
+  PostgrestError,
+  RealtimeChannel,
+  RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import type { Store } from 'pinia';
 // Local imports
 export interface SupabaseListenerConfig {
@@ -41,11 +45,13 @@ export function useSupabaseListener({
   const channel = ref<RealtimeChannel | null>(null);
   const isSubscribed = ref(false);
   const hasInitiallyLoaded = ref(false);
+  const loadError = ref<PostgrestError | null>(null);
   const storeIdForLogging = storeId || store.$id;
   // Helper to get current filter value (supports both string and ref)
   const getFilterValue = (): string | undefined => unref(filter);
   // Initial fetch
   const fetchData = async () => {
+    loadError.value = null;
     const currentFilter = getFilterValue();
     if (!currentFilter) {
       hasInitiallyLoaded.value = true;
@@ -67,6 +73,7 @@ export function useSupabaseListener({
     if (error && error.code !== 'PGRST116') {
       // PGRST116 is "The result contains 0 rows"
       logger.error(`[${storeIdForLogging}] Error fetching initial data:`, error);
+      loadError.value = error;
       hasInitiallyLoaded.value = true;
       return;
     }
@@ -165,6 +172,7 @@ export function useSupabaseListener({
   return {
     isSubscribed,
     hasInitiallyLoaded,
+    loadError,
     cleanup,
     fetchData,
   };

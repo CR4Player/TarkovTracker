@@ -1,5 +1,18 @@
 import { useNow } from '@vueuse/core';
 import { computed } from 'vue';
+/**
+ * Calculates Escape from Tarkov in-game time.
+ *
+ * Logic:
+ * - Time flows 7x faster than real life (TARKOV_RATE).
+ * - The base calculation is: (RealTimestamp * 7) + FixedOffset.
+ * - This result is wrapped to a 24-hour cycle using modulo.
+ * - The "Moscow Offset" aligns the calculated time with the game's servers.
+ * - The secondary time represents the alternate in-game timezone (exactly 12 hours
+ *   offset) the game uses to show the opposite cycle or a different map/region.
+ * - Secondary time = primary time ± 12 hours; use it for dual-map time displays
+ *   (e.g., showing day/night for another server/map) or syncing events across maps.
+ */
 const ONE_HOUR = 60 * 60 * 1000;
 const TARKOV_RATE = 7;
 const MOSCOW_OFFSET = 3 * ONE_HOUR;

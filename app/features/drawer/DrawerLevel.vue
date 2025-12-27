@@ -56,14 +56,9 @@
               {{ t('navigation_drawer.level') }}
             </div>
             <div class="text-center">
-              <h1
+              <AppTooltip
                 v-if="!editingLevel || useAutomaticLevel"
-                :class="
-                  useAutomaticLevel
-                    ? 'mx-auto w-11 text-[2rem] leading-[0.85]'
-                    : 'hover:text-primary mx-auto w-11 cursor-pointer text-[2rem] leading-[0.85] transition-colors'
-                "
-                :title="
+                :text="
                   useAutomaticLevel
                     ? t(
                         'navigation_drawer.auto_level_enabled',
@@ -71,10 +66,36 @@
                       )
                     : ''
                 "
-                @click="!useAutomaticLevel && startEditingLevel()"
               >
-                {{ displayedLevel }}
-              </h1>
+                <h1
+                  :class="
+                    useAutomaticLevel
+                      ? 'mx-auto w-11 text-[2rem] leading-[0.85]'
+                      : 'hover:text-primary mx-auto w-11 cursor-pointer text-[2rem] leading-[0.85] transition-colors'
+                  "
+                  :tabindex="useAutomaticLevel ? '-1' : '0'"
+                  :role="useAutomaticLevel ? undefined : 'button'"
+                  :aria-disabled="useAutomaticLevel ? 'true' : undefined"
+                  :aria-label="
+                    useAutomaticLevel
+                      ? t(
+                          'navigation_drawer.level_display_auto',
+                          'Level {level} (automatic calculation enabled)',
+                          { level: displayedLevel }
+                        )
+                      : t(
+                          'navigation_drawer.level_display_editable',
+                          'Level {level}, click or press Enter to edit',
+                          { level: displayedLevel }
+                        )
+                  "
+                  @click="!useAutomaticLevel && startEditingLevel()"
+                  @keydown.enter="!useAutomaticLevel && startEditingLevel()"
+                  @keydown.space.prevent="!useAutomaticLevel && startEditingLevel()"
+                >
+                  {{ displayedLevel }}
+                </h1>
+              </AppTooltip>
               <input
                 v-else
                 ref="levelInput"
@@ -90,10 +111,8 @@
             </div>
           </span>
           <span class="ml-0.5 flex shrink-0 flex-col items-center gap-0.5">
-            <button
-              class="flex h-6 w-6 cursor-pointer items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-              :disabled="useAutomaticLevel || displayedLevel >= maxPlayerLevel"
-              :title="
+            <AppTooltip
+              :text="
                 useAutomaticLevel
                   ? t(
                       'navigation_drawer.manual_disabled',
@@ -101,15 +120,18 @@
                     )
                   : ''
               "
-              @click="incrementLevel"
             >
-              <UIcon name="i-mdi-chevron-up" class="h-5 w-5" />
-            </button>
-            <template v-if="displayedLevel > minPlayerLevel">
               <button
                 class="flex h-6 w-6 cursor-pointer items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="useAutomaticLevel"
-                :title="
+                :disabled="useAutomaticLevel || displayedLevel >= maxPlayerLevel"
+                @click="incrementLevel"
+              >
+                <UIcon name="i-mdi-chevron-up" class="h-5 w-5" />
+              </button>
+            </AppTooltip>
+            <template v-if="displayedLevel > minPlayerLevel">
+              <AppTooltip
+                :text="
                   useAutomaticLevel
                     ? t(
                         'navigation_drawer.manual_disabled',
@@ -117,10 +139,15 @@
                       )
                     : ''
                 "
-                @click="decrementLevel"
               >
-                <UIcon name="i-mdi-chevron-down" class="h-5 w-5" />
-              </button>
+                <button
+                  class="flex h-6 w-6 cursor-pointer items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  :disabled="useAutomaticLevel"
+                  @click="decrementLevel"
+                >
+                  <UIcon name="i-mdi-chevron-down" class="h-5 w-5" />
+                </button>
+              </AppTooltip>
             </template>
             <template v-else>
               <div class="h-6 w-6" aria-hidden="true"></div>
@@ -157,8 +184,11 @@
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   const { t } = useI18n({ useScope: 'global' });
   const router = useRouter();
+  // Create formatter that uses current locale
+  const formatNumber = useLocaleNumberFormatter();
   defineProps({
     isCollapsed: {
       type: Boolean,
@@ -231,10 +261,6 @@
   // Navigate to settings page
   function navigateToSettings() {
     router.push('/settings');
-  }
-  // Format number with commas
-  function formatNumber(num) {
-    return num.toLocaleString('en-US');
   }
   // Reset failure flags if icons change (retry)
   watch(pmcFactionIcon, () => {

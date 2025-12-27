@@ -16,7 +16,7 @@
                 class="h-32 w-32 -rotate-90 transform md:h-48 md:w-48"
                 viewBox="0 0 192 192"
                 role="progressbar"
-                :aria-valuenow="parseFloat(totalTasksPercentage)"
+                :aria-valuenow="totalTasksPercentageNum"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 :aria-label="`Overall task completion: ${totalTasksPercentage}%`"
@@ -67,7 +67,7 @@
             <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
               <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
                 <div class="text-primary-400 text-xl font-bold md:text-3xl">
-                  {{ dashboardStats.completedTasks }}
+                  {{ dashboardStats.completedTasks.value }}
                 </div>
                 <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.tasksComplete') }}
@@ -75,7 +75,7 @@
               </div>
               <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
                 <div class="text-success-400 text-xl font-bold md:text-3xl">
-                  {{ dashboardStats.availableTasksCount }}
+                  {{ dashboardStats.availableTasksCount.value }}
                 </div>
                 <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.available') }}
@@ -83,7 +83,7 @@
               </div>
               <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
                 <div class="text-error-400 text-xl font-bold md:text-3xl">
-                  {{ dashboardStats.failedTasksCount }}
+                  {{ dashboardStats.failedTasksCount.value }}
                 </div>
                 <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.failed') }}
@@ -109,186 +109,51 @@
         {{ $t('page.dashboard.progress.title') }}
       </h2>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <!-- Tasks Progress -->
-        <div
-          class="bg-surface-900 border-surface-700/30 hover:border-primary-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+        <DashboardProgressCard
+          icon="i-mdi-checkbox-marked-circle-outline"
+          :label="$t('page.dashboard.progress.tasks')"
+          :completed="dashboardStats.completedTasks.value"
+          :total="dashboardStats.totalTasks.value"
+          :percentage="totalTasksPercentageNum"
+          color="primary"
           @click="router.push('/tasks')"
-        >
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center">
-              <div
-                class="bg-primary-600/15 mr-3 flex h-10 w-10 items-center justify-center rounded-lg"
-              >
-                <UIcon
-                  name="i-mdi-checkbox-marked-circle-outline"
-                  class="text-primary-400 h-5 w-5"
-                />
-              </div>
-              <div>
-                <div class="text-surface-400 text-sm tracking-wider uppercase">
-                  {{ $t('page.dashboard.progress.tasks') }}
-                </div>
-                <div class="text-2xl font-bold text-white">
-                  {{ dashboardStats.completedTasks }}/{{ dashboardStats.totalTasks }}
-                </div>
-              </div>
-            </div>
-            <div class="text-primary-400 text-3xl font-bold">{{ totalTasksPercentage }}%</div>
-          </div>
-          <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
-            <div
-              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-              :class="
-                holidayEffectsEnabled
-                  ? 'candy-cane'
-                  : 'from-primary-600 to-primary-400 bg-linear-to-r'
-              "
-              :style="{ width: `${totalTasksPercentage}%` }"
-            ></div>
-          </div>
-        </div>
-        <!-- Objectives Progress -->
-        <div
-          class="bg-surface-900 border-surface-700/30 hover:border-info-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+        />
+        <DashboardProgressCard
+          icon="i-mdi-briefcase-search"
+          :label="$t('page.dashboard.progress.objectives')"
+          :completed="dashboardStats.completedObjectives.value"
+          :total="dashboardStats.totalObjectives.value"
+          :percentage="totalObjectivesPercentageNum"
+          color="info"
           @click="router.push('/tasks')"
-        >
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center">
-              <div
-                class="bg-info-600/15 mr-3 flex h-10 w-10 items-center justify-center rounded-lg"
-              >
-                <UIcon name="i-mdi-briefcase-search" class="text-info-400 h-5 w-5" />
-              </div>
-              <div>
-                <div class="text-surface-400 text-sm tracking-wider uppercase">
-                  {{ $t('page.dashboard.progress.objectives') }}
-                </div>
-                <div class="text-2xl font-bold text-white">
-                  {{ dashboardStats.completedObjectives }}/{{ dashboardStats.totalObjectives }}
-                </div>
-              </div>
-            </div>
-            <div class="text-info-400 text-3xl font-bold">{{ totalObjectivesPercentage }}%</div>
-          </div>
-          <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
-            <div
-              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-              :class="
-                holidayEffectsEnabled ? 'candy-cane' : 'from-info-600 to-info-400 bg-linear-to-r'
-              "
-              :style="{ width: `${totalObjectivesPercentage}%` }"
-            ></div>
-          </div>
-        </div>
-        <!-- Task Items Progress -->
-        <div
-          class="bg-surface-900 border-surface-700/30 hover:border-success-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+        />
+        <DashboardProgressCard
+          icon="i-mdi-package-variant"
+          :label="$t('page.dashboard.progress.items')"
+          :completed="dashboardStats.completedTaskItems.value"
+          :total="dashboardStats.totalTaskItems.value"
+          :percentage="totalTaskItemsPercentageNum"
+          color="success"
           @click="router.push('/neededitems')"
-        >
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center">
-              <div
-                class="bg-success-600/15 mr-3 flex h-10 w-10 items-center justify-center rounded-lg"
-              >
-                <UIcon name="i-mdi-package-variant" class="text-success-400 h-5 w-5" />
-              </div>
-              <div>
-                <div class="text-surface-400 text-sm tracking-wider uppercase">
-                  {{ $t('page.dashboard.progress.items') }}
-                </div>
-                <div class="text-2xl font-bold text-white">
-                  {{ dashboardStats.completedTaskItems }}/{{ dashboardStats.totalTaskItems }}
-                </div>
-              </div>
-            </div>
-            <div class="text-success-400 text-3xl font-bold">{{ totalTaskItemsPercentage }}%</div>
-          </div>
-          <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
-            <div
-              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-              :class="
-                holidayEffectsEnabled
-                  ? 'candy-cane'
-                  : 'from-success-600 to-success-400 bg-linear-to-r'
-              "
-              :style="{ width: `${totalTaskItemsPercentage}%` }"
-            ></div>
-          </div>
-        </div>
-        <!-- Kappa Progress -->
-        <div
-          class="bg-surface-900 border-surface-700/30 hover:border-warning-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+        />
+        <DashboardProgressCard
+          icon="i-mdi-trophy"
+          :label="$t('page.dashboard.progress.kappa')"
+          :completed="dashboardStats.completedKappaTasks.value"
+          :total="dashboardStats.totalKappaTasks.value"
+          :percentage="totalKappaTasksPercentageNum"
+          color="warning"
           @click="router.push('/tasks')"
-        >
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center">
-              <div
-                class="bg-warning-600/15 mr-3 flex h-10 w-10 items-center justify-center rounded-lg"
-              >
-                <UIcon name="i-mdi-trophy" class="text-warning-400 h-5 w-5" />
-              </div>
-              <div>
-                <div class="text-surface-400 text-sm tracking-wider uppercase">
-                  {{ $t('page.dashboard.progress.kappa') }}
-                </div>
-                <div class="text-2xl font-bold text-white">
-                  {{ dashboardStats.completedKappaTasks }}/{{ dashboardStats.totalKappaTasks }}
-                </div>
-              </div>
-            </div>
-            <div class="text-warning-400 text-3xl font-bold">{{ totalKappaTasksPercentage }}%</div>
-          </div>
-          <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
-            <div
-              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-              :class="
-                holidayEffectsEnabled
-                  ? 'candy-cane'
-                  : 'from-warning-600 to-warning-400 bg-linear-to-r'
-              "
-              :style="{ width: `${totalKappaTasksPercentage}%` }"
-            ></div>
-          </div>
-        </div>
-        <!-- Lightkeeper Progress -->
-        <div
-          class="bg-surface-900 border-surface-700/30 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors hover:border-purple-700/50"
+        />
+        <DashboardProgressCard
+          icon="i-mdi-lighthouse"
+          :label="$t('page.dashboard.progress.lightkeeper')"
+          :completed="dashboardStats.completedLightkeeperTasks.value"
+          :total="dashboardStats.totalLightkeeperTasks.value"
+          :percentage="totalLightkeeperTasksPercentageNum"
+          color="purple"
           @click="router.push('/tasks')"
-        >
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center">
-              <div
-                class="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600/15"
-              >
-                <UIcon name="i-mdi-lighthouse" class="h-5 w-5 text-purple-400" />
-              </div>
-              <div>
-                <div class="text-surface-400 text-sm tracking-wider uppercase">
-                  {{ $t('page.dashboard.progress.lightkeeper') }}
-                </div>
-                <div class="text-2xl font-bold text-white">
-                  {{ dashboardStats.completedLightkeeperTasks }}/{{
-                    dashboardStats.totalLightkeeperTasks
-                  }}
-                </div>
-              </div>
-            </div>
-            <div class="text-3xl font-bold text-purple-400">
-              {{ totalLightkeeperTasksPercentage }}%
-            </div>
-          </div>
-          <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
-            <div
-              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-              :class="
-                holidayEffectsEnabled
-                  ? 'candy-cane'
-                  : 'bg-linear-to-r from-purple-600 to-purple-400'
-              "
-              :style="{ width: `${totalLightkeeperTasksPercentage}%` }"
-            ></div>
-          </div>
-        </div>
+        />
       </div>
     </div>
     <!-- Trader Progress Section -->
@@ -298,44 +163,52 @@
         {{ $t('page.dashboard.traders.title') }}
       </h2>
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-        <div
+        <AppTooltip
           v-for="trader in traderStats"
           :key="trader.id"
-          class="bg-surface-900 border-surface-700/30 hover:border-primary-700/30 cursor-pointer rounded-lg border p-3 shadow-sm transition-all hover:shadow-md"
-          :title="`View ${trader.name}'s tasks`"
-          @click="navigateToTraderTasks(trader.id)"
+          :text="$t('page.dashboard.traders.viewTasks', { name: trader.name })"
         >
-          <div class="mb-2 flex items-center gap-3">
-            <img
-              v-if="trader.imageLink"
-              :src="trader.imageLink"
-              :alt="trader.name"
-              class="bg-surface-800 border-surface-700 h-10 w-10 rounded-full border"
-            />
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-xs font-semibold text-white">
-                {{ trader.name }}
-              </div>
-              <div class="text-surface-400 text-xs">
-                {{ trader.completedTasks }}/{{ trader.totalTasks }}
+          <div
+            role="button"
+            tabindex="0"
+            class="bg-surface-900 border-surface-700/30 hover:border-primary-700/30 focus-visible:border-primary-500 focus-visible:ring-primary-500/50 cursor-pointer rounded-lg border p-3 shadow-sm transition-all outline-none hover:shadow-md focus-visible:ring-2"
+            :aria-label="$t('page.dashboard.traders.viewTasks', { name: trader.name })"
+            @click="navigateToTraderTasks(trader.id)"
+            @keydown.enter="navigateToTraderTasks(trader.id)"
+            @keydown.space.prevent="navigateToTraderTasks(trader.id)"
+          >
+            <div class="mb-2 flex items-center gap-3">
+              <img
+                v-if="trader.imageLink"
+                :src="trader.imageLink"
+                :alt="trader.name"
+                class="bg-surface-800 border-surface-700 h-10 w-10 rounded-full border"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-xs font-semibold text-white">
+                  {{ trader.name }}
+                </div>
+                <div class="text-surface-400 text-xs">
+                  {{ trader.completedTasks }}/{{ trader.totalTasks }}
+                </div>
               </div>
             </div>
+            <div class="bg-surface-800 relative h-1.5 overflow-hidden rounded-full">
+              <div
+                class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                :class="
+                  holidayEffectsEnabled
+                    ? 'candy-cane'
+                    : 'from-primary-600 to-primary-400 bg-linear-to-r'
+                "
+                :style="{ width: `${trader.percentage}%` }"
+              ></div>
+            </div>
+            <div class="text-primary-400 mt-1 text-right text-xs font-medium">
+              {{ trader.percentage }}%
+            </div>
           </div>
-          <div class="bg-surface-800 relative h-1.5 overflow-hidden rounded-full">
-            <div
-              class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-              :class="
-                holidayEffectsEnabled
-                  ? 'candy-cane'
-                  : 'from-primary-600 to-primary-400 bg-linear-to-r'
-              "
-              :style="{ width: `${trader.percentage}%` }"
-            ></div>
-          </div>
-          <div class="text-primary-400 mt-1 text-right text-xs font-medium">
-            {{ trader.percentage }}%
-          </div>
-        </div>
+        </AppTooltip>
       </div>
     </div>
     <!-- Milestones Section -->
@@ -345,149 +218,46 @@
         {{ $t('page.dashboard.milestones.title') }}
       </h2>
       <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-        <!-- 25% Milestone -->
-        <div
-          :class="[
-            'relative overflow-hidden rounded-xl border p-6 transition-all',
-            parseFloat(totalTasksPercentage) >= 25
-              ? 'from-primary-900/40 to-surface-900 border-primary-600/50 shadow-primary-900/20 bg-linear-to-br shadow-lg'
-              : 'bg-surface-900/50 border-surface-700/30 opacity-50',
-          ]"
-        >
-          <div class="relative z-10">
-            <UIcon
-              :name="
-                parseFloat(totalTasksPercentage) >= 25
-                  ? 'i-mdi-check-circle'
-                  : 'i-mdi-circle-outline'
-              "
-              :class="[
-                'mb-3 h-12 w-12',
-                parseFloat(totalTasksPercentage) >= 25 ? 'text-primary-400' : 'text-surface-600',
-              ]"
-            />
-            <div class="mb-1 text-3xl font-bold text-white">25%</div>
-            <div class="text-surface-400 text-xs tracking-wider uppercase">
-              {{ $t('page.dashboard.milestones.starter') }}
-            </div>
-          </div>
-        </div>
-        <!-- 50% Milestone -->
-        <div
-          :class="[
-            'relative overflow-hidden rounded-xl border p-6 transition-all',
-            parseFloat(totalTasksPercentage) >= 50
-              ? 'from-info-900/40 to-surface-900 border-info-600/50 shadow-info-900/20 bg-linear-to-br shadow-lg'
-              : 'bg-surface-900/50 border-surface-700/30 opacity-50',
-          ]"
-        >
-          <div class="relative z-10">
-            <UIcon
-              :name="
-                parseFloat(totalTasksPercentage) >= 50
-                  ? 'i-mdi-check-circle'
-                  : 'i-mdi-circle-outline'
-              "
-              :class="[
-                'mb-3 h-12 w-12',
-                parseFloat(totalTasksPercentage) >= 50 ? 'text-info-400' : 'text-surface-600',
-              ]"
-            />
-            <div class="mb-1 text-3xl font-bold text-white">50%</div>
-            <div class="text-surface-400 text-xs tracking-wider uppercase">
-              {{ $t('page.dashboard.milestones.halfway') }}
-            </div>
-          </div>
-        </div>
-        <!-- 75% Milestone -->
-        <div
-          :class="[
-            'relative overflow-hidden rounded-xl border p-6 transition-all',
-            parseFloat(totalTasksPercentage) >= 75
-              ? 'from-success-900/40 to-surface-900 border-success-600/50 shadow-success-900/20 bg-linear-to-br shadow-lg'
-              : 'bg-surface-900/50 border-surface-700/30 opacity-50',
-          ]"
-        >
-          <div class="relative z-10">
-            <UIcon
-              :name="
-                parseFloat(totalTasksPercentage) >= 75
-                  ? 'i-mdi-check-circle'
-                  : 'i-mdi-circle-outline'
-              "
-              :class="[
-                'mb-3 h-12 w-12',
-                parseFloat(totalTasksPercentage) >= 75 ? 'text-success-400' : 'text-surface-600',
-              ]"
-            />
-            <div class="mb-1 text-3xl font-bold text-white">75%</div>
-            <div class="text-surface-400 text-xs tracking-wider uppercase">
-              {{ $t('page.dashboard.milestones.veteran') }}
-            </div>
-          </div>
-        </div>
-        <!-- Kappa Milestone -->
-        <div
-          :class="[
-            'relative overflow-hidden rounded-xl border p-6 transition-all',
-            parseFloat(totalKappaTasksPercentage) >= 100
-              ? 'from-warning-900/40 to-surface-900 border-warning-600/50 shadow-warning-900/20 bg-linear-to-br shadow-lg'
-              : 'bg-surface-900/50 border-surface-700/30 opacity-50',
-          ]"
-        >
-          <div class="relative z-10">
-            <UIcon
-              :name="
-                parseFloat(totalKappaTasksPercentage) >= 100
-                  ? 'i-mdi-trophy'
-                  : 'i-mdi-trophy-outline'
-              "
-              :class="[
-                'mb-3 h-12 w-12',
-                parseFloat(totalKappaTasksPercentage) >= 100
-                  ? 'text-warning-400'
-                  : 'text-surface-600',
-              ]"
-            />
-            <div class="mb-1 text-3xl font-bold text-white">
-              {{ $t('page.dashboard.milestones.kappa.title') }}
-            </div>
-            <div class="text-surface-400 text-xs tracking-wider uppercase">
-              {{ $t('page.dashboard.milestones.kappa.subtitle') }}
-            </div>
-          </div>
-        </div>
-        <!-- Lightkeeper Milestone -->
-        <div
-          :class="[
-            'relative overflow-hidden rounded-xl border p-6 transition-all',
-            parseFloat(totalLightkeeperTasksPercentage) >= 100
-              ? 'to-surface-900 border-purple-600/50 bg-linear-to-br from-purple-900/40 shadow-lg shadow-purple-900/20'
-              : 'bg-surface-900/50 border-surface-700/30 opacity-50',
-          ]"
-        >
-          <div class="relative z-10">
-            <UIcon
-              :name="
-                parseFloat(totalLightkeeperTasksPercentage) >= 100
-                  ? 'i-mdi-lighthouse'
-                  : 'i-mdi-lighthouse-on'
-              "
-              :class="[
-                'mb-3 h-12 w-12',
-                parseFloat(totalLightkeeperTasksPercentage) >= 100
-                  ? 'text-purple-400'
-                  : 'text-surface-600',
-              ]"
-            />
-            <div class="mb-1 text-3xl font-bold text-white">
-              {{ $t('page.dashboard.milestones.lightkeeper.title') }}
-            </div>
-            <div class="text-surface-400 text-xs tracking-wider uppercase">
-              {{ $t('page.dashboard.milestones.lightkeeper.subtitle') }}
-            </div>
-          </div>
-        </div>
+        <DashboardMilestoneCard
+          title="25%"
+          :subtitle="$t('page.dashboard.milestones.starter')"
+          :is-achieved="totalTasksPercentageNum >= 25"
+          achieved-icon="i-mdi-check-circle"
+          unachieved-icon="i-mdi-circle-outline"
+          color="primary"
+        />
+        <DashboardMilestoneCard
+          title="50%"
+          :subtitle="$t('page.dashboard.milestones.halfway')"
+          :is-achieved="totalTasksPercentageNum >= 50"
+          achieved-icon="i-mdi-check-circle"
+          unachieved-icon="i-mdi-circle-outline"
+          color="info"
+        />
+        <DashboardMilestoneCard
+          title="75%"
+          :subtitle="$t('page.dashboard.milestones.veteran')"
+          :is-achieved="totalTasksPercentageNum >= 75"
+          achieved-icon="i-mdi-check-circle"
+          unachieved-icon="i-mdi-circle-outline"
+          color="success"
+        />
+        <DashboardMilestoneCard
+          :title="$t('page.dashboard.milestones.kappa.title')"
+          :subtitle="$t('page.dashboard.milestones.kappa.subtitle')"
+          :is-achieved="totalKappaTasksPercentageNum >= 100"
+          achieved-icon="i-mdi-trophy"
+          unachieved-icon="i-mdi-trophy-outline"
+          color="warning"
+        />
+        <DashboardMilestoneCard
+          :title="$t('page.dashboard.milestones.lightkeeper.title')"
+          :subtitle="$t('page.dashboard.milestones.lightkeeper.subtitle')"
+          :is-achieved="totalLightkeeperTasksPercentageNum >= 100"
+          achieved-icon="i-mdi-lighthouse"
+          unachieved-icon="i-mdi-lighthouse-on"
+          color="purple"
+        />
       </div>
     </div>
   </div>
@@ -495,6 +265,7 @@
 <script setup lang="ts">
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { calculatePercentage, calculatePercentageNum } from '@/utils/formatters';
   // Page metadata
   useSeoMeta({
     title: 'Dashboard',
@@ -521,42 +292,42 @@
   });
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);
-  // Helper function to calculate percentage
-  const calculatePercentage = (completed: number, total: number): string => {
-    return total > 0 ? ((completed / total) * 100).toFixed(1) : '0.0';
-  };
-  // Percentage calculations
-  const totalTasksPercentage = computed(() =>
-    calculatePercentage(dashboardStats.completedTasks.value, dashboardStats.totalTasks.value)
+  // Percentage calculations (numeric)
+  const totalTasksPercentageNum = computed(() =>
+    calculatePercentageNum(dashboardStats.completedTasks.value, dashboardStats.totalTasks.value)
   );
-  const totalObjectivesPercentage = computed(() =>
-    calculatePercentage(
+  const totalObjectivesPercentageNum = computed(() =>
+    calculatePercentageNum(
       dashboardStats.completedObjectives.value,
       dashboardStats.totalObjectives.value
     )
   );
-  const totalTaskItemsPercentage = computed(() =>
-    calculatePercentage(
+  const totalTaskItemsPercentageNum = computed(() =>
+    calculatePercentageNum(
       dashboardStats.completedTaskItems.value,
       dashboardStats.totalTaskItems.value
     )
   );
-  const totalKappaTasksPercentage = computed(() =>
-    calculatePercentage(
+  const totalKappaTasksPercentageNum = computed(() =>
+    calculatePercentageNum(
       dashboardStats.completedKappaTasks.value,
       dashboardStats.totalKappaTasks.value
     )
   );
-  const totalLightkeeperTasksPercentage = computed(() =>
-    calculatePercentage(
+  const totalLightkeeperTasksPercentageNum = computed(() =>
+    calculatePercentageNum(
       dashboardStats.completedLightkeeperTasks.value,
       dashboardStats.totalLightkeeperTasks.value
     )
   );
+  // Percentage calculations (formatted strings for display)
+  const totalTasksPercentage = computed(() =>
+    calculatePercentage(dashboardStats.completedTasks.value, dashboardStats.totalTasks.value)
+  );
   // Circle progress calculation
   const circumference = 2 * Math.PI * 88; // radius = 88
   const progressOffset = computed(() => {
-    const progress = parseFloat(totalTasksPercentage.value) / 100;
+    const progress = totalTasksPercentageNum.value / 100;
     return circumference * (1 - progress);
   });
 </script>

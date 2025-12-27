@@ -62,7 +62,7 @@
       class="mt-2 flex items-center justify-end gap-1 text-sm text-gray-400"
     >
       <UIcon name="i-mdi-star" class="h-4 w-4 text-yellow-500" />
-      <span>{{ task.experience.toLocaleString() }} XP</span>
+      <span>{{ formatNumber(task.experience) }} XP</span>
     </div>
   </div>
 </template>
@@ -70,9 +70,12 @@
   import { defineAsyncComponent } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   const ActionButton = defineAsyncComponent(() => import('./ActionButton'));
   const AlternativesList = defineAsyncComponent(() => import('./AlternativesList'));
+  const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
+  const formatNumber = useLocaleNumberFormatter();
   const completeButtonUi = {
     base: 'bg-success-500 hover:bg-success-600 active:bg-success-700 text-white border border-success-700',
   };
@@ -85,5 +88,4 @@
     isOurFaction: { type: Boolean, required: true },
   });
   defineEmits(['complete', 'uncomplete', 'unlock']);
-  const { t } = useI18n({ useScope: 'global' });
 </script>

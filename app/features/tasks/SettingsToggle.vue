@@ -8,9 +8,9 @@
       />
       <span class="text-sm text-gray-200">{{ label }}</span>
     </div>
-    <UTooltip v-if="tooltip" :text="tooltip">
+    <AppTooltip v-if="tooltip" :text="tooltip">
       <UIcon name="i-mdi-help-circle-outline" class="h-5 w-5 text-gray-500" />
-    </UTooltip>
+    </AppTooltip>
   </div>
 </template>
 <script setup lang="ts">

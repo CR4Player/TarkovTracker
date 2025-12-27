@@ -22,11 +22,3 @@ export interface RawTokenRow {
   is_active: boolean | null;
   token_value?: string | null;
 }
-export interface UpdateProgressPayload {
-  level?: number;
-  faction?: string;
-  taskCompletions?: Record<string, boolean>;
-  taskObjectives?: Record<string, boolean>;
-  hideoutModules?: Record<string, number>;
-  hideoutParts?: Record<string, number>;
-}

@@ -3,13 +3,15 @@
     <!-- Counter controls group with background -->
     <div class="bg-surface-700 flex items-center rounded-lg border border-white/20 shadow-sm">
       <!-- Decrease button -->
-      <button
-        class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-5 w-5 items-center justify-center rounded-l-lg transition-colors hover:text-white sm:h-6 sm:w-6 lg:h-8 lg:w-8"
-        title="Decrease count"
-        @click="$emit('decrease')"
-      >
-        <UIcon name="i-mdi-minus" class="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-5 lg:w-5" />
-      </button>
+      <AppTooltip text="Decrease count">
+        <button
+          class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-5 w-5 items-center justify-center rounded-l-lg transition-colors hover:text-white sm:h-6 sm:w-6 lg:h-8 lg:w-8"
+          aria-label="Decrease count"
+          @click="$emit('decrease')"
+        >
+          <UIcon name="i-mdi-minus" class="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-5 lg:w-5" />
+        </button>
+      </AppTooltip>
       <div
         class="bg-surface-800 flex h-5 min-w-8 items-center justify-center border-x border-white/20 sm:h-6 sm:min-w-10 lg:h-8 lg:min-w-16"
       >
@@ -27,41 +29,51 @@
           />
         </template>
         <template v-else>
-          <button
-            class="hover:bg-surface-600 h-full w-full cursor-pointer px-0.5 text-[10px] font-semibold text-white transition-colors sm:text-xs lg:px-2 lg:text-sm"
-            title="Click to enter value"
-            @click="startEditing"
-          >
-            {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
-          </button>
+          <AppTooltip text="Click to enter value">
+            <button
+              class="hover:bg-surface-600 h-full w-full cursor-pointer px-0.5 text-[10px] font-semibold text-white transition-colors sm:text-xs lg:px-2 lg:text-sm"
+              aria-label="Click to enter value"
+              @click="startEditing"
+            >
+              {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
+            </button>
+          </AppTooltip>
         </template>
       </div>
       <!-- Increase button -->
-      <button
-        class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-5 w-5 items-center justify-center rounded-r-lg transition-colors hover:text-white sm:h-6 sm:w-6 lg:h-8 lg:w-8"
-        title="Increase count"
-        @click="$emit('increase')"
-      >
-        <UIcon name="i-mdi-plus" class="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-5 lg:w-5" />
-      </button>
+      <AppTooltip text="Increase count">
+        <button
+          class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-5 w-5 items-center justify-center rounded-r-lg transition-colors hover:text-white sm:h-6 sm:w-6 lg:h-8 lg:w-8"
+          aria-label="Increase count"
+          @click="$emit('increase')"
+        >
+          <UIcon name="i-mdi-plus" class="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-5 lg:w-5" />
+        </button>
+      </AppTooltip>
     </div>
     <!-- Mark as 100% complete button - separated with more spacing -->
-    <button
-      class="flex h-5 w-5 items-center justify-center rounded-lg border transition-colors sm:h-6 sm:w-6 lg:h-8 lg:w-8"
-      :class="
-        currentCount >= neededCount
-          ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
-          : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
-      "
-      :title="currentCount >= neededCount ? 'Already complete' : 'Mark as 100% complete'"
-      @click="$emit('toggle')"
+    <AppTooltip
+      :text="currentCount >= neededCount ? 'Mark as incomplete' : 'Mark as 100% complete'"
     >
-      <UIcon name="i-mdi-check-circle" class="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-5 lg:w-5" />
-    </button>
+      <button
+        class="flex h-5 w-5 items-center justify-center rounded-lg border transition-colors sm:h-6 sm:w-6 lg:h-8 lg:w-8"
+        :aria-label="currentCount >= neededCount ? 'Mark as incomplete' : 'Mark as 100% complete'"
+        :class="
+          currentCount >= neededCount
+            ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
+            : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
+        "
+        @click="$emit('toggle')"
+      >
+        <UIcon name="i-mdi-check-circle" class="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-5 lg:w-5" />
+      </button>
+    </AppTooltip>
   </div>
 </template>
 <script setup lang="ts">
   import { ref, nextTick, watch } from 'vue';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
+  const formatNumber = useLocaleNumberFormatter();
   const props = defineProps<{
     currentCount: number;
     neededCount: number;

@@ -18,13 +18,13 @@
     <div v-if="item" class="flex h-12 shrink-0 items-center justify-center px-2 pt-2">
       <div class="line-clamp-2 text-center text-sm leading-tight">
         {{ item.name }}
-        <UTooltip v-if="props.need.foundInRaid" text="Found in Raid required">
+        <AppTooltip v-if="props.need.foundInRaid" text="Found in Raid required">
           <UIcon
             name="i-mdi-checkbox-marked-circle-outline"
             class="ml-0.5 inline-block h-3.5 w-3.5"
           />
-        </UTooltip>
-        <UTooltip v-if="isCraftable" :text="craftableTitle">
+        </AppTooltip>
+        <AppTooltip v-if="isCraftable" :text="craftableTitle">
           <button
             type="button"
             class="ml-0.5 inline-flex"
@@ -38,7 +38,7 @@
               aria-hidden="true"
             />
           </button>
-        </UTooltip>
+        </AppTooltip>
       </div>
     </div>
     <!-- Task/Station info - fixed height with line clamp -->
@@ -85,7 +85,7 @@
         />
       </template>
       <span v-else class="text-success-400 text-sm font-semibold">
-        {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+        {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
       </span>
     </div>
   </div>
@@ -97,6 +97,7 @@
     neededItemKey,
   } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   import ItemCountControls from './ItemCountControls.vue';
   import RequirementInfo from './RequirementInfo.vue';
   import TeamNeedsDisplay from './TeamNeedsDisplay.vue';
@@ -110,6 +111,7 @@
   });
   defineEmits(['increaseCount', 'decreaseCount', 'toggleCount', 'setCount']);
   const tarkovStore = useTarkovStore();
+  const formatNumber = useLocaleNumberFormatter();
   const {
     selfCompletedNeed,
     relatedTask,

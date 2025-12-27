@@ -1,8 +1,8 @@
 <template>
   <div class="fixed right-4 bottom-4 z-[200]">
-    <UTooltip
+    <AppTooltip
       :text="enabled ? 'Disable holiday effects' : 'Enable holiday effects'"
-      :popper="{ placement: 'left' }"
+      :content="{ side: 'left', sideOffset: 10, collisionPadding: 8 }"
     >
       <button
         type="button"
@@ -25,7 +25,7 @@
           "
         />
       </button>
-    </UTooltip>
+    </AppTooltip>
   </div>
 </template>
 <script setup lang="ts">

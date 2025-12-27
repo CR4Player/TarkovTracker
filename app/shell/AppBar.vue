@@ -4,27 +4,32 @@
   >
     <div class="flex h-full items-center gap-1 px-2 sm:gap-3 sm:px-3">
       <!-- Left: Toggle Button -->
-      <UButton
-        :icon="navBarIcon"
-        variant="ghost"
-        color="neutral"
-        size="xl"
-        aria-label="Toggle Menu Drawer"
-        title="Toggle Menu Drawer"
-        @click.stop="changeNavigationDrawer"
-      />
+      <AppTooltip text="Toggle Menu Drawer">
+        <UButton
+          :icon="navBarIcon"
+          variant="ghost"
+          color="neutral"
+          size="xl"
+          aria-label="Toggle Menu Drawer"
+          @click.stop="changeNavigationDrawer"
+        />
+      </AppTooltip>
       <!-- Center: Page Title -->
       <span class="min-w-0 flex-1 truncate text-xl font-bold text-white">
         {{ pageTitle }}
       </span>
       <!-- Right: Status Icons & Settings -->
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
-        <span v-if="dataError" title="Error Loading Tarkov Data">
-          <UIcon name="i-mdi-database-alert" class="text-error-500 h-6 w-6" />
-        </span>
-        <span v-if="dataLoading || hideoutLoading" title="Loading Tarkov Data">
-          <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-6 w-6 animate-spin" />
-        </span>
+        <AppTooltip v-if="dataError" text="Error Loading Tarkov Data">
+          <span class="inline-flex rounded">
+            <UIcon name="i-mdi-database-alert" class="text-error-500 h-6 w-6" />
+          </span>
+        </AppTooltip>
+        <AppTooltip v-if="dataLoading || hideoutLoading" text="Loading Tarkov Data">
+          <span class="inline-flex rounded">
+            <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-6 w-6 animate-spin" />
+          </span>
+        </AppTooltip>
         <!-- Game mode quick toggle -->
         <div
           class="bg-surface-900/90 flex items-center overflow-hidden rounded-md border border-white/15 ring-1 ring-white/10"

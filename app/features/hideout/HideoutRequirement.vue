@@ -29,20 +29,18 @@
         <UIcon name="i-mdi-check-circle" class="text-success-300 h-8 w-8" />
       </div>
       <!-- FiR Badge -->
-      <div
-        v-if="isFoundInRaid"
-        class="absolute -top-1 -right-1 rounded bg-yellow-500/90 p-0.5"
-        :title="'Found in Raid required'"
-      >
-        <UIcon name="i-mdi-checkbox-marked-circle-outline" class="h-3 w-3 text-yellow-900" />
-      </div>
+      <AppTooltip v-if="isFoundInRaid" text="Found in Raid required">
+        <div class="absolute -top-1 -right-1 rounded bg-yellow-500/90 p-0.5">
+          <UIcon name="i-mdi-checkbox-marked-circle-outline" class="h-3 w-3 text-yellow-900" />
+        </div>
+      </AppTooltip>
       <!-- Count Badge for multi-count items -->
       <div v-if="requiredCount > 1" class="absolute right-0 -bottom-1 left-0 flex justify-center">
         <div
           class="rounded border border-gray-700 bg-gray-900/90 px-1.5 py-0.5 text-[10px] font-bold"
           :class="isComplete ? 'text-success-400' : 'text-gray-300'"
         >
-          {{ currentCount.toLocaleString() }}/{{ requiredCount.toLocaleString() }}
+          {{ formatNumber(currentCount) }}/{{ formatNumber(requiredCount) }}
         </div>
       </div>
     </div>
@@ -60,7 +58,7 @@
       <ContextMenuItem
         v-if="!isComplete"
         icon="i-mdi-check-circle"
-        :label="`Mark Complete (${requiredCount.toLocaleString()})`"
+        :label="`Mark Complete (${formatNumber(requiredCount)})`"
         @click="
           markComplete();
           close();
@@ -150,6 +148,7 @@
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import GameItem from '@/components/ui/GameItem.vue';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   interface Props {
     requirement: {
       id: string;
@@ -171,6 +170,7 @@
   }
   const props = defineProps<Props>();
   const tarkovStore = useTarkovStore();
+  const formatNumber = useLocaleNumberFormatter();
   const requirementId = computed(() => props.requirement.id);
   const requiredCount = computed(() => props.requirement.count);
   // Context menu

@@ -56,7 +56,7 @@
                   />
                 </template>
                 <template v-else>
-                  {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+                  {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
                 </template>
               </UButton>
               <UModal v-model="smallDialog" :ui="{ width: 'w-11/12' }">
@@ -142,18 +142,20 @@
                         />
                       </template>
                       <template v-else>
-                        <CollectedToggleButton
-                          :is-collected="isCollected"
-                          class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
-                          :class="
-                            isCollected
-                              ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
-                              : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
-                          "
-                          :title="isCollected ? 'Collected' : 'Mark as collected'"
-                          icon-class="h-6 w-6"
-                          @toggle="$emit('toggleCount')"
-                        />
+                        <AppTooltip :text="isCollected ? 'Collected' : 'Mark as collected'">
+                          <CollectedToggleButton
+                            :is-collected="isCollected"
+                            class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
+                            :class="
+                              isCollected
+                                ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
+                                : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
+                            "
+                            :aria-label="isCollected ? 'Collected' : 'Mark as collected'"
+                            icon-class="h-6 w-6"
+                            @toggle="$emit('toggleCount')"
+                          />
+                        </AppTooltip>
                       </template>
                       <!-- Show team needs alongside controls -->
                       <TeamNeedsDisplay
@@ -169,7 +171,7 @@
                       class="mx-2 mt-2 mb-2 flex h-full items-center justify-center self-stretch"
                     >
                       <span class="text-success-400 text-sm font-semibold">
-                        {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+                        {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
                       </span>
                     </div>
                   </div>
@@ -209,18 +211,20 @@
                   />
                 </template>
                 <template v-else>
-                  <CollectedToggleButton
-                    :is-collected="isCollected"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
-                    :class="
-                      isCollected
-                        ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
-                        : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
-                    "
-                    :title="isCollected ? 'Collected' : 'Mark as collected'"
-                    icon-class="h-6 w-6"
-                    @toggle="$emit('toggleCount')"
-                  />
+                  <AppTooltip :text="isCollected ? 'Collected' : 'Mark as collected'">
+                    <CollectedToggleButton
+                      :is-collected="isCollected"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
+                      :class="
+                        isCollected
+                          ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
+                          : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
+                      "
+                      :aria-label="isCollected ? 'Collected' : 'Mark as collected'"
+                      icon-class="h-6 w-6"
+                      @toggle="$emit('toggleCount')"
+                    />
+                  </AppTooltip>
                 </template>
                 <!-- Show team needs alongside controls -->
                 <TeamNeedsDisplay
@@ -232,7 +236,7 @@
               <!-- Show static count for completed parent items -->
               <div v-else class="mr-2 flex items-center justify-center self-center">
                 <span class="text-success-400 text-sm font-semibold">
-                  {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+                  {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
                 </span>
               </div>
             </div>
@@ -251,6 +255,7 @@
     neededItemKey,
   } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   import ItemCountControls from './ItemCountControls.vue';
   import RequirementInfo from './RequirementInfo.vue';
   import TeamNeedsDisplay from './TeamNeedsDisplay.vue';
@@ -265,6 +270,7 @@
   // Use shared breakpoints to avoid duplicate listeners
   const { belowMd, mdAndUp } = useSharedBreakpoints();
   const tarkovStore = useTarkovStore();
+  const formatNumber = useLocaleNumberFormatter();
   const smallDialog = ref(false);
   const {
     selfCompletedNeed,

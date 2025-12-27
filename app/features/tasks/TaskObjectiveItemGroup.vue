@@ -21,12 +21,11 @@
           :alt="row.meta.itemName"
           class="h-16 w-16 shrink-0 rounded-sm object-contain"
         />
-        <span
-          class="max-w-[12rem] truncate text-xs font-medium text-gray-100"
-          :title="row.meta.itemName"
-        >
-          {{ row.meta.itemName }}
-        </span>
+        <AppTooltip :text="row.meta.itemName">
+          <span class="max-w-[12rem] truncate text-xs font-medium text-gray-100">
+            {{ row.meta.itemName }}
+          </span>
+        </AppTooltip>
         <span
           v-if="row.meta.foundInRaid"
           class="rounded bg-yellow-500/10 px-1 py-0.5 text-[10px] font-semibold text-yellow-300"
@@ -56,11 +55,6 @@
             row.allComplete
               ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
               : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
-          "
-          :title="
-            row.allComplete
-              ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
-              : t('page.tasks.questcard.complete', 'Complete')
           "
           @click="toggleCountForRow(row)"
         >

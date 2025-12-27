@@ -16,7 +16,7 @@
         <UIcon name="i-mdi-account" class="h-3 w-3" />
         <span>{{ getDisplayName(userNeed.user) }}</span>
         <span class="text-surface-300">
-          {{ userNeed.count.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+          {{ formatNumber(userNeed.count) }}/{{ formatNumber(neededCount) }}
         </span>
       </UBadge>
     </div>
@@ -24,6 +24,8 @@
 </template>
 <script setup lang="ts">
   import { useProgressStore } from '@/stores/useProgress';
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
+  const formatNumber = useLocaleNumberFormatter();
   interface UserNeed {
     user: string;
     count: number;
