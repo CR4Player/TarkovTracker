@@ -144,6 +144,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   const crsKey = ref('');
   // Idle detection timer
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  // Resize observer
+  let resizeObserver: ResizeObserver | null = null;
   // Computed
   const floors = computed<string[]>(() => {
     const svgConfig = map.value?.svg;
@@ -371,6 +373,18 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     } finally {
       isLoading.value = false;
     }
+
+    // Setup resize observer
+    if (containerRef.value) {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstance.value) {
+          mapInstance.value.invalidateSize();
+          // Optional: re-fit bounds if needed, or just invalidate size
+          // refreshView(); // calling refreshView would re-fit bounds
+        }
+      });
+      resizeObserver.observe(containerRef.value);
+    }
   }
   /**
    * Loads the appropriate SVG for the current map.
@@ -412,6 +426,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   function destroy(): void {
     if (idleTimer) {
       clearTimeout(idleTimer);
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
     }
     if (mapInstance.value) {
       mapInstance.value.remove();
