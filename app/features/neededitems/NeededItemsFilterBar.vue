@@ -33,7 +33,7 @@
     <!-- Secondary filters container -->
     <div class="flex w-full flex-wrap gap-3">
       <!-- Section 1: Search bar -->
-      <div class="flex min-w-[250px] flex-1 items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+      <div class="flex min-w-62.5ex-1 items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
         <UInput
           :model-value="search"
           :placeholder="
