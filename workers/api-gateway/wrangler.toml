@@ -6,6 +6,18 @@ preview_urls = false
 routes = [
   { pattern = "tarkovtracker.org/api/v2/*", zone_name = "tarkovtracker.org" },
   { pattern = "www.tarkovtracker.org/api/v2/*", zone_name = "tarkovtracker.org" },
+  { pattern = "tarkovtracker.org/health", zone_name = "tarkovtracker.org" },
+  { pattern = "www.tarkovtracker.org/health", zone_name = "tarkovtracker.org" },
+  { pattern = "tarkovtracker.org/api/token*", zone_name = "tarkovtracker.org" },
+  { pattern = "tarkovtracker.org/api/progress*", zone_name = "tarkovtracker.org" },
+  { pattern = "tarkovtracker.org/api/team/progress*", zone_name = "tarkovtracker.org" },
+  { pattern = "www.tarkovtracker.org/api/token*", zone_name = "tarkovtracker.org" },
+  { pattern = "www.tarkovtracker.org/api/progress*", zone_name = "tarkovtracker.org" },
+  { pattern = "www.tarkovtracker.org/api/team/progress*", zone_name = "tarkovtracker.org" },
+  { pattern = "api.tarkovtracker.org/health", zone_name = "tarkovtracker.org" },
+  { pattern = "api.tarkovtracker.org/token*", zone_name = "tarkovtracker.org" },
+  { pattern = "api.tarkovtracker.org/progress*", zone_name = "tarkovtracker.org" },
+  { pattern = "api.tarkovtracker.org/team/progress*", zone_name = "tarkovtracker.org" },
 ]
 
 [placement]

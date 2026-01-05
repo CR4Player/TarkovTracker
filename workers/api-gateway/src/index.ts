@@ -259,6 +259,7 @@ function errorResponse(
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const host = url.hostname.toLowerCase();
     const path = '/' + url.pathname.split('/').filter(Boolean).join('/');
     const origin = env.ALLOWED_ORIGIN;
     const reqOrigin = request.headers.get('Origin') || undefined;
@@ -282,12 +283,31 @@ export default {
         reqOrigin
       );
     }
-    // Match API routes (support both /api and /api/v2 prefixes)
-    const apiMatch = path.match(/^\/api(?:\/v2)?(.*)$/);
-    if (!apiMatch) {
+    const apiHostPrefix = host === 'api.tarkovtracker.org';
+    // Extract the API path based on host
+    let apiPath: string | null = null;
+    if (apiHostPrefix) {
+      // On api subdomain, support clean URLs without /api or /v2 prefix
+      // Strip any existing prefix for backwards compatibility
+      if (path.startsWith('/api/v2/') || path === '/api/v2') {
+        apiPath = path.slice(7) || '/';
+      } else if (path.startsWith('/api/') || path === '/api') {
+        apiPath = path.slice(4) || '/';
+      } else if (path.startsWith('/v2/') || path === '/v2') {
+        apiPath = path.slice(3) || '/';
+      } else {
+        apiPath = path;
+      }
+    } else {
+      // On other hosts, require /api or /api/v2 prefix
+      const apiMatch = path.match(/^\/api(?:\/v2)?(.*)$/);
+      if (apiMatch) {
+        apiPath = apiMatch[1] || '/';
+      }
+    }
+    if (!apiPath) {
       return new Response('Not Found', { status: 404, headers });
     }
-    const apiPath = apiMatch[1] || '/';
     // Extract and validate token
     const authHeader = request.headers.get('Authorization');
     const rawToken = extractBearerToken(authHeader);
