@@ -61,20 +61,17 @@ type RateLimitResult = {
 export class ApiGatewayRateLimiter {
   private data?: RateLimitState;
   constructor(private state: DurableObjectState) {}
-
   private json(body: RateLimitResponse) {
     return new Response(JSON.stringify(body), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
   }
-
   private async load() {
     if (this.data) return;
     const stored = await this.state.storage.get<RateLimitState>('state');
     if (stored) this.data = stored;
   }
-
   async fetch(request: Request): Promise<Response> {
     if (request.method !== 'POST') {
       return new Response('Method Not Allowed', { status: 405 });
@@ -87,22 +84,13 @@ export class ApiGatewayRateLimiter {
     }
     const limit = Number(payload.limit);
     const windowSec = Number(payload.windowSec);
-    if (
-      !Number.isFinite(limit) ||
-      !Number.isFinite(windowSec) ||
-      limit <= 0 ||
-      windowSec <= 0
-    ) {
+    if (!Number.isFinite(limit) || !Number.isFinite(windowSec) || limit <= 0 || windowSec <= 0) {
       return new Response('Bad Request', { status: 400 });
     }
     await this.load();
     const now = Date.now();
     const windowMs = windowSec * 1000;
-    if (
-      !this.data ||
-      this.data.windowSec !== windowSec ||
-      now >= this.data.resetAt
-    ) {
+    if (!this.data || this.data.windowSec !== windowSec || now >= this.data.resetAt) {
       this.data = { count: 0, resetAt: now + windowMs, windowSec };
     }
     if (this.data.count >= limit) {
