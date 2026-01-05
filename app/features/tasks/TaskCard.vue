@@ -171,6 +171,20 @@
               {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
             </UBadge>
           </AppTooltip>
+          <AppTooltip
+            v-if="preferencesStore.getShowRequiredLabels && minExclusiveEdition"
+            :text="
+              t(
+                'page.tasks.questcard.editionExclusiveTooltip',
+                { editions: minExclusiveEdition.title },
+                `This quest is only available to players with ${minExclusiveEdition.title} edition`
+              )
+            "
+          >
+            <UBadge size="xs" color="primary" variant="soft" class="cursor-help text-[11px]">
+              {{ exclusiveEditionBadge }}
+            </UBadge>
+          </AppTooltip>
           <!-- XP display - shown for all task statuses when setting is enabled -->
           <div
             v-if="preferencesStore.getShowExperienceRewards && task.experience"
@@ -423,8 +437,9 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  import type { Task } from '@/types/tarkov';
+  import type { GameEdition, Task } from '@/types/tarkov';
   import { HOT_WHEELS_TASK_ID } from '@/utils/constants';
+  import { getExclusiveEditionsForTask } from '@/utils/editionHelpers';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   type ContextMenuRef = { open: (event: MouseEvent) => void };
   const QuestKeys = defineAsyncComponent(() => import('@/features/tasks/QuestKeys.vue'));
@@ -480,6 +495,26 @@
   const meetsLevelRequirement = computed(() => {
     const minLevel = props.task.minPlayerLevel ?? 0;
     return minLevel <= 0 || tarkovStore.playerLevel() >= minLevel;
+  });
+  const exclusiveEditions = computed<GameEdition[]>(() =>
+    getExclusiveEditionsForTask(props.task.id, metadataStore.editions)
+  );
+  // Get the minimum required edition (lowest value = base requirement)
+  const minExclusiveEdition = computed(() => {
+    if (!exclusiveEditions.value.length) return null;
+    return exclusiveEditions.value.reduce((min, e) => (e.value < min.value ? e : min));
+  });
+  // Short display names for edition badges
+  const editionShortNames: Record<string, string> = {
+    'Edge of Darkness': 'EOD',
+    'Unheard Edition': 'Unheard',
+    Standard: 'Standard',
+    'Left Behind': 'Left Behind',
+    'Prepare for Escape': 'PFE',
+  };
+  const exclusiveEditionBadge = computed(() => {
+    if (!minExclusiveEdition.value) return '';
+    return editionShortNames[minExclusiveEdition.value.title] || minExclusiveEdition.value.title;
   });
   const taskClasses = computed(() => {
     if (isComplete.value && !isFailed.value) return 'border-success-500/25 bg-success-500/10';

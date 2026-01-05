@@ -29,7 +29,6 @@ export interface PreferencesState {
   localeOverride: string | null;
   // Task filter settings
   showNonSpecialTasks: boolean;
-  showEodTasks: boolean;
   showLightkeeperTasks: boolean;
   // Task appearance settings
   showRequiredLabels: boolean;
@@ -76,7 +75,6 @@ export const preferencesDefaultState: PreferencesState = {
   localeOverride: null,
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
-  showEodTasks: true,
   showLightkeeperTasks: true,
   // Task appearance settings
   showRequiredLabels: true,
@@ -192,9 +190,6 @@ export const usePreferencesStore = defineStore('preferences', {
     getShowNonSpecialTasks: (state) => {
       return state.showNonSpecialTasks ?? true;
     },
-    getShowEodTasks: (state) => {
-      return state.showEodTasks ?? true;
-    },
     getShowLightkeeperTasks: (state) => {
       return state.showLightkeeperTasks ?? true;
     },
@@ -308,9 +303,6 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowNonSpecialTasks(show: boolean) {
       this.showNonSpecialTasks = show;
     },
-    setShowEodTasks(show: boolean) {
-      this.showEodTasks = show;
-    },
     setShowLightkeeperTasks(show: boolean) {
       this.showLightkeeperTasks = show;
     },
@@ -382,7 +374,6 @@ export const usePreferencesStore = defineStore('preferences', {
       'localeOverride',
       // Task filter settings
       'showNonSpecialTasks',
-      'showEodTasks',
       'showLightkeeperTasks',
       // Task appearance settings
       'showRequiredLabels',

@@ -130,16 +130,19 @@
     getHideNonKappaTasks,
     getShowNonSpecialTasks,
     getShowLightkeeperTasks,
-    getShowEodTasks,
   } = storeToRefs(preferencesStore);
   const metadataStore = useMetadataStore();
   const { tasks, loading: tasksLoading } = storeToRefs(metadataStore);
   // Use mapsWithSvg getter to get maps with merged SVG config from maps.json
   const maps = computed(() => metadataStore.mapsWithSvg);
+  // Edition data for filtering (reactive to trigger refresh when edition changes)
+  const editions = computed(() => metadataStore.editions);
   const progressStore = useProgressStore();
   const { tasksCompletions, unlockedTasks, tasksFailed } = storeToRefs(progressStore);
   const { visibleTasks, reloadingTasks, updateVisibleTasks } = useTaskFiltering();
   const tarkovStore = useTarkovStore();
+  // Game edition for filtering (reactive to trigger refresh when edition changes)
+  const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
   // Maps with static/fixed raid times (don't follow normal day/night cycle)
   const STATIC_TIME_MAPS: Record<string, string> = {
@@ -300,12 +303,14 @@
       getHideNonKappaTasks,
       getShowNonSpecialTasks,
       getShowLightkeeperTasks,
-      getShowEodTasks,
       tasksLoading,
       tasks,
       maps,
       tasksCompletions,
       unlockedTasks,
+      tasksFailed,
+      userGameEdition,
+      editions,
     ],
     () => {
       refreshVisibleTasks();
