@@ -263,6 +263,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useXpCalculation } from '@/composables/useXpCalculation';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { calculatePercentage, calculatePercentageNum } from '@/utils/formatters';
@@ -277,6 +278,7 @@
   const tarkovStore = useTarkovStore();
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
+  const xpCalculation = useXpCalculation();
   // Holiday effects
   const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
   // Navigate to tasks page filtered by trader
@@ -285,10 +287,10 @@
     preferencesStore.setTaskTraderView(traderId);
     router.push('/tasks');
   };
-  // Get current level
+  // Get current level - respect automatic calculation setting
+  const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
   const currentLevel = computed(() => {
-    const currentMode = tarkovStore.currentGameMode;
-    return tarkovStore[currentMode]?.level || 1;
+    return useAutomaticLevel.value ? xpCalculation.derivedLevel.value : tarkovStore.playerLevel();
   });
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);
