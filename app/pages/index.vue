@@ -267,6 +267,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { calculatePercentage, calculatePercentageNum } from '@/utils/formatters';
+  import { logger } from '@/utils/logger';
   // Page metadata
   useSeoMeta({
     title: 'Dashboard',
@@ -290,7 +291,37 @@
   // Get current level - respect automatic calculation setting
   const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
   const currentLevel = computed(() => {
-    return useAutomaticLevel.value ? xpCalculation.derivedLevel.value : tarkovStore.playerLevel();
+    const manualLevel = tarkovStore.playerLevel();
+    const fallbackLevel = Number.isFinite(manualLevel) ? manualLevel : 0;
+    // Observability: warn when manualLevel is not finite
+    if (!Number.isFinite(manualLevel)) {
+      logger.warn('[Dashboard] manualLevel is not finite, using fallback', { manualLevel });
+    }
+    if (Number.isFinite(manualLevel) && manualLevel < 0) {
+      logger.warn('[Dashboard] manualLevel is negative, using fallbackLevel', {
+        manualLevel,
+        fallbackLevel,
+      });
+    }
+    if (!useAutomaticLevel.value) {
+      return Math.max(0, fallbackLevel);
+    }
+    const derivedLevel = xpCalculation?.derivedLevel?.value;
+    // Observability: warn when derivedLevel is not finite in automatic mode
+    if (!Number.isFinite(derivedLevel)) {
+      logger.warn('[Dashboard] derivedLevel is not finite, using fallbackLevel', {
+        derivedLevel,
+        fallbackLevel,
+      });
+    }
+    if (Number.isFinite(derivedLevel) && derivedLevel < 0) {
+      logger.warn('[Dashboard] derivedLevel is negative, using fallbackLevel', {
+        derivedLevel,
+        fallbackLevel,
+      });
+    }
+    const result = Number.isFinite(derivedLevel) ? derivedLevel : fallbackLevel;
+    return Math.max(0, result);
   });
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);
