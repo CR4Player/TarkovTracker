@@ -4,12 +4,11 @@
       <div class="px-3 py-2">
         <div class="mx-0 flex flex-nowrap items-center">
           <div class="flex min-w-0 flex-1 items-center p-0">
-            <span class="block">
+            <span class="block h-12 w-12 shrink-0 md:h-16 md:w-16">
               <GameItem
-                v-if="isVisible"
                 :image-item="imageItem"
                 :src="imageItem?.iconLink"
-                :is-visible="true"
+                :is-visible="isVisible"
                 :item-name="item.name"
                 :wiki-link="item.wikiLink"
                 :dev-link="item.link"
@@ -271,6 +270,10 @@
       type: Object,
       required: true,
     },
+    initiallyVisible: {
+      type: Boolean,
+      default: false,
+    },
   });
   // Use shared breakpoints to avoid duplicate listeners
   const { belowMd, mdAndUp } = useSharedBreakpoints();
@@ -296,7 +299,9 @@
   } = inject(neededItemKey, createDefaultNeededItemContext());
   // Intersection observer for lazy loading
   const cardRef = ref(null);
-  const { isVisible } = useItemRowIntersection(cardRef);
+  const { isVisible } = useItemRowIntersection(cardRef, {
+    initialVisible: props.initiallyVisible,
+  });
   const itemRowClasses = computed(() => {
     return {
       'bg-gradient-to-l from-complete to-surface':
