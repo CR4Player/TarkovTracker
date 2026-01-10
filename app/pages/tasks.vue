@@ -36,15 +36,22 @@
         <div v-if="filteredTasks.length === 0" class="py-6">
           <TaskEmptyState />
         </div>
-        <div v-else class="space-y-4" data-testid="task-list">
-          <TaskCard
-            v-for="task in paginatedTasks"
+        <div v-else ref="taskListRef" data-testid="task-list">
+          <div
+            v-for="task in visibleTasksSlice"
             :key="task.id"
-            :task="task"
-            @on-task-action="onTaskAction"
-          />
-          <!-- Sentinel for infinite scroll -->
-          <div v-if="displayCount < filteredTasks.length" ref="tasksSentinel" class="h-1" />
+            class="pb-4"
+            style="content-visibility: auto; contain-intrinsic-size: auto 280px"
+          >
+            <TaskCard :task="task" @on-task-action="onTaskAction" />
+          </div>
+          <div
+            v-if="visibleTaskCount < filteredTasks.length"
+            ref="loadMoreSentinel"
+            class="flex items-center justify-center py-4"
+          >
+            <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin text-gray-400" />
+          </div>
         </div>
       </div>
     </div>
@@ -94,7 +101,7 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
+  import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute, useRouter } from 'vue-router';
   import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
@@ -108,7 +115,12 @@
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { Task, TaskObjective } from '@/types/tarkov';
+  import { debounce } from '@/utils/debounce';
   import { logger } from '@/utils/logger';
+  // Route meta for layout behavior
+  definePageMeta({
+    usesWindowScroll: true,
+  });
   // Lazy load LeafletMap for performance
   const LeafletMapComponent = defineAsyncComponent(() => import('@/features/maps/LeafletMap.vue'));
   // Page metadata
@@ -127,6 +139,9 @@
     getTaskUserView,
     getTaskMapView,
     getTaskTraderView,
+    getTaskSortMode,
+    getTaskSortDirection,
+    getTaskSharedByAllOnly,
     getHideNonKappaTasks,
     getShowNonSpecialTasks,
     getShowLightkeeperTasks,
@@ -288,7 +303,9 @@
       getTaskMapView.value,
       getTaskTraderView.value,
       mergedMaps.value,
-      tasksLoading.value
+      tasksLoading.value,
+      getTaskSortMode.value,
+      getTaskSortDirection.value
     ).catch((error) => {
       logger.error('[Tasks] Failed to refresh tasks:', error);
     });
@@ -300,6 +317,9 @@
       getTaskUserView,
       getTaskMapView,
       getTaskTraderView,
+      getTaskSortMode,
+      getTaskSortDirection,
+      getTaskSharedByAllOnly,
       getHideNonKappaTasks,
       getShowNonSpecialTasks,
       getShowLightkeeperTasks,
@@ -320,59 +340,79 @@
   const isLoading = computed(
     () => !metadataStore.hasInitialized || tasksLoading.value || reloadingTasks.value
   );
-  // Search state
+  // Search state (debounced to reduce lag)
   const searchQuery = ref('');
+  const debouncedSearch = ref('');
+  const updateDebouncedSearch = debounce((value: string) => {
+    debouncedSearch.value = value;
+  }, 180);
+  watch(searchQuery, (value) => {
+    if (!value) {
+      updateDebouncedSearch.cancel();
+      debouncedSearch.value = '';
+      return;
+    }
+    updateDebouncedSearch(value);
+  });
+  const normalizedSearch = computed(() => debouncedSearch.value.toLowerCase().trim());
+  // Cache lowercase task names to avoid repeated toLowerCase() calls in filter
+  type TaskWithLowerName = Task & { _lowerName: string };
+  const tasksWithLowerName = computed((): TaskWithLowerName[] => {
+    return visibleTasks.value.map((task) => ({
+      ...task,
+      _lowerName: (task.name ?? '').toLowerCase(),
+    }));
+  });
   // Filter tasks by search query
-  const filteredTasks = computed(() => {
-    if (!searchQuery.value.trim()) {
+  const filteredTasks = computed((): Task[] => {
+    if (!normalizedSearch.value) {
       return visibleTasks.value;
     }
-    const query = searchQuery.value.toLowerCase().trim();
-    return visibleTasks.value.filter((task) => task.name?.toLowerCase().includes(query));
+    const query = normalizedSearch.value;
+    return tasksWithLowerName.value.filter((task) => task._lowerName.includes(query)) as Task[];
   });
-  // Pagination state for infinite scroll
-  const displayCount = ref(15);
-  const tasksSentinel = ref<HTMLElement | null>(null);
-  const focusedTaskId = ref<string | null>(null);
-  const isHandlingTaskQuery = ref(false);
-  const paginatedTasks = computed(() => {
-    const baseTasks = filteredTasks.value.slice(0, displayCount.value);
-    // If there's a focused task not in the current page, prepend it
-    if (focusedTaskId.value) {
-      // First try to find in filteredTasks (has neededBy field)
-      let focusedTask = filteredTasks.value.find((t) => t.id === focusedTaskId.value);
-      // If not found (async filter update pending), fall back to raw tasks metadata
-      if (!focusedTask) {
-        focusedTask = tasks.value.find((t) => t.id === focusedTaskId.value);
-      }
-      if (focusedTask && !baseTasks.some((t) => t.id === focusedTaskId.value)) {
-        return [focusedTask, ...baseTasks];
-      }
+  const pinnedTaskId = ref<string | null>(null);
+  const pinnedTaskTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+  const pinnedTask = computed(() => {
+    if (!pinnedTaskId.value) return null;
+    return filteredTasks.value.find((task) => task.id === pinnedTaskId.value) ?? null;
+  });
+  // Progressive rendering - load tasks incrementally for smooth scrolling
+  const INITIAL_BATCH = 15;
+  const BATCH_SIZE = 10;
+  const visibleTaskCount = ref(INITIAL_BATCH);
+  const loadMoreSentinel = ref<HTMLElement | null>(null);
+  const visibleTasksSlice = computed(() => {
+    if (!pinnedTask.value) {
+      return filteredTasks.value.slice(0, visibleTaskCount.value);
     }
-    return baseTasks;
+    const remaining = filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id);
+    const sliceCount = Math.max(visibleTaskCount.value - 1, 0);
+    return [pinnedTask.value, ...remaining.slice(0, sliceCount)];
   });
+  const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
-    if (displayCount.value < filteredTasks.value.length) {
-      displayCount.value += 15;
-    }
+    if (!hasMoreTasks.value) return;
+    visibleTaskCount.value = Math.min(
+      visibleTaskCount.value + BATCH_SIZE,
+      filteredTasks.value.length
+    );
   };
-  // Setup infinite scroll
-  const infiniteScrollEnabled = computed(() => displayCount.value < filteredTasks.value.length);
-  const { stop: _stopInfiniteScroll, start: _startInfiniteScroll } = useInfiniteScroll(
-    tasksSentinel,
-    loadMoreTasks,
-    { rootMargin: '200px', threshold: 0.1, enabled: infiniteScrollEnabled }
-  );
-  // Reset pagination and clear focused task when filters or search changes
-  watch(
-    [searchQuery, getTaskSecondaryView, getTaskPrimaryView, getTaskMapView, getTaskTraderView],
-    () => {
-      displayCount.value = 15;
-      if (!isHandlingTaskQuery.value) {
-        focusedTaskId.value = null;
-      }
+  // Use shared infinite scroll composable
+  const { checkAndLoadMore } = useInfiniteScroll(loadMoreSentinel, loadMoreTasks, {
+    enabled: hasMoreTasks,
+  });
+  // Reset visible count when filters change
+  watch(filteredTasks, () => {
+    visibleTaskCount.value = INITIAL_BATCH;
+    if (pinnedTaskId.value && !filteredTasks.value.some((task) => task.id === pinnedTaskId.value)) {
+      pinnedTaskId.value = null;
     }
-  );
+    nextTick(() => {
+      checkAndLoadMore();
+    });
+  });
+  const taskListRef = ref<HTMLElement | null>(null);
   // Handle deep linking to a specific task via ?task=taskId query param
   const getTaskStatus = (taskId: string): 'available' | 'locked' | 'completed' | 'failed' => {
     const isFailed = tasksFailed.value?.[taskId]?.['self'] ?? false;
@@ -383,43 +423,87 @@
     if (isUnlocked) return 'available';
     return 'locked';
   };
+  const highlightTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+  const highlightTask = (taskElement: HTMLElement) => {
+    taskElement.classList.add(
+      'ring-2',
+      'ring-primary-500',
+      'ring-offset-2',
+      'ring-offset-surface-900'
+    );
+    if (highlightTimeout.value) {
+      clearTimeout(highlightTimeout.value);
+    }
+    highlightTimeout.value = setTimeout(() => {
+      taskElement.classList.remove(
+        'ring-2',
+        'ring-primary-500',
+        'ring-offset-2',
+        'ring-offset-surface-900'
+      );
+      highlightTimeout.value = null;
+    }, 2000);
+  };
+  onBeforeUnmount(() => {
+    updateDebouncedSearch.cancel();
+    if (highlightTimeout.value) {
+      clearTimeout(highlightTimeout.value);
+      highlightTimeout.value = null;
+    }
+    if (pinnedTaskTimeout.value) {
+      clearTimeout(pinnedTaskTimeout.value);
+      pinnedTaskTimeout.value = null;
+    }
+  });
   const scrollToTask = async (taskId: string) => {
-    // Poll for DOM element (focusedTaskId ensures task is in paginatedTasks)
-    const maxWaitTime = 2000;
-    const checkInterval = 50;
-    let elapsed = 0;
-    while (elapsed < maxWaitTime) {
-      await nextTick();
-      const taskElement = document.getElementById(`task-${taskId}`);
-      if (taskElement) {
-        taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add a brief highlight effect
-        taskElement.classList.add(
-          'ring-2',
-          'ring-primary-500',
-          'ring-offset-2',
-          'ring-offset-surface-900'
-        );
-        setTimeout(() => {
-          taskElement.classList.remove(
-            'ring-2',
-            'ring-primary-500',
-            'ring-offset-2',
-            'ring-offset-surface-900'
-          );
-        }, 2000);
+    await nextTick();
+    const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
+    if (taskIndex === -1) return;
+    const pinTaskToTop = () => {
+      pinnedTaskId.value = taskId;
+      if (pinnedTaskTimeout.value) {
+        clearTimeout(pinnedTaskTimeout.value);
+      }
+      pinnedTaskTimeout.value = setTimeout(() => {
+        pinnedTaskId.value = null;
+        pinnedTaskTimeout.value = null;
+      }, 8000);
+    };
+    // If task is already in DOM, scroll to it
+    const taskElement = document.getElementById(`task-${taskId}`);
+    if (taskElement) {
+      const rect = taskElement.getBoundingClientRect();
+      const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      if (isVisible) {
+        highlightTask(taskElement);
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, checkInterval));
-      elapsed += checkInterval;
+      const nearbyThreshold = window.innerHeight * 1.5;
+      const isNearby = Math.abs(rect.top) <= nearbyThreshold;
+      if (isNearby) {
+        taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightTask(taskElement);
+        return;
+      }
+      pinTaskToTop();
+      await nextTick();
+      const pinnedElement = document.getElementById(`task-${taskId}`);
+      if (pinnedElement) {
+        highlightTask(pinnedElement);
+      }
+      return;
     }
+    pinTaskToTop();
+    await nextTick();
+    const newTaskElement = document.getElementById(`task-${taskId}`);
+    if (!newTaskElement) return;
+    highlightTask(newTaskElement);
   };
   const handleTaskQueryParam = async () => {
     const taskId = route.query.task as string;
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
-    isHandlingTaskQuery.value = true;
     // Enable the appropriate type filter based on task properties
     const isKappaRequired = taskInMetadata.kappaRequired === true;
     const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
@@ -458,16 +542,10 @@
     if (searchQuery.value) {
       searchQuery.value = '';
     }
-    try {
-      // Wait for filter/watch updates to settle so we don't immediately clear the focus
-      await nextTick();
-      // Set focusedTaskId after filter changes - ensures task appears in paginatedTasks
-      focusedTaskId.value = taskId;
-      // scrollToTask polls for DOM element with its own nextTick calls
-      await scrollToTask(taskId);
-    } finally {
-      isHandlingTaskQuery.value = false;
-    }
+    // Wait for filter/watch updates to settle
+    await nextTick();
+    // scrollToTask handles scrolling directly via scrollIntoView
+    await scrollToTask(taskId);
     // Clear the query param to avoid re-triggering on filter changes
     router.replace({ path: '/tasks', query: {} });
   };
