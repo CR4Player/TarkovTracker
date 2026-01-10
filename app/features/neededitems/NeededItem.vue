@@ -14,6 +14,7 @@
     <div class="w-full pt-1">
       <LazyNeededItemRow
         :need="props.need"
+        :initially-visible="props.initiallyVisible"
         @decrease-count="decreaseCount()"
         @toggle-count="toggleCount()"
         @increase-count="increaseCount()"
@@ -37,6 +38,10 @@
     itemStyle: {
       type: String,
       default: 'mediumCard',
+    },
+    initiallyVisible: {
+      type: Boolean,
+      default: false,
     },
   });
   const progressStore = useProgressStore();

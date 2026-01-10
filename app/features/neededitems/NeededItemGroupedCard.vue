@@ -176,33 +176,13 @@
 </template>
 <script setup lang="ts">
   import { useCraftableItem } from '@/composables/useCraftableItem';
+  import type { GroupedNeededItem } from '@/types/tarkov';
   import { formatCompactNumber } from '@/utils/formatters';
-  interface GroupedItem {
-    itemId: string;
-    item: {
-      id: string;
-      name: string;
-      iconLink?: string;
-      image512pxLink?: string;
-      wikiLink?: string;
-      link?: string;
-    };
-    taskFir: number;
-    taskFirCurrent: number;
-    taskNonFir: number;
-    taskNonFirCurrent: number;
-    hideoutFir: number;
-    hideoutFirCurrent: number;
-    hideoutNonFir: number;
-    hideoutNonFirCurrent: number;
-    total: number;
-    currentCount: number;
-  }
   const props = defineProps<{
-    groupedItem: GroupedItem;
+    groupedItem: GroupedNeededItem;
     activeFilter?: 'all' | 'tasks' | 'hideout' | 'completed';
   }>();
-  const itemId = computed(() => props.groupedItem.itemId);
+  const itemId = computed(() => props.groupedItem.item.id);
   const isComplete = computed(() => {
     return props.groupedItem.currentCount >= props.groupedItem.total;
   });
