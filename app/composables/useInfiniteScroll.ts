@@ -67,6 +67,7 @@ export function useInfiniteScroll(
   let isStuckToBottom = false;
   let ignoreInitialIntersection = !autoLoadOnReady;
   let pendingRafId: number | null = null;
+  let pendingNextTick = false;
   const updateStickiness = () => {
     if (!stickToBottom || !stickToBottomArmed || typeof window === 'undefined') return;
     const doc = document.documentElement;
@@ -102,15 +103,17 @@ export function useInfiniteScroll(
       try {
         await Promise.resolve(onLoadMore());
       } catch (error) {
-        // Avoid leaving isLoading stuck on errors
         logger.error('[useInfiniteScroll] Failed to load more items:', error);
       } finally {
         isLoading.value = false;
         // Re-check after DOM updates AND browser paint - sentinel may still
         // be visible if user scrolled fast and more content is needed.
-        // nextTick ensures Vue's DOM update, requestAnimationFrame ensures paint.
-        if (autoFill) {
+        // Guard against multiple queued nextTick/rAF chains during rapid scroll.
+        if (autoFill && !pendingNextTick && pendingRafId === null) {
+          pendingNextTick = true;
           nextTick(() => {
+            pendingNextTick = false;
+            if (pendingRafId !== null || !enabled.value || !sentinelRef.value) return;
             pendingRafId = requestAnimationFrame(() => {
               pendingRafId = null;
               if (!enabled.value || !sentinelRef.value) return;
@@ -198,6 +201,7 @@ export function useInfiniteScroll(
       cancelAnimationFrame(pendingRafId);
       pendingRafId = null;
     }
+    pendingNextTick = false;
     pendingScroll = false;
     autoLoadCount = 0;
     stickToBottomArmed = false;
