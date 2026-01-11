@@ -8,6 +8,7 @@ import { useTeammateStores, useTeamStore } from '@/stores/useTeamStore';
 import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
 import { GAME_MODES, SPECIAL_STATIONS } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import { perfEnd, perfStart } from '@/utils/perf';
 import { computeInvalidProgress } from '@/utils/progressInvalidation';
 import type { Store } from 'pinia';
 function getGameModeData(store: Store<string, UserState> | undefined): UserProgressData {
@@ -79,8 +80,15 @@ export const useProgressStore = defineStore('progress', () => {
     return visibleStores;
   });
   const tasksCompletions = computed(() => {
+    const perfTimer = perfStart('[Progress] tasksCompletions', {
+      tasks: metadataStore.tasks.length,
+    });
     const completions: CompletionsMap = {};
-    if (!metadataStore.tasks.length || !visibleTeamStores.value) return {};
+    if (!metadataStore.tasks.length || !visibleTeamStores.value) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
+    const teamCount = Object.keys(visibleTeamStores.value).length;
     for (const task of metadataStore.tasks as Task[]) {
       completions[task.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
@@ -89,11 +97,17 @@ export const useProgressStore = defineStore('progress', () => {
         completions[task.id]![teamId] = currentData?.taskCompletions?.[task.id]?.complete ?? false;
       }
     }
+    perfEnd(perfTimer, { tasks: metadataStore.tasks.length, teams: teamCount });
     return completions;
   });
   const tasksFailed = computed(() => {
+    const perfTimer = perfStart('[Progress] tasksFailed', { tasks: metadataStore.tasks.length });
     const failures: FailedTasksMap = {};
-    if (!metadataStore.tasks.length || !visibleTeamStores.value) return {};
+    if (!metadataStore.tasks.length || Object.keys(visibleTeamStores.value).length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
+    const teamCount = Object.keys(visibleTeamStores.value).length;
     for (const task of metadataStore.tasks as Task[]) {
       failures[task.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
@@ -102,12 +116,19 @@ export const useProgressStore = defineStore('progress', () => {
         failures[task.id]![teamId] = currentData?.taskCompletions?.[task.id]?.failed ?? false;
       }
     }
+    perfEnd(perfTimer, { tasks: metadataStore.tasks.length, teams: teamCount });
     return failures;
   });
   const gameEditionData = computed<GameEdition[]>(() => metadataStore.editions);
   const traderLevelsAchieved = computed(() => {
+    const perfTimer = perfStart('[Progress] traderLevelsAchieved', {
+      traders: metadataStore.traders.length,
+    });
     const levels: TraderLevelsMap = {};
-    if (!metadataStore.traders.length || !visibleTeamStores.value) return {};
+    if (!metadataStore.traders.length || Object.keys(visibleTeamStores.value).length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     for (const teamId of Object.keys(visibleTeamStores.value)) {
       levels[teamId] = {};
       const store = visibleTeamStores.value[teamId];
@@ -116,16 +137,22 @@ export const useProgressStore = defineStore('progress', () => {
         levels[teamId]![trader.id] = currentData?.level ?? 0;
       }
     }
+    perfEnd(perfTimer, { traders: metadataStore.traders.length });
     return levels;
   });
   const playerFaction = computed(() => {
+    const perfTimer = perfStart('[Progress] playerFaction');
     const faction: FactionMap = {};
-    if (!visibleTeamStores.value) return {};
+    if (Object.keys(visibleTeamStores.value).length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     for (const teamId of Object.keys(visibleTeamStores.value)) {
       const store = visibleTeamStores.value[teamId];
       const currentData = getGameModeData(store);
       faction[teamId] = currentData?.pmcFaction ?? 'USEC';
     }
+    perfEnd(perfTimer);
     return faction;
   });
   /**
@@ -134,12 +161,18 @@ export const useProgressStore = defineStore('progress', () => {
    * This reduces redundant store lookups that were happening per-task-per-team.
    */
   const unlockedTasks = computed(() => {
+    const perfTimer = perfStart('[Progress] unlockedTasks', {
+      tasks: metadataStore.tasks.length,
+    });
     const available: TaskAvailabilityMap = {};
     const tasks = metadataStore.tasks as Task[];
-    if (!tasks.length || !visibleTeamStores.value) return {};
     const teamIds = Object.keys(visibleTeamStores.value);
-    if (!teamIds.length) return {};
+    if (tasks.length === 0 || teamIds.length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     // Pre-collect all team data once (avoid repeated getGameModeData calls)
+    // Use getLevel() to respect automatic level calculation preference for 'self'
     const teamDataCache = new Map<
       string,
       {
@@ -152,7 +185,7 @@ export const useProgressStore = defineStore('progress', () => {
       const store = visibleTeamStores.value[teamId];
       const currentData = getGameModeData(store);
       teamDataCache.set(teamId, {
-        level: currentData?.level ?? 0,
+        level: getLevel(teamId),
         faction: currentData?.pmcFaction ?? 'USEC',
         completions: currentData?.taskCompletions ?? {},
       });
@@ -270,11 +303,22 @@ export const useProgressStore = defineStore('progress', () => {
         available[task.id]![teamId] = isTaskAvailable(task.id);
       }
     }
+    perfEnd(perfTimer, { tasks: tasks.length, teams: teamIds.length });
     return available;
   });
   const objectiveCompletions = computed(() => {
+    const perfTimer = perfStart('[Progress] objectiveCompletions', {
+      objectives: metadataStore.objectives.length,
+    });
     const completions: ObjectiveCompletionsMap = {};
-    if (!metadataStore.objectives.length || !visibleTeamStores.value) return {};
+    if (
+      metadataStore.objectives.length === 0 ||
+      Object.keys(visibleTeamStores.value).length === 0
+    ) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
+    const teamCount = Object.keys(visibleTeamStores.value).length;
     for (const objective of metadataStore.objectives) {
       completions[objective.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
@@ -284,16 +328,24 @@ export const useProgressStore = defineStore('progress', () => {
           currentData?.taskObjectives?.[objective.id]?.complete ?? false;
       }
     }
+    perfEnd(perfTimer, { objectives: metadataStore.objectives.length, teams: teamCount });
     return completions;
   });
   const invalidProgressByTeam = computed(() => {
+    const perfTimer = perfStart('[Progress] invalidProgressByTeam', {
+      tasks: metadataStore.tasks.length,
+    });
     const invalidByTeam: Record<
       string,
       { invalidTasks: Record<string, boolean>; invalidObjectives: Record<string, boolean> }
     > = {};
-    if (!metadataStore.tasks.length || !visibleTeamStores.value) return {};
     const tasks = metadataStore.tasks as Task[];
-    for (const teamId of Object.keys(visibleTeamStores.value)) {
+    const teamIds = Object.keys(visibleTeamStores.value);
+    if (tasks.length === 0 || teamIds.length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
+    for (const teamId of teamIds) {
       const store = visibleTeamStores.value[teamId];
       const currentData = getGameModeData(store);
       invalidByTeam[teamId] = computeInvalidProgress({
@@ -302,12 +354,19 @@ export const useProgressStore = defineStore('progress', () => {
         pmcFaction: currentData?.pmcFaction ?? 'USEC',
       });
     }
+    perfEnd(perfTimer, { tasks: tasks.length, teams: teamIds.length });
     return invalidByTeam;
   });
   const invalidTasks = computed(() => {
+    const perfTimer = perfStart('[Progress] invalidTasks', {
+      tasks: metadataStore.tasks.length,
+    });
     const invalids: InvalidTasksMap = {};
-    if (!metadataStore.tasks.length || !visibleTeamStores.value) return {};
     const teamIds = Object.keys(visibleTeamStores.value);
+    if (metadataStore.tasks.length === 0 || teamIds.length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     const invalidByTeam = invalidProgressByTeam.value;
     for (const task of metadataStore.tasks as Task[]) {
       invalids[task.id] = {};
@@ -315,12 +374,19 @@ export const useProgressStore = defineStore('progress', () => {
         invalids[task.id]![teamId] = invalidByTeam[teamId]?.invalidTasks?.[task.id] ?? false;
       }
     }
+    perfEnd(perfTimer, { tasks: metadataStore.tasks.length, teams: teamIds.length });
     return invalids;
   });
   const invalidObjectives = computed(() => {
+    const perfTimer = perfStart('[Progress] invalidObjectives', {
+      objectives: metadataStore.objectives.length,
+    });
     const invalids: InvalidObjectivesMap = {};
-    if (!metadataStore.objectives.length || !visibleTeamStores.value) return {};
     const teamIds = Object.keys(visibleTeamStores.value);
+    if (metadataStore.objectives.length === 0 || teamIds.length === 0) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     const invalidByTeam = invalidProgressByTeam.value;
     for (const objective of metadataStore.objectives) {
       invalids[objective.id] = {};
@@ -329,11 +395,21 @@ export const useProgressStore = defineStore('progress', () => {
           invalidByTeam[teamId]?.invalidObjectives?.[objective.id] ?? false;
       }
     }
+    perfEnd(perfTimer, { objectives: metadataStore.objectives.length, teams: teamIds.length });
     return invalids;
   });
   const hideoutLevels = computed(() => {
+    const perfTimer = perfStart('[Progress] hideoutLevels', {
+      stations: metadataStore.hideoutStations.length,
+    });
     const levels: HideoutLevelMap = {};
-    if (!metadataStore.hideoutStations.length || !visibleTeamStores.value) return {};
+    if (
+      !metadataStore.hideoutStations.length ||
+      Object.keys(visibleTeamStores.value).length === 0
+    ) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     const teamIds = Object.keys(visibleTeamStores.value);
     // Performance optimization: Pre-cache team data and edition info once
     const teamDataCache = new Map<
@@ -399,11 +475,21 @@ export const useProgressStore = defineStore('progress', () => {
         levels[station.id]![teamId] = currentStationDisplayLevel;
       }
     }
+    perfEnd(perfTimer, { stations: metadataStore.hideoutStations.length });
     return levels;
   });
   const moduleCompletions = computed(() => {
+    const perfTimer = perfStart('[Progress] moduleCompletions', {
+      stations: metadataStore.hideoutStations.length,
+    });
     const completions: CompletionsMap = {};
-    if (!metadataStore.hideoutStations.length || !visibleTeamStores.value) return {};
+    if (
+      !metadataStore.hideoutStations.length ||
+      Object.keys(visibleTeamStores.value).length === 0
+    ) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     const teamIds = Object.keys(visibleTeamStores.value);
     // Performance optimization: Pre-cache team edition data
     const teamEditionCache = new Map<
@@ -455,11 +541,21 @@ export const useProgressStore = defineStore('progress', () => {
         }
       }
     }
+    perfEnd(perfTimer, { stations: metadataStore.hideoutStations.length });
     return completions;
   });
   const modulePartCompletions = computed(() => {
+    const perfTimer = perfStart('[Progress] modulePartCompletions', {
+      stations: metadataStore.hideoutStations.length,
+    });
     const completions: CompletionsMap = {};
-    if (!metadataStore.hideoutStations.length || !visibleTeamStores.value) return {};
+    if (
+      !metadataStore.hideoutStations.length ||
+      Object.keys(visibleTeamStores.value).length === 0
+    ) {
+      perfEnd(perfTimer, { skipped: true });
+      return {};
+    }
     const teamIds = Object.keys(visibleTeamStores.value);
     // Performance optimization: Pre-cache team data once
     const teamDataCache = new Map<string, UserProgressData>();
@@ -485,6 +581,7 @@ export const useProgressStore = defineStore('progress', () => {
         completions[partId]![teamId] = currentData?.hideoutParts?.[partId]?.complete ?? false;
       }
     }
+    perfEnd(perfTimer, { parts: allPartIds.size });
     return completions;
   });
   const getTeamIndex = (teamId: string): string => {
@@ -515,45 +612,40 @@ export const useProgressStore = defineStore('progress', () => {
     // Final fallback
     return teamId.substring(0, 6);
   };
-  const derivedLevelsByTeam = computed(() => {
-    const derivedLevels: Record<string, number> = {};
+  // Only compute derived level for 'self' since automatic calculation is never applied to teammates
+  const derivedLevelForSelf = computed(() => {
     const tasks = metadataStore.tasks;
-    if (!Array.isArray(tasks) || tasks.length === 0) return derivedLevels;
+    if (!Array.isArray(tasks) || tasks.length === 0) return 1;
     const levels = metadataStore.playerLevels;
-    if (!levels || levels.length === 0) return derivedLevels;
-    const teamIds = Object.keys(teamStores.value);
-    if (!teamIds.length) return derivedLevels;
-    for (const teamId of teamIds) {
-      const store = teamStores.value[teamId];
-      const currentData = getGameModeData(store);
-      const completions = currentData?.taskCompletions ?? {};
-      const xpOffset = currentData?.xpOffset ?? 0;
-      let calculatedQuestXP = 0;
-      for (const task of tasks) {
-        const completion = completions[task.id];
-        if (completion?.complete === true && completion?.failed !== true) {
-          calculatedQuestXP += task.experience || 0;
-        }
+    if (!levels || levels.length === 0) return 1;
+    const store = teamStores.value['self'];
+    if (!store) return 1;
+    const currentData = getGameModeData(store);
+    const completions = currentData?.taskCompletions ?? {};
+    const xpOffset = currentData?.xpOffset ?? 0;
+    let calculatedQuestXP = 0;
+    for (const task of tasks) {
+      const completion = completions[task.id];
+      if (completion?.complete === true && completion?.failed !== true) {
+        calculatedQuestXP += task.experience || 0;
       }
-      const totalXP = calculatedQuestXP + xpOffset;
-      let derivedLevel = 1;
-      for (let i = levels.length - 1; i >= 0; i--) {
-        const level = levels[i];
-        if (level && totalXP >= level.exp) {
-          derivedLevel = level.level;
-          break;
-        }
-      }
-      derivedLevels[teamId] = derivedLevel;
     }
-    return derivedLevels;
+    const totalXP = calculatedQuestXP + xpOffset;
+    let derivedLevel = 1;
+    for (let i = levels.length - 1; i >= 0; i--) {
+      const level = levels[i];
+      if (level && totalXP >= level.exp) {
+        derivedLevel = level.level;
+        break;
+      }
+    }
+    return derivedLevel;
   });
   /**
-   * Calculate derived level from XP for any team member
+   * Calculate derived level from XP (only applies to 'self')
    */
-  const calculateDerivedLevel = (teamId: string): number => {
-    const storeKey = getTeamIndex(teamId);
-    return derivedLevelsByTeam.value[storeKey] ?? 1;
+  const calculateDerivedLevel = (): number => {
+    return derivedLevelForSelf.value;
   };
   const getLevel = (teamId: string): number => {
     const storeKey = getTeamIndex(teamId);
@@ -561,7 +653,7 @@ export const useProgressStore = defineStore('progress', () => {
     const currentData = getGameModeData(store);
     // For the current user (self), check if automatic level calculation is enabled
     if (storeKey === 'self' && preferencesStore.getUseAutomaticLevelCalculation) {
-      return calculateDerivedLevel(teamId);
+      return calculateDerivedLevel();
     }
     // For teammates or when manual mode, use stored level
     return currentData?.level ?? 1;

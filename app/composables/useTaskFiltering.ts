@@ -7,6 +7,7 @@ import type { Task } from '@/types/tarkov';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 import { EXCLUDED_SCAV_KARMA_TASKS, TRADER_ORDER } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import { perfEnabled, perfEnd, perfNow, perfStart } from '@/utils/perf';
 interface MergedMap {
   id: string;
   mergedIds?: string[];
@@ -16,8 +17,24 @@ export function useTaskFiltering() {
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
+  const roundMs = (value: number) => Math.round(value * 10) / 10;
+  /**
+   * Execute a function and return [result, elapsedMs].
+   * When perf is disabled, elapsedMs is 0 to avoid overhead.
+   */
+  const timed = <T>(fn: () => T, perfOn: boolean): [T, number] => {
+    if (!perfOn) {
+      return [fn(), 0];
+    }
+    const t0 = perfNow();
+    const result = fn();
+    return [result, perfNow() - t0];
+  };
   const reloadingTasks = ref(false);
   const visibleTasks = shallowRef<Task[]>([]);
+  // Cached trader order map to avoid rebuilding on every sort
+  let cachedTraderOrderMap: Map<string, number> | null = null;
+  let cachedTradersRef: typeof metadataStore.traders | null = null;
   const mapObjectiveTypes = [
     'mark',
     'zone',
@@ -361,6 +378,12 @@ export function useTaskFiltering() {
     activeUserView: string,
     secondaryView: string
   ) => {
+    const perfTimer = perfStart('[Tasks] calculateMapTaskTotals', {
+      tasks: tasks.length,
+      maps: mergedMaps.length,
+      secondaryView,
+      userView: activeUserView,
+    });
     const mapTaskCounts: Record<string, number> = {};
     const typedTasks = filterTasksByTypeSettings(tasks);
     const statusFilteredTasks = filterTasksByStatus(typedTasks, secondaryView, activeUserView);
@@ -380,6 +403,7 @@ export function useTaskFiltering() {
         mapTaskCounts[mapId]!++;
       }
     }
+    perfEnd(perfTimer, { mapsWithCounts: Object.keys(mapTaskCounts).length });
     return mapTaskCounts;
   };
   /**
@@ -427,6 +451,26 @@ export function useTaskFiltering() {
       orderMap.set(trader.id, index === -1 ? TRADER_ORDER.length : index);
     });
     return orderMap;
+  };
+  /**
+   * Get cached trader order map, rebuilding only when traders change
+   */
+  const getTraderOrderMap = (): Map<string, number> => {
+    const traders = metadataStore.traders;
+    // Use reference equality to detect changes in traders array
+    if (cachedTraderOrderMap && cachedTradersRef === traders) {
+      return cachedTraderOrderMap;
+    }
+    cachedTraderOrderMap = buildTraderOrderMap();
+    cachedTradersRef = traders;
+    return cachedTraderOrderMap;
+  };
+  /**
+   * Reset the trader order map cache (call when traders are reloaded)
+   */
+  const resetTraderOrderMapCache = () => {
+    cachedTraderOrderMap = null;
+    cachedTradersRef = null;
   };
   const buildTeammateAvailableCounts = (taskList: Task[]): Map<string, number> => {
     const teamIds = Object.keys(progressStore.visibleTeamStores || {});
@@ -484,7 +528,7 @@ export function useTaskFiltering() {
   };
   const sortTasksByTrader = (taskList: Task[], sortDirection: TaskSortDirection): Task[] => {
     const directionFactor = sortDirection === 'desc' ? -1 : 1;
-    const orderMap = buildTraderOrderMap();
+    const orderMap = getTraderOrderMap();
     return [...taskList].sort((a, b) => {
       const traderA = a.trader?.id
         ? (orderMap.get(a.trader.id) ?? TRADER_ORDER.length)
@@ -546,7 +590,7 @@ export function useTaskFiltering() {
         return sortTasksByTeammatesAvailable(taskList, sortDirection);
       case 'xp':
         return sortTasksByXp(taskList, sortDirection);
-      case 'default':
+      case 'none':
       default:
         return sortDirection === 'desc' ? [...taskList].reverse() : [...taskList];
     }
@@ -562,46 +606,90 @@ export function useTaskFiltering() {
     activeTraderView: string,
     mergedMaps: MergedMap[],
     tasksLoading: boolean,
-    sortMode: TaskSortMode = 'default',
+    sortMode: TaskSortMode = 'none',
     sortDirection: TaskSortDirection = 'asc'
   ) => {
+    const perfTimer = perfStart('[Tasks] updateVisibleTasks', {
+      primaryView: activePrimaryView,
+      secondaryView: activeSecondaryView,
+      userView: activeUserView,
+      mapView: activeMapView,
+      traderView: activeTraderView,
+      sortMode,
+      sortDirection,
+    });
+    const perfOn = perfEnabled();
+    const startOverall = perfOn ? perfNow() : 0;
     // Simple guard clauses - data should be available due to global initialization
     if (tasksLoading || !metadataStore.tasks.length) {
+      perfEnd(perfTimer, {
+        skipped: true,
+        tasksLoading,
+        tasks: metadataStore.tasks.length,
+      });
       return;
     }
     reloadingTasks.value = true;
     try {
       let visibleTaskList = metadataStore.tasks;
+      const tasksIn = visibleTaskList.length;
       // Apply task type filters (Kappa, Lightkeeper, Non-special)
-      visibleTaskList = filterTasksByTypeSettings(visibleTaskList);
-      // Apply primary view filter
-      visibleTaskList = filterTasksByView(
-        visibleTaskList,
-        activePrimaryView,
-        activeMapView,
-        activeTraderView,
-        mergedMaps
+      const [afterType, filterTypeMs] = timed(
+        () => filterTasksByTypeSettings(visibleTaskList),
+        perfOn
       );
+      visibleTaskList = afterType;
+      // Apply primary view filter
+      const [afterView, filterViewMs] = timed(
+        () => filterTasksByView(visibleTaskList, activePrimaryView, activeMapView, activeTraderView, mergedMaps),
+        perfOn
+      );
+      visibleTaskList = afterView;
       // Apply status and user filters
-      visibleTaskList = filterTasksByStatus(visibleTaskList, activeSecondaryView, activeUserView);
+      const [afterStatus, filterStatusMs] = timed(
+        () => filterTasksByStatus(visibleTaskList, activeSecondaryView, activeUserView),
+        perfOn
+      );
+      visibleTaskList = afterStatus;
       // Filter to tasks available to all visible teammates (team view only)
+      let sharedFilterMs = 0;
       if (
         preferencesStore.getTaskSharedByAllOnly &&
         activeUserView === 'all' &&
         activeSecondaryView === 'available'
       ) {
         const teamIds = Object.keys(progressStore.visibleTeamStores || {});
-        visibleTaskList = visibleTaskList.filter((task) => {
-          const relevantTeamIds = getRelevantTeamIds(task, teamIds);
-          if (relevantTeamIds.length === 0) return false;
-          return relevantTeamIds.every((teamId) => {
-            const status = getTaskStatus(task.id, teamId);
-            return status.isUnlocked && !status.isCompleted && !status.isFailed;
-          });
-        });
+        const [afterShared, ms] = timed(
+          () =>
+            visibleTaskList.filter((task) => {
+              const relevantTeamIds = getRelevantTeamIds(task, teamIds);
+              if (relevantTeamIds.length === 0) return false;
+              return relevantTeamIds.every((teamId) => {
+                const status = getTaskStatus(task.id, teamId);
+                return status.isUnlocked && !status.isCompleted && !status.isFailed;
+              });
+            }),
+          perfOn
+        );
+        visibleTaskList = afterShared;
+        sharedFilterMs = ms;
       }
-      visibleTaskList = sortTasks(visibleTaskList, activeUserView, sortMode, sortDirection);
-      visibleTasks.value = visibleTaskList;
+      // Apply sorting
+      const [sorted, sortMs] = timed(
+        () => sortTasks(visibleTaskList, activeUserView, sortMode, sortDirection),
+        perfOn
+      );
+      visibleTasks.value = sorted;
+      perfEnd(perfTimer, {
+        tasksIn,
+        tasksOut: sorted.length,
+        totalMs: perfOn ? roundMs(perfNow() - startOverall) : undefined,
+        filterTypeMs: perfOn ? roundMs(filterTypeMs) : undefined,
+        filterViewMs: perfOn ? roundMs(filterViewMs) : undefined,
+        filterStatusMs: perfOn ? roundMs(filterStatusMs) : undefined,
+        sharedFilterMs: perfOn ? roundMs(sharedFilterMs) : undefined,
+        sortMs: perfOn ? roundMs(sortMs) : undefined,
+      });
     } finally {
       reloadingTasks.value = false;
     }
@@ -612,6 +700,10 @@ export function useTaskFiltering() {
   const calculateStatusCounts = (
     userView: string
   ): { all: number; available: number; locked: number; completed: number; failed: number } => {
+    const perfTimer = perfStart('[Tasks] calculateStatusCounts', {
+      tasks: metadataStore.tasks.length,
+      userView,
+    });
     const counts = { all: 0, available: 0, locked: 0, completed: 0, failed: 0 };
     const taskList = metadataStore.tasks;
     // Get prestige filtering data
@@ -689,12 +781,18 @@ export function useTaskFiltering() {
         }
       }
     }
+    perfEnd(perfTimer, { total: counts.all });
     return counts;
   };
   /**
    * Calculate task counts per trader based on current status filter
    */
   const calculateTraderCounts = (userView: string, secondaryView: string = 'available') => {
+    const perfTimer = perfStart('[Tasks] calculateTraderCounts', {
+      tasks: metadataStore.tasks.length,
+      userView,
+      secondaryView,
+    });
     const counts: Record<string, number> = {};
     const taskList = metadataStore.tasks;
     // Get prestige filtering data
@@ -780,6 +878,7 @@ export function useTaskFiltering() {
         if (shouldCount) counts[traderId]++;
       }
     }
+    perfEnd(perfTimer, { traders: Object.keys(counts).length });
     return counts;
   };
   return {
@@ -794,6 +893,7 @@ export function useTaskFiltering() {
     calculateStatusCounts,
     calculateTraderCounts,
     updateVisibleTasks,
+    resetTraderOrderMapCache,
     mapObjectiveTypes,
     disabledTasks: EXCLUDED_SCAV_KARMA_TASKS,
   };

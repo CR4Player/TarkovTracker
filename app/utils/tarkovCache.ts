@@ -10,6 +10,7 @@
  * Example: tarkov-data-regular-en, tarkov-hideout-pve-fr
  */
 import { logger } from './logger';
+import { perfEnabled, perfEnd, perfStart } from './perf';
 // Cache configuration
 export const CACHE_CONFIG = {
   DB_NAME: 'tarkov-tracker-cache',
@@ -26,6 +27,7 @@ export type CacheType =
   | 'tasks-objectives'
   | 'tasks-rewards'
   | 'hideout'
+  | 'items-lite'
   | 'items'
   | 'prestige'
   | 'editions';
@@ -37,10 +39,14 @@ export interface CachedData<T> {
   gameMode: string;
   lang: string;
   version: number;
+  /** Cached size in bytes, computed only when perf is enabled */
+  sizeBytes?: number;
 }
 /**
  * Opens or creates the IndexedDB database
  */
+let dbPromise: Promise<IDBDatabase> | null = null;
+let dbInstance: IDBDatabase | null = null;
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
@@ -74,6 +80,46 @@ function openDatabase(): Promise<IDBDatabase> {
     };
   });
 }
+function getDatabase(): Promise<IDBDatabase> {
+  if (dbInstance) {
+    return Promise.resolve(dbInstance);
+  }
+  if (dbPromise) {
+    return dbPromise;
+  }
+  // Capture the promise locally to avoid race conditions on error
+  const currentPromise = openDatabase()
+    .then((db) => {
+      dbInstance = db;
+      db.onversionchange = () => {
+        try {
+          db.close();
+        } finally {
+          dbInstance = null;
+          dbPromise = null;
+        }
+      };
+      // Handle unexpected connection close (e.g., browser closing DB)
+      db.onclose = () => {
+        logger.warn('[TarkovCache] Database connection closed unexpectedly', {
+          dbName: CACHE_CONFIG.DB_NAME,
+          dbVersion: CACHE_CONFIG.DB_VERSION,
+        });
+        dbInstance = null;
+        dbPromise = null;
+      };
+      return db;
+    })
+    .catch((error) => {
+      // Clear dbPromise only if it's still the same promise (avoid clearing a newer attempt)
+      if (dbPromise === currentPromise) {
+        dbPromise = null;
+      }
+      throw error;
+    });
+  dbPromise = currentPromise;
+  return dbPromise;
+}
 /**
  * Helper to create a transaction context with common error handling and cleanup
  */
@@ -91,11 +137,13 @@ function createTransactionContext(
   db: IDBDatabase,
   mode: IDBTransactionMode,
   promiseResolve: (value: unknown) => void,
-  promiseReject: (reason: unknown) => void
+  promiseReject: (reason: unknown) => void,
+  shouldClose: boolean
 ): TransactionContext {
   const transaction = db.transaction(CACHE_CONFIG.STORE_NAME, mode);
   const store = transaction.objectStore(CACHE_CONFIG.STORE_NAME);
   const closeDb = () => {
+    if (!shouldClose) return;
     try {
       db.close();
     } catch {
@@ -149,11 +197,37 @@ function createTransactionContext(
  */
 function executeDatabaseTransaction<T>(
   mode: IDBTransactionMode,
-  operation: (store: IDBObjectStore) => IDBRequest
+  operation: (store: IDBObjectStore) => IDBRequest,
+  perfLabel = 'transaction'
 ): Promise<T> {
-  return openDatabase().then((db) => {
+  const perfTimer = perfStart(`[Cache] ${perfLabel}`, { mode });
+  const openTimer = perfStart('[Cache] openDatabase', { mode, label: perfLabel });
+  return getDatabase().then((db) => {
+    perfEnd(openTimer, { mode, label: perfLabel });
     return new Promise<T>((resolve, reject) => {
-      const ctx = createTransactionContext(db, mode, resolve as (value: unknown) => void, reject);
+      const ctx = createTransactionContext(
+        db,
+        mode,
+        resolve as (value: unknown) => void,
+        reject,
+        false
+      );
+      let perfEnded = false;
+      const endPerf = (meta?: Record<string, unknown>) => {
+        if (perfEnded) return;
+        perfEnded = true;
+        perfEnd(perfTimer, meta);
+      };
+      const originalResolve = ctx.resolve;
+      const originalReject = ctx.reject;
+      ctx.resolve = <U>(value: U) => {
+        endPerf({ ok: true, mode, label: perfLabel });
+        originalResolve(value);
+      };
+      ctx.reject = (error: unknown) => {
+        endPerf({ ok: false, mode, label: perfLabel });
+        originalReject(error);
+      };
       const request = operation(ctx.store);
       request.onerror = () => ctx.reject(request.error);
       request.onsuccess = () => ctx.resolve(request.result as T);
@@ -171,7 +245,13 @@ function executeCursorOperation(
   onComplete: () => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const ctx = createTransactionContext(db, mode, resolve as (value: unknown) => void, reject);
+    const ctx = createTransactionContext(
+      db,
+      mode,
+      resolve as (value: unknown) => void,
+      reject,
+      false
+    );
     const request = cursorRequest(ctx.store);
     request.onerror = () => ctx.reject(request.error);
     request.onsuccess = (event) => {
@@ -221,8 +301,10 @@ export async function getCachedData<T>(
 ): Promise<T | null> {
   try {
     const cacheKey = generateCacheKey(type, gameMode, lang);
-    return executeDatabaseTransaction<CachedData<T> | undefined>('readonly', (store) =>
-      store.get(cacheKey)
+    return executeDatabaseTransaction<CachedData<T> | undefined>(
+      'readonly',
+      (store) => store.get(cacheKey),
+      `get ${type}`
     ).then((cachedResult) => {
       if (!cachedResult) {
         logger.debug(`[TarkovCache] Cache MISS: ${cacheKey}`);
@@ -238,6 +320,9 @@ export async function getCachedData<T>(
         return null;
       }
       logger.debug(`[TarkovCache] Cache HIT: ${cacheKey} (age: ${Math.round(age / 1000 / 60)}min)`);
+      if (perfEnabled() && cachedResult.sizeBytes !== undefined) {
+        logger.info('[Perf] [Cache] entry size', { cacheKey, sizeBytes: cachedResult.sizeBytes });
+      }
       return cachedResult.data;
     });
   } catch (error) {
@@ -257,6 +342,12 @@ export async function setCachedData<T>(
 ): Promise<void> {
   try {
     const cacheKey = generateCacheKey(type, gameMode, lang);
+    // Compute accurate byte size only when perf logging is enabled
+    let sizeBytes: number | undefined;
+    if (perfEnabled()) {
+      const jsonStr = JSON.stringify(data);
+      sizeBytes = new Blob([jsonStr]).size;
+    }
     const cacheEntry: CachedData<T> = {
       data,
       timestamp: Date.now(),
@@ -265,8 +356,13 @@ export async function setCachedData<T>(
       gameMode,
       lang,
       version: CACHE_CONFIG.DB_VERSION,
+      sizeBytes,
     };
-    await executeDatabaseTransaction<undefined>('readwrite', (store) => store.put(cacheEntry));
+    await executeDatabaseTransaction<undefined>(
+      'readwrite',
+      (store) => store.put(cacheEntry),
+      `set ${type}`
+    );
     logger.debug(`[TarkovCache] Cache STORED: ${cacheKey}`);
   } catch (error) {
     logger.error('[TarkovCache] Error storing cached data:', error);
@@ -283,7 +379,11 @@ export async function clearCacheEntry(
 ): Promise<void> {
   try {
     const cacheKey = generateCacheKey(type, gameMode, lang);
-    await executeDatabaseTransaction<undefined>('readwrite', (store) => store.delete(cacheKey));
+    await executeDatabaseTransaction<undefined>(
+      'readwrite',
+      (store) => store.delete(cacheKey),
+      `delete ${type}`
+    );
     logger.debug(`[TarkovCache] Cache DELETED: ${cacheKey}`);
   } catch (error) {
     logger.error('[TarkovCache] Error deleting cache entry:', error);
@@ -295,7 +395,7 @@ export async function clearCacheEntry(
  */
 export async function clearCacheByGameMode(gameMode: string): Promise<void> {
   try {
-    const db = await openDatabase();
+    const db = await getDatabase();
     await executeCursorOperation(
       db,
       'readwrite',
@@ -313,7 +413,7 @@ export async function clearCacheByGameMode(gameMode: string): Promise<void> {
  */
 export async function clearAllCache(): Promise<void> {
   try {
-    await executeDatabaseTransaction<undefined>('readwrite', (store) => store.clear());
+    await executeDatabaseTransaction<undefined>('readwrite', (store) => store.clear(), 'clear all');
     logger.debug('[TarkovCache] All cache CLEARED');
   } catch (error) {
     logger.error('[TarkovCache] Error clearing all cache:', error);
@@ -371,7 +471,7 @@ export async function getCacheStats(): Promise<CacheStats> {
  */
 export async function cleanupExpiredCache(): Promise<number> {
   try {
-    const db = await openDatabase();
+    const db = await getDatabase();
     let deletedCount = 0;
     const now = Date.now();
     await executeCursorOperation(
