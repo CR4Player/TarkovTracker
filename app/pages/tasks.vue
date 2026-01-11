@@ -103,7 +103,13 @@
   import { storeToRefs } from 'pinia';
   import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRoute, useRouter } from 'vue-router';
+  import {
+    useRoute,
+    useRouter,
+    type LocationQuery,
+    type LocationQueryRaw,
+    type LocationQueryValue,
+  } from 'vue-router';
   import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
   import { useTarkovTime } from '@/composables/useTarkovTime';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
@@ -150,6 +156,7 @@
   const { tasks, loading: tasksLoading } = storeToRefs(metadataStore);
   // Use mapsWithSvg getter to get maps with merged SVG config from maps.json
   const maps = computed(() => metadataStore.mapsWithSvg);
+  const sortedTraders = computed(() => metadataStore.sortedTraders);
   // Edition data for filtering (reactive to trigger refresh when edition changes)
   const editions = computed(() => metadataStore.editions);
   const progressStore = useProgressStore();
@@ -295,6 +302,147 @@
     }));
   });
   const lightkeeperTraderId = computed(() => metadataStore.getTraderByName('lightkeeper')?.id);
+  const TASK_PRIMARY_VIEWS = ['all', 'maps', 'traders'] as const;
+  type TaskPrimaryView = (typeof TASK_PRIMARY_VIEWS)[number];
+  const isTaskPrimaryView = (value: unknown): value is TaskPrimaryView => {
+    return typeof value === 'string' && TASK_PRIMARY_VIEWS.includes(value as TaskPrimaryView);
+  };
+  const getQueryString = (
+    value: LocationQueryValue | LocationQueryValue[] | undefined
+  ): string | undefined => {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+      const firstValue = value.find((entry): entry is string => typeof entry === 'string');
+      return firstValue;
+    }
+    return undefined;
+  };
+  type QueryLike = LocationQuery | LocationQueryRaw;
+  const normalizeQuery = (query: QueryLike): string => {
+    const normalized: Record<string, string> = {};
+    Object.keys(query)
+      .sort()
+      .forEach((key) => {
+        const value = query[key];
+        if (value === undefined || value === null || value === '') return;
+        if (Array.isArray(value)) {
+          const entries = value.filter(
+            (entry): entry is string | number => entry !== undefined && entry !== null
+          );
+          const nonEmptyEntries = entries.filter(
+            (entry) => (typeof entry === 'string' ? entry !== '' : true)
+          );
+          if (nonEmptyEntries.length === 0) return;
+          normalized[key] = nonEmptyEntries.map(String).join(',');
+          return;
+        }
+        normalized[key] = String(value);
+      });
+    return JSON.stringify(normalized);
+  };
+  const buildViewQuery = (
+    primaryView: TaskPrimaryView,
+    mapView: string,
+    traderView: string
+  ): LocationQueryRaw => {
+    const nextQuery: LocationQueryRaw = { ...route.query };
+    if (primaryView === 'maps') {
+      nextQuery.view = 'maps';
+      nextQuery.map = mapView !== 'all' ? mapView : undefined;
+      nextQuery.trader = undefined;
+      return nextQuery;
+    }
+    if (primaryView === 'traders') {
+      nextQuery.view = 'traders';
+      nextQuery.trader = traderView !== 'all' ? traderView : undefined;
+      nextQuery.map = undefined;
+      return nextQuery;
+    }
+    nextQuery.view = 'all';
+    nextQuery.map = undefined;
+    nextQuery.trader = undefined;
+    return nextQuery;
+  };
+  const isSyncingFromRoute = ref(false);
+  const isSyncingToRoute = ref(false);
+  const hasInitializedRouteSync = ref(false);
+  const syncRoute = (nextQuery: LocationQueryRaw, replace = false) => {
+    if (isSyncingToRoute.value) return;
+    if (normalizeQuery(route.query) === normalizeQuery(nextQuery)) return;
+    isSyncingToRoute.value = true;
+    const method = replace ? 'replace' : 'push';
+    void router[method]({ query: nextQuery }).finally(() => {
+      isSyncingToRoute.value = false;
+    });
+  };
+  const syncStateFromRoute = () => {
+    if (isSyncingToRoute.value) return;
+    const viewParam = getQueryString(route.query.view);
+    const mapParam = getQueryString(route.query.map);
+    const traderParam = getQueryString(route.query.trader);
+    const normalizedView = isTaskPrimaryView(viewParam) ? viewParam : undefined;
+    if (!hasInitializedRouteSync.value) {
+      hasInitializedRouteSync.value = true;
+      if (!normalizedView) {
+        const storedView = isTaskPrimaryView(preferencesStore.getTaskPrimaryView)
+          ? preferencesStore.getTaskPrimaryView
+          : 'all';
+        syncRoute(
+          buildViewQuery(
+            storedView,
+            preferencesStore.getTaskMapView,
+            preferencesStore.getTaskTraderView
+          ),
+          true
+        );
+        return;
+      }
+    }
+    const targetView = normalizedView ?? 'all';
+    isSyncingFromRoute.value = true;
+    if (targetView !== preferencesStore.getTaskPrimaryView) {
+      preferencesStore.setTaskPrimaryView(targetView);
+    }
+    if (targetView === 'maps') {
+      const mapId = maps.value.some((map) => map.id === mapParam)
+        ? mapParam
+        : maps.value[0]?.id;
+      if (mapId && mapId !== preferencesStore.getTaskMapView) {
+        preferencesStore.setTaskMapView(mapId);
+      }
+    }
+    if (targetView === 'traders') {
+      const traderId = sortedTraders.value.some((trader) => trader.id === traderParam)
+        ? traderParam
+        : sortedTraders.value[0]?.id;
+      if (traderId && traderId !== preferencesStore.getTaskTraderView) {
+        preferencesStore.setTaskTraderView(traderId);
+      }
+    }
+    isSyncingFromRoute.value = false;
+  };
+  watch(
+    [
+      () => route.query.view,
+      () => route.query.map,
+      () => route.query.trader,
+      () => maps.value.length,
+      () => sortedTraders.value.length,
+    ],
+    () => {
+      syncStateFromRoute();
+    },
+    { immediate: true }
+  );
+  watch(
+    [getTaskPrimaryView, getTaskMapView, getTaskTraderView],
+    ([primaryView, mapView, traderView], [prevPrimaryView]) => {
+      if (isSyncingFromRoute.value) return;
+      const normalizedPrimary = isTaskPrimaryView(primaryView) ? primaryView : 'all';
+      const shouldReplace = normalizedPrimary === prevPrimaryView;
+      syncRoute(buildViewQuery(normalizedPrimary, mapView, traderView), shouldReplace);
+    }
+  );
   const refreshVisibleTasks = () => {
     updateVisibleTasks(
       getTaskPrimaryView.value,
@@ -504,7 +652,7 @@
     highlightTask(newTaskElement);
   };
   const handleTaskQueryParam = async () => {
-    const taskId = route.query.task as string;
+    const taskId = getQueryString(route.query.task);
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
@@ -551,7 +699,9 @@
     // scrollToTask handles scrolling directly via scrollIntoView
     await scrollToTask(taskId);
     // Clear the query param to avoid re-triggering on filter changes
-    router.replace({ path: '/tasks', query: {} });
+    const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>;
+    delete nextQuery.task;
+    router.replace({ query: nextQuery });
   };
   // Watch for task query param and handle it when tasks are loaded
   watch(

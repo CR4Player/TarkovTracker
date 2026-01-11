@@ -401,47 +401,50 @@
           markerColor = '#3b82f6'; // blue-500
           break;
       }
-      const iconHtml = `<span style="
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background-color: ${markerColor};
-    "></span>`;
+      const extractDot = L.circleMarker([latLng.lat, latLng.lng], {
+        radius: 3,
+        fillColor: markerColor,
+        fillOpacity: 1,
+        color: '#0b0b0f',
+        weight: 1,
+        opacity: 1,
+        interactive: false,
+      });
       // Create custom icon for extracts
       // Use inline styles instead of Tailwind classes since Leaflet injects these outside Vue context
+      const extractBadge = document.createElement('div');
+      extractBadge.setAttribute('title', extract.name);
+      extractBadge.setAttribute('aria-label', extract.name);
+      extractBadge.style.display = 'inline-flex';
+      extractBadge.style.alignItems = 'center';
+      extractBadge.style.gap = '6px';
+      extractBadge.style.padding = '3px 6px';
+      extractBadge.style.borderRadius = '999px';
+      extractBadge.style.backgroundColor = 'rgba(26, 26, 30, 0.9)';
+      extractBadge.style.border = `2px solid ${markerColor}`;
+      extractBadge.style.fontSize = '11px';
+      extractBadge.style.lineHeight = '1';
+      extractBadge.style.color = '#e5e5e5';
+      extractBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.5)';
+      extractBadge.style.whiteSpace = 'nowrap';
+      extractBadge.style.transform = 'translate(-50%, calc(-100% - 6px))';
+      const extractLabel = document.createElement('span');
+      extractLabel.style.fontWeight = '600';
+      extractLabel.textContent = extract.name;
+      extractBadge.appendChild(extractLabel);
       const extractIcon = L.divIcon({
         className: 'extract-marker',
-        html: `<div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background-color: #1a1a1e;
-        border: 2px solid ${markerColor};
-        font-size: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      ">${iconHtml}</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        html: extractBadge,
+        iconAnchor: [0, 0],
+        iconSize: undefined,
       });
-      const marker = L.marker([latLng.lat, latLng.lng], { icon: extractIcon });
-      // Popup with extract info
-      const factionText = isCoop
-        ? 'Co-op (PMC + Scav)'
-        : extract.faction
-          ? extract.faction.charAt(0).toUpperCase() + extract.faction.slice(1)
-          : 'Unknown';
-      const popupContent = `
-      <div class="text-sm">
-        <div class="font-semibold">${extract.name}</div>
-        <div class="text-gray-400">Faction: ${factionText}</div>
-      </div>
-    `;
-      attachTogglePopup(marker, popupContent, () => marker.getLatLng());
-      extractLayer.value!.addLayer(marker);
+      const labelMarker = L.marker([latLng.lat, latLng.lng], {
+        icon: extractIcon,
+        interactive: false,
+        zIndexOffset: 1000,
+      });
+      extractLayer.value!.addLayer(extractDot);
+      extractLayer.value!.addLayer(labelMarker);
     });
   }
   /**
