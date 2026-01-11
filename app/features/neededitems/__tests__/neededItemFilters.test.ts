@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isNonFirSpecialEquipment } from '@/features/neededitems/neededItemFilters';
+import {
+  getNeededItemData,
+  getNeededItemId,
+  isNonFirSpecialEquipment,
+} from '@/features/neededitems/neededItemFilters';
 import type { NeededItemTaskObjective, TarkovItem } from '@/types/tarkov';
 const createItem = (overrides: Partial<TarkovItem> = {}): TarkovItem => {
   return {
@@ -58,5 +62,30 @@ describe('isNonFirSpecialEquipment', () => {
       }),
     });
     expect(isNonFirSpecialEquipment(need)).toBe(false);
+  });
+});
+describe('getNeededItemId', () => {
+  it('returns the item id for standard objectives', () => {
+    const need = createNeed({ item: createItem({ id: 'item-id' }) });
+    expect(getNeededItemId(need)).toBe('item-id');
+  });
+  it('falls back to marker item id', () => {
+    const need = createNeed({
+      item: undefined,
+      markerItem: createItem({ id: 'marker-id' }),
+    });
+    expect(getNeededItemId(need)).toBe('marker-id');
+  });
+});
+describe('getNeededItemData', () => {
+  it('returns the item when available', () => {
+    const item = createItem({ id: 'item-id', name: 'Item' });
+    const need = createNeed({ item });
+    expect(getNeededItemData(need)).toEqual(item);
+  });
+  it('falls back to the marker item data', () => {
+    const marker = createItem({ id: 'marker-id', name: 'Marker' });
+    const need = createNeed({ item: undefined, markerItem: marker });
+    expect(getNeededItemData(need)).toEqual(marker);
   });
 });

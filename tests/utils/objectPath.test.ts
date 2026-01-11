@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { get, set } from '@/utils/objectPath';
+import { get, set, MAX_ARRAY_INDEX } from '@/utils/objectPath';
 describe('objectPath', () => {
   describe('get', () => {
     it('returns the object itself for empty path', () => {
@@ -135,17 +135,28 @@ describe('objectPath', () => {
       set(obj, 'a.', 3);
       expect(obj).toEqual({ a: 3 });
     });
-    it('supports keys containing brackets', () => {
+    it('treats unmatched brackets as literal characters', () => {
       const obj: Record<string, unknown> = {};
       set(obj, 'config[weird]', 'value');
       expect(obj['config[weird]']).toBe('value');
     });
-    it('creates very large sparse array indices', () => {
+    it('throws for array index exceeding MAX_ARRAY_INDEX', () => {
       const obj: Record<string, unknown> = {};
-      set(obj, 'items[1000000]', 'big');
+      const largeIndex = MAX_ARRAY_INDEX + 1;
+      expect(() => set(obj, `items[${largeIndex}]`, 'big')).toThrow(RangeError);
+      expect(() => set(obj, `items[${largeIndex}]`, 'big')).toThrow(/exceeds maximum/);
+    });
+    it('allows overriding maxArrayIndex via options', () => {
+      const obj: Record<string, unknown> = {};
+      set(obj, 'items[50000]', 'value', { maxArrayIndex: 100_000 });
+      expect((obj.items as unknown[])[50000]).toBe('value');
+    });
+    it('creates sparse array up to MAX_ARRAY_INDEX', () => {
+      const obj: Record<string, unknown> = {};
+      set(obj, `items[${MAX_ARRAY_INDEX}]`, 'max');
       const items = obj.items as unknown[];
-      expect(items[1000000]).toBe('big');
-      expect(items.length).toBe(1000001);
+      expect(items[MAX_ARRAY_INDEX]).toBe('max');
+      expect(items.length).toBe(MAX_ARRAY_INDEX + 1);
     });
   });
   describe('parsePath edge cases', () => {

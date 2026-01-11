@@ -22,8 +22,8 @@ describe('taskSorter', () => {
   describe('buildImpactScores', () => {
     it('returns 0 for tasks with no successors', () => {
       const tasks = [createTask({ id: 'task1', successors: [] })];
-      const data = { tasksCompletions: {}, tasksFailed: {} };
-      const scores = buildImpactScores(tasks, ['user1'], data);
+      const data = { tasksCompletions: {}, tasksFailed: {}, visibleTeamStores: { user1: {} } };
+      const scores = buildImpactScores(tasks, data);
       expect(scores.get('task1')).toBe(0);
     });
     it('counts incomplete successors', () => {
@@ -31,8 +31,9 @@ describe('taskSorter', () => {
       const data = {
         tasksCompletions: { task2: { user1: true } },
         tasksFailed: {},
+        visibleTeamStores: { user1: {} },
       };
-      const scores = buildImpactScores(tasks, ['user1'], data);
+      const scores = buildImpactScores(tasks, data);
       expect(scores.get('task1')).toBe(1); // task3 is incomplete
     });
     it('treats failed tasks as complete for impact', () => {
@@ -40,14 +41,27 @@ describe('taskSorter', () => {
       const data = {
         tasksCompletions: {},
         tasksFailed: { task2: { user1: true } },
+        visibleTeamStores: { user1: {} },
       };
-      const scores = buildImpactScores(tasks, ['user1'], data);
+      const scores = buildImpactScores(tasks, data);
       expect(scores.get('task1')).toBe(0);
     });
     it('returns 0 for all tasks when no team members', () => {
       const tasks = [createTask({ id: 'task1', successors: ['task2'] })];
-      const scores = buildImpactScores(tasks, [], { tasksCompletions: {}, tasksFailed: {} });
+      const scores = buildImpactScores(tasks, {
+        tasksCompletions: {},
+        tasksFailed: {},
+        visibleTeamStores: {},
+      });
       expect(scores.get('task1')).toBe(0);
+    });
+    it('returns empty map when no tasks', () => {
+      const scores = buildImpactScores([], {
+        tasksCompletions: {},
+        tasksFailed: {},
+        visibleTeamStores: { user1: {} },
+      });
+      expect(scores.size).toBe(0);
     });
   });
   describe('buildTeammateAvailableCounts', () => {
@@ -151,8 +165,8 @@ describe('taskSorter', () => {
         createTask({ id: 'high', name: 'High', successors: ['s1', 's2', 's3'] }),
         createTask({ id: 'mid', name: 'Mid', successors: ['s1'] }),
       ];
-      const data = { tasksCompletions: {}, tasksFailed: {} };
-      const sorted = sortTasksByImpact(tasks, ['user1'], data, 'desc');
+      const data = { tasksCompletions: {}, tasksFailed: {}, visibleTeamStores: { user1: {} } };
+      const sorted = sortTasksByImpact(tasks, data, 'desc');
       expect(sorted.map((t) => t.id)).toEqual(['high', 'mid', 'low']);
     });
     it('accounts for partially completed successors', () => {
@@ -166,8 +180,9 @@ describe('taskSorter', () => {
           s1: { user1: true },
         },
         tasksFailed: {},
+        visibleTeamStores: { user1: {} },
       };
-      const sorted = sortTasksByImpact(tasks, ['user1'], data, 'desc');
+      const sorted = sortTasksByImpact(tasks, data, 'desc');
       expect(sorted.map((t) => t.id)).toEqual(['high', 'mid', 'low']);
     });
   });
