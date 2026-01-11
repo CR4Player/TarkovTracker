@@ -9,7 +9,11 @@
  */
 import { deepMerge, isPlainObject } from './deepMerge';
 import { createLogger } from './logger';
-import { inferFoundInRaid, normalizeObjectiveList } from './objectiveTypeInferrer';
+import {
+  inferFoundInRaid,
+  inferObjectiveType,
+  normalizeObjectiveList,
+} from './objectiveTypeInferrer';
 const logger = createLogger('Overlay');
 // Overlay data structure
 interface OverlayData {
@@ -228,6 +232,13 @@ function expandObjectiveAdditions(additions: unknown[]): ObjectiveAddEntry[] {
         : 'Hand over the found in raid item';
     const foundInRaid = inferFoundInRaid(description, entry);
     const count = typeof entry.count === 'number' ? entry.count : DEFAULT_OVERLAY_OBJECTIVE_COUNT;
+    const inferredType = inferObjectiveType(entry);
+    const normalizedType =
+      typeof inferredType === 'string' && inferredType.trim().length > 0
+        ? inferredType.trim()
+        : undefined;
+    const objectiveType =
+      normalizedType ?? (items.length > 0 ? DEFAULT_OVERLAY_OBJECTIVE_TYPE : undefined);
     // Expand multi-item objectives into individual objectives
     if (!entry.type && items.length > 1) {
       for (const [itemIndex, item] of items.entries()) {
@@ -237,7 +248,7 @@ function expandObjectiveAdditions(additions: unknown[]): ObjectiveAddEntry[] {
         expanded.push({
           ...entry,
           id: `${baseId}:${itemId}`,
-          type: DEFAULT_OVERLAY_OBJECTIVE_TYPE,
+          type: objectiveType ?? DEFAULT_OVERLAY_OBJECTIVE_TYPE,
           count,
           foundInRaid,
           description: `Hand over the found in raid item: ${itemName}`,
@@ -246,9 +257,16 @@ function expandObjectiveAdditions(additions: unknown[]): ObjectiveAddEntry[] {
       }
       continue;
     }
+    // Determine objective type: use explicit type, infer from entry/description, or fallback to items
+    if (objectiveType === undefined) {
+      logger.warn(
+        `Skipping overlay objective ${baseId}: missing type and unable to infer objective type`
+      );
+      continue;
+    }
     expanded.push({
       ...entry,
-      type: entry.type ?? (items.length > 0 ? DEFAULT_OVERLAY_OBJECTIVE_TYPE : entry.type),
+      type: objectiveType,
       count,
       foundInRaid,
     });
