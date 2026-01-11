@@ -85,10 +85,11 @@
   const overlay = ref<HTMLElement | null>(null);
   const previousActiveElement = ref<HTMLElement | null>(null);
   const inertElements = ref<Element[]>([]);
-  // Check if any critical data is still loading or if store isn't ready
+  // Block until tasks, hideout, prestige, and editions data have all finished loading.
+  // If already initialized from cache, never block.
   const isLoading = computed(() => {
+    if (metadataStore.hasInitialized) return false;
     return (
-      !metadataStore.hasInitialized ||
       metadataStore.loading ||
       metadataStore.hideoutLoading ||
       metadataStore.prestigeLoading ||
@@ -106,7 +107,7 @@
   });
   // Show loading screen if loading or has errors (unless user dismissed)
   const shouldShow = computed(() => {
-    if (userDismissed.value) return false;
+    if (userDismissed.value || metadataStore.hasInitialized) return false;
     return isLoading.value || hasErrors.value;
   });
   // Handle accessibility and focus management

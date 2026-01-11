@@ -38,7 +38,7 @@ function parseCommaSeparated(value: string): string[] {
 }
 /**
  * Check if a route matches a pattern (supports * wildcard at end)
- * e.g., "/api/tarkov/*" matches "/api/tarkov/data" and "/api/tarkov/items"
+ * e.g., "/api/tarkov/*" matches "/api/tarkov/items" and "/api/tarkov/tasks-core"
  */
 function routeMatchesPattern(route: string, pattern: string): boolean {
   if (pattern.endsWith('/*')) {

@@ -31,7 +31,7 @@ export function isValidGraphQLResponse<T>(response: unknown): response is Tarkov
   );
 }
 /**
- * Validates GraphQL response and narrows type to ensure data.data exists
+ * Validates GraphQL response and narrows type to ensure response.data exists
  * @param response - The raw response from the GraphQL API
  * @param logger - Logger instance for warning messages
  * @param allowPartialData - If true, allows responses with errors as long as data exists

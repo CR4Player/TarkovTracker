@@ -33,8 +33,7 @@ function isTruthyFlag(value: unknown): boolean {
 }
 function shouldBypassCache(event: H3Event): boolean {
   const headerValue =
-    event.node?.req?.headers?.['x-bypass-cache'] ??
-    event.node?.req?.headers?.['x-cache-bypass'];
+    event.node?.req?.headers?.['x-bypass-cache'] ?? event.node?.req?.headers?.['x-cache-bypass'];
   if (isTruthyFlag(headerValue)) return true;
   const query = getQuery(event);
   if (isTruthyFlag(query?.nocache)) return true;
