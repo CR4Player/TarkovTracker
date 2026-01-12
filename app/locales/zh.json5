@@ -199,7 +199,7 @@
           repairFailedHint: '清除所有与当前失败条件不相符的失败标志',
           repairFailedCount: '检测到的失败任务数: {count}',
           repairFailedConfirm: '是否要通过清除当前失败条件不支持的失败标记来修复失败的任务?',
-          repairFailedDone: '已移除了 {count} 个任务的失败标记.',
+          repairFailedDone: '已移除了 {count} 个任务的失败标记',
         },
       },
       notasksfound: '未找到任务，可尝试修改筛选条件或更新人物等级',
