@@ -3,7 +3,16 @@ export const OPENAPI_SPEC = {
   info: {
     title: 'TarkovTracker API Gateway',
     version: '2.0.0',
-    description: 'Public API gateway for TarkovTracker progress, team progress, and token info.',
+    description:
+      'Public API gateway for TarkovTracker progress, team progress, and token info.\n\n' +
+      'Authentication: Send API tokens in the Authorization header as `Bearer <token>`.\n' +
+      'Tokens use prefixes `tt_`, `PVP_`, or `PVE_`.\n\n' +
+      'Rate limits: enforced per IP + token. Read endpoints are ~60/min, write endpoints are ~30/min.\n\n' +
+      'Docs: https://api.tarkovtracker.org/docs (or / on the api subdomain).',
+    contact: {
+      name: 'TarkovTracker',
+      url: 'https://tarkovtracker.org',
+    },
   },
   servers: [
     {
@@ -14,14 +23,87 @@ export const OPENAPI_SPEC = {
       url: 'https://tarkovtracker.org/api/v2',
       description: 'Legacy path-based API',
     },
+    {
+      url: 'http://localhost:8787',
+      description: 'Local dev (wrangler dev)',
+    },
   ],
-  tags: [{ name: 'health' }, { name: 'tokens' }, { name: 'progress' }, { name: 'team' }],
+  tags: [
+    { name: 'health', description: 'Health and diagnostics' },
+    { name: 'docs', description: 'Documentation endpoints' },
+    { name: 'tokens', description: 'Token inspection endpoints' },
+    { name: 'progress', description: 'User progress read/write endpoints' },
+    { name: 'team', description: 'Team progress endpoints' },
+  ],
   components: {
     securitySchemes: {
       bearerAuth: {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'API Token',
+        description: 'Authorization: Bearer <token>',
+      },
+    },
+    responses: {
+      Unauthorized: {
+        description: 'Unauthorized',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/ErrorResponse' },
+            examples: {
+              missingToken: { value: { success: false, error: 'Unauthorized' } },
+              invalidToken: { value: { success: false, error: 'Invalid token' } },
+            },
+          },
+        },
+      },
+      Forbidden: {
+        description: 'Forbidden (missing permission)',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/ErrorResponse' },
+            examples: {
+              missingPermission: {
+                value: { success: false, error: 'Missing required permission: TP' },
+              },
+            },
+          },
+        },
+      },
+      BadRequest: {
+        description: 'Bad Request',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/ErrorResponse' },
+            examples: {
+              invalidState: { value: { success: false, error: 'Invalid state' } },
+            },
+          },
+        },
+      },
+      RateLimited: {
+        description: 'Rate limit exceeded',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/ErrorResponse' },
+            examples: {
+              rateLimited: { value: { success: false, error: 'Rate limit exceeded' } },
+            },
+          },
+        },
+      },
+      ServiceUnavailable: {
+        description: 'Rate limiter unavailable',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/ErrorResponse' },
+            examples: {
+              limiterUnavailable: {
+                value: { success: false, error: 'Rate limiter unavailable' },
+              },
+            },
+          },
+        },
       },
     },
     schemas: {
@@ -32,19 +114,44 @@ export const OPENAPI_SPEC = {
           error: { type: 'string' },
         },
         required: ['success', 'error'],
+        examples: [{ success: false, error: 'Unauthorized' }],
+      },
+      Permission: {
+        type: 'string',
+        enum: ['GP', 'TP', 'WP'],
+        description: 'GP=progress read, TP=team progress, WP=progress write',
+      },
+      GameMode: {
+        type: 'string',
+        enum: ['pvp', 'pve'],
+      },
+      PmcFaction: {
+        type: 'string',
+        enum: ['USEC', 'BEAR'],
       },
       TokenInfoResponse: {
         type: 'object',
         properties: {
           success: { const: true },
-          permissions: { type: 'array', items: { type: 'string' } },
+          permissions: { type: 'array', items: { $ref: '#/components/schemas/Permission' } },
           token: { type: 'string' },
           owner: { type: 'string' },
           note: { type: 'string' },
-          calls: { type: 'number' },
-          gameMode: { type: 'string', enum: ['pvp', 'pve'] },
+          calls: { type: 'integer' },
+          gameMode: { $ref: '#/components/schemas/GameMode' },
         },
         required: ['success', 'permissions', 'token', 'owner', 'note', 'calls', 'gameMode'],
+        examples: [
+          {
+            success: true,
+            permissions: ['GP', 'WP'],
+            token: 'PVP_deadbeefcafe',
+            owner: 'user-uuid',
+            note: 'RatScanner',
+            calls: 12,
+            gameMode: 'pvp',
+          },
+        ],
       },
       ProgressTask: {
         type: 'object',
@@ -83,6 +190,22 @@ export const OPENAPI_SPEC = {
         },
         required: ['id', 'complete', 'count'],
       },
+      ProgressMeta: {
+        type: 'object',
+        properties: {
+          self: { type: 'string' },
+          gameMode: { $ref: '#/components/schemas/GameMode' },
+        },
+        required: ['self', 'gameMode'],
+      },
+      TeamProgressMeta: {
+        type: 'object',
+        properties: {
+          self: { type: 'string' },
+          hiddenTeammates: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['self', 'hiddenTeammates'],
+      },
       ProgressData: {
         type: 'object',
         properties: {
@@ -101,9 +224,9 @@ export const OPENAPI_SPEC = {
           },
           displayName: { type: 'string' },
           userId: { type: 'string' },
-          playerLevel: { type: 'number' },
-          gameEdition: { type: 'number' },
-          pmcFaction: { type: 'string' },
+          playerLevel: { type: 'integer', minimum: 1, maximum: 79 },
+          gameEdition: { type: 'integer', minimum: 1 },
+          pmcFaction: { $ref: '#/components/schemas/PmcFaction' },
         },
         required: [
           'tasksProgress',
@@ -122,30 +245,35 @@ export const OPENAPI_SPEC = {
         properties: {
           success: { const: true },
           data: { $ref: '#/components/schemas/ProgressData' },
-          meta: {
-            type: 'object',
-            properties: {
-              self: { type: 'string' },
-              gameMode: { type: 'string' },
-            },
-            required: ['self', 'gameMode'],
-          },
+          meta: { $ref: '#/components/schemas/ProgressMeta' },
         },
         required: ['success', 'data', 'meta'],
+        examples: [
+          {
+            success: true,
+            data: {
+              tasksProgress: [{ id: 'task-1', complete: true, failed: false, invalid: false }],
+              taskObjectivesProgress: [
+                { id: 'obj-1', complete: true, count: 2, invalid: false },
+              ],
+              hideoutModulesProgress: [],
+              hideoutPartsProgress: [],
+              displayName: 'Tracker',
+              userId: 'user-uuid',
+              playerLevel: 10,
+              gameEdition: 1,
+              pmcFaction: 'USEC',
+            },
+            meta: { self: 'user-uuid', gameMode: 'pvp' },
+          },
+        ],
       },
       TeamProgressResponse: {
         type: 'object',
         properties: {
           success: { const: true },
           data: { type: 'array', items: { $ref: '#/components/schemas/ProgressData' } },
-          meta: {
-            type: 'object',
-            properties: {
-              self: { type: 'string' },
-              hiddenTeammates: { type: 'array', items: { type: 'string' } },
-            },
-            required: ['self', 'hiddenTeammates'],
-          },
+          meta: { $ref: '#/components/schemas/TeamProgressMeta' },
         },
         required: ['success', 'data', 'meta'],
       },
@@ -156,13 +284,14 @@ export const OPENAPI_SPEC = {
           data: {
             type: 'object',
             properties: {
-              level: { type: 'number' },
+              level: { type: 'integer', minimum: 1, maximum: 79 },
               message: { type: 'string' },
             },
             required: ['level', 'message'],
           },
         },
         required: ['success', 'data'],
+        examples: [{ success: true, data: { level: 12, message: 'Level updated successfully' } }],
       },
       TaskState: {
         type: 'string',
@@ -174,6 +303,7 @@ export const OPENAPI_SPEC = {
           state: { $ref: '#/components/schemas/TaskState' },
         },
         required: ['state'],
+        examples: [{ state: 'completed' }],
       },
       BatchTaskUpdateItem: {
         type: 'object',
@@ -186,10 +316,12 @@ export const OPENAPI_SPEC = {
       LegacyTaskUpdateMap: {
         type: 'object',
         additionalProperties: { $ref: '#/components/schemas/TaskState' },
+        examples: [{ 'task-1': 'completed', 'task-2': 'failed' }],
       },
       TaskUpdateArray: {
         type: 'array',
         items: { $ref: '#/components/schemas/BatchTaskUpdateItem' },
+        examples: [[{ id: 'task-1', state: 'completed' }, { id: 'task-2', state: 'failed' }]],
       },
       ObjectiveUpdateRequest: {
         type: 'object',
@@ -197,6 +329,8 @@ export const OPENAPI_SPEC = {
           state: { type: 'string', enum: ['completed', 'uncompleted'] },
           count: { type: 'number' },
         },
+        anyOf: [{ required: ['state'] }, { required: ['count'] }],
+        examples: [{ state: 'completed' }, { count: 3 }, { state: 'completed', count: 3 }],
       },
       UpdateTaskResponse: {
         type: 'object',
@@ -213,6 +347,12 @@ export const OPENAPI_SPEC = {
           },
         },
         required: ['success', 'data'],
+        examples: [
+          {
+            success: true,
+            data: { taskId: 'task-1', state: 'completed', message: 'Task updated successfully' },
+          },
+        ],
       },
       UpdateTasksResponse: {
         type: 'object',
@@ -228,6 +368,15 @@ export const OPENAPI_SPEC = {
           },
         },
         required: ['success', 'data'],
+        examples: [
+          {
+            success: true,
+            data: {
+              updatedTasks: ['task-1', 'task-2'],
+              message: 'Tasks updated successfully',
+            },
+          },
+        ],
       },
       UpdateObjectiveResponse: {
         type: 'object',
@@ -245,6 +394,17 @@ export const OPENAPI_SPEC = {
           },
         },
         required: ['success', 'data'],
+        examples: [
+          {
+            success: true,
+            data: {
+              objectiveId: 'obj-1',
+              state: 'completed',
+              count: 2,
+              message: 'Task objective updated successfully',
+            },
+          },
+        ],
       },
     },
   },
@@ -253,6 +413,7 @@ export const OPENAPI_SPEC = {
       get: {
         tags: ['health'],
         summary: 'Gateway health check',
+        description: 'Does not require authentication.',
         operationId: 'getHealth',
         responses: {
           '200': {
@@ -276,6 +437,58 @@ export const OPENAPI_SPEC = {
                   },
                   required: ['success', 'data'],
                 },
+                examples: {
+                  healthy: {
+                    value: {
+                      success: true,
+                      data: {
+                        status: 'healthy',
+                        timestamp: '2025-01-01T00:00:00.000Z',
+                        version: '2.0.0',
+                        service: 'tarkovtracker-api',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/openapi.json': {
+      get: {
+        tags: ['docs'],
+        summary: 'OpenAPI specification',
+        description: 'Returns the OpenAPI 3.1 JSON spec for this gateway.',
+        operationId: 'getOpenApiSpec',
+        responses: {
+          '200': {
+            description: 'OpenAPI JSON document',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  additionalProperties: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/docs': {
+      get: {
+        tags: ['docs'],
+        summary: 'API documentation UI',
+        description: 'Scalar API reference UI (HTML). Also served at `/` on api.tarkovtracker.org.',
+        operationId: 'getDocs',
+        responses: {
+          '200': {
+            description: 'HTML documentation page',
+            content: {
+              'text/html': {
+                schema: { type: 'string' },
               },
             },
           },
@@ -286,6 +499,7 @@ export const OPENAPI_SPEC = {
       get: {
         tags: ['tokens'],
         summary: 'Get token info',
+        description: 'Requires GP permission. Rate limit: ~60/min per IP + token.',
         operationId: 'getTokenInfo',
         security: [{ bearerAuth: [] }],
         responses: {
@@ -297,12 +511,10 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '401': {
-            description: 'Unauthorized',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },
@@ -310,6 +522,7 @@ export const OPENAPI_SPEC = {
       get: {
         tags: ['progress'],
         summary: 'Get user progress',
+        description: 'Requires GP permission. Rate limit: ~60/min per IP + token.',
         operationId: 'getProgress',
         security: [{ bearerAuth: [] }],
         responses: {
@@ -321,12 +534,10 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '401': {
-            description: 'Unauthorized',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },
@@ -334,6 +545,7 @@ export const OPENAPI_SPEC = {
       get: {
         tags: ['team'],
         summary: 'Get team progress',
+        description: 'Requires TP permission. Rate limit: ~60/min per IP + token.',
         operationId: 'getTeamProgress',
         security: [{ bearerAuth: [] }],
         responses: {
@@ -345,12 +557,10 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '401': {
-            description: 'Unauthorized',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },
@@ -358,6 +568,7 @@ export const OPENAPI_SPEC = {
       post: {
         tags: ['progress'],
         summary: 'Update player level',
+        description: 'Requires WP permission. Rate limit: ~30/min per IP + token.',
         operationId: 'updatePlayerLevel',
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -365,7 +576,9 @@ export const OPENAPI_SPEC = {
             name: 'level',
             in: 'path',
             required: true,
-            schema: { type: 'number', minimum: 1, maximum: 79 },
+            description: 'Player level (1-79).',
+            schema: { type: 'integer', minimum: 1, maximum: 79 },
+            example: 15,
           },
         ],
         responses: {
@@ -377,12 +590,11 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '400': {
-            description: 'Invalid level',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },
@@ -390,14 +602,28 @@ export const OPENAPI_SPEC = {
       post: {
         tags: ['progress'],
         summary: 'Update single task state',
+        description: 'Requires WP permission. Rate limit: ~30/min per IP + token.',
         operationId: 'updateTask',
         security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'taskId', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [
+          {
+            name: 'taskId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            example: 'task-1',
+          },
+        ],
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: { $ref: '#/components/schemas/TaskUpdateRequest' },
+              examples: {
+                complete: { value: { state: 'completed' } },
+                failed: { value: { state: 'failed' } },
+                uncompleted: { value: { state: 'uncompleted' } },
+              },
             },
           },
         },
@@ -410,12 +636,11 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '400': {
-            description: 'Invalid state',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },
@@ -423,16 +648,28 @@ export const OPENAPI_SPEC = {
       post: {
         tags: ['progress'],
         summary: 'Update a task objective',
+        description: 'Requires WP permission. Rate limit: ~30/min per IP + token.',
         operationId: 'updateTaskObjective',
         security: [{ bearerAuth: [] }],
         parameters: [
-          { name: 'objectiveId', in: 'path', required: true, schema: { type: 'string' } },
+          {
+            name: 'objectiveId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            example: 'obj-1',
+          },
         ],
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: { $ref: '#/components/schemas/ObjectiveUpdateRequest' },
+              examples: {
+                stateOnly: { value: { state: 'completed' } },
+                countOnly: { value: { count: 3 } },
+                stateAndCount: { value: { state: 'completed', count: 3 } },
+              },
             },
           },
         },
@@ -445,12 +682,11 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '400': {
-            description: 'Invalid body',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },
@@ -458,6 +694,7 @@ export const OPENAPI_SPEC = {
       post: {
         tags: ['progress'],
         summary: 'Batch update tasks',
+        description: 'Requires WP permission. Rate limit: ~30/min per IP + token.',
         operationId: 'updateTasksBatch',
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -469,6 +706,20 @@ export const OPENAPI_SPEC = {
                   { $ref: '#/components/schemas/LegacyTaskUpdateMap' },
                   { $ref: '#/components/schemas/TaskUpdateArray' },
                 ],
+              },
+              examples: {
+                legacyObject: {
+                  value: {
+                    'task-1': 'completed',
+                    'task-2': 'failed',
+                  },
+                },
+                arrayFormat: {
+                  value: [
+                    { id: 'task-1', state: 'completed' },
+                    { id: 'task-2', state: 'failed' },
+                  ],
+                },
               },
             },
           },
@@ -482,12 +733,11 @@ export const OPENAPI_SPEC = {
               },
             },
           },
-          '400': {
-            description: 'Invalid body',
-            content: {
-              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
-            },
-          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
       },
     },

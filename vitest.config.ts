@@ -1,4 +1,5 @@
 import { defineVitestConfig } from '@nuxt/test-utils/config';
+import { configDefaults } from 'vitest/config';
 // Allow environment variable overrides for Supabase config in tests
 // Falls back to local Supabase instance on port 54321
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://localhost:54321';
@@ -14,7 +15,7 @@ export default defineVitestConfig({
     environment: 'nuxt', // The Nuxt environment handles the DOM setup automatically
     globals: true,
     setupFiles: ['./test-setup.ts'],
-    exclude: ['workers/**'],
+    exclude: [...configDefaults.exclude, 'workers/**'],
     // Don't auto-clean up DOM elements as Nuxt environment handles this
     clearMocks: true,
     // Suppress some console warnings during tests

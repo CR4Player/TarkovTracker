@@ -5,5 +5,6 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     clearMocks: true,
+    include: ['workers/api-gateway/src/**/__tests__/**/*.test.ts'],
   },
 });

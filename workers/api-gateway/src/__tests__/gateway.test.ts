@@ -19,7 +19,7 @@ const makeLimiter = () =>
         ),
     }),
   }) as unknown as DurableObjectNamespace;
-const baseEnv: Env = {
+const BASE_ENV: Env = {
   API_GATEWAY_LIMITER: makeLimiter(),
   SUPABASE_URL: 'https://supabase.example',
   SUPABASE_ANON_KEY: 'anon-key',
@@ -34,35 +34,38 @@ const jsonResponse = (payload: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   });
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn());
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('Unmocked fetch: missing test handler', { status: 500 }))
+  );
 });
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('api-gateway', () => {
   it('serves health without auth', async () => {
-    const res = await worker.fetch(buildRequest('/health'), baseEnv);
+    const res = await worker.fetch(buildRequest('/health'), BASE_ENV);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success: boolean; data: { service: string } };
     expect(body.success).toBe(true);
     expect(body.data.service).toBe('tarkovtracker-api');
   });
   it('serves OpenAPI spec on api host', async () => {
-    const res = await worker.fetch(buildRequest('/openapi.json'), baseEnv);
+    const res = await worker.fetch(buildRequest('/openapi.json'), BASE_ENV);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { openapi: string; info?: { title?: string } };
     expect(body.openapi).toBe('3.1.0');
     expect(body.info?.title).toBe('TarkovTracker API Gateway');
   });
   it('serves Scalar docs at api root', async () => {
-    const res = await worker.fetch(buildRequest('/'), baseEnv);
+    const res = await worker.fetch(buildRequest('/'), BASE_ENV);
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(text).toContain('Scalar.createApiReference');
     expect(res.headers.get('content-type')).toContain('text/html');
   });
   it('rejects missing bearer token', async () => {
-    const res = await worker.fetch(buildRequest('/token', { method: 'GET' }), baseEnv);
+    const res = await worker.fetch(buildRequest('/token', { method: 'GET' }), BASE_ENV);
     expect(res.status).toBe(401);
     const body = (await res.json()) as { success: boolean; error: string };
     expect(body.success).toBe(false);
@@ -97,7 +100,7 @@ describe('api-gateway', () => {
         method: 'GET',
         headers: { Authorization: 'Bearer PVP_abc123' },
       }),
-      baseEnv
+      BASE_ENV
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success: boolean; token: string; owner: string };
@@ -106,7 +109,7 @@ describe('api-gateway', () => {
     expect(body.owner).toBe('user-1');
   });
   it('returns progress for valid token', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/rest/v1/api_tokens')) {
         return jsonResponse([
@@ -151,7 +154,6 @@ describe('api-gateway', () => {
         ]);
       }
       if (url === 'https://api.tarkov.dev/graphql') {
-        const query = init?.body ? JSON.parse(init.body as string) : null;
         const data = {
           tasks: [
             {
@@ -165,7 +167,7 @@ describe('api-gateway', () => {
           ],
           hideoutStations: [],
         };
-        return jsonResponse({ data, query });
+        return jsonResponse({ data });
       }
       return new Response('Not Found', { status: 404 });
     });
@@ -175,7 +177,7 @@ describe('api-gateway', () => {
         method: 'GET',
         headers: { Authorization: 'Bearer PVP_abc123' },
       }),
-      baseEnv
+      BASE_ENV
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success: boolean; data: { userId: string } };

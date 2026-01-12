@@ -203,7 +203,11 @@ function docsResponse(envOrigin?: string, requestOrigin?: string): Response {
   </head>
   <body style="margin:0;min-height:100vh;background:#0e0f12;">
     <div id="app"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.43.1"
+      integrity="sha384-HjTUYHbvChA/watX+X7iQtuhwMhsCYU600qyfXPYC90fYr/2Y/Mg7ybHlvkp+eUW"
+      crossorigin="anonymous"
+    ></script>
     <script>
       Scalar.createApiReference('#app', {
         url: '/openapi.json'
@@ -226,7 +230,7 @@ function openApiResponse(envOrigin?: string, requestOrigin?: string): Response {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       ...corsHeaders(envOrigin, requestOrigin),
-      'Cache-Control': 'no-store',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
     },
   });
 }
@@ -302,7 +306,7 @@ export default {
     const origin = env.ALLOWED_ORIGIN;
     const reqOrigin = request.headers.get('Origin') || undefined;
     const headers = corsHeaders(origin, reqOrigin);
-    const apiHostPrefix = host === 'api.tarkovtracker.org';
+    const isApiHost = host === 'api.tarkovtracker.org';
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers });
@@ -322,15 +326,15 @@ export default {
         reqOrigin
       );
     }
-    if (apiHostPrefix && (path === '/' || path === '/docs')) {
+    if (isApiHost && (path === '/' || path === '/docs')) {
       return docsResponse(origin, reqOrigin);
     }
-    if (apiHostPrefix && path === '/openapi.json') {
+    if (isApiHost && path === '/openapi.json') {
       return openApiResponse(origin, reqOrigin);
     }
     // Extract the API path based on host
     let apiPath: string | null = null;
-    if (apiHostPrefix) {
+    if (isApiHost) {
       // On api subdomain, support clean URLs without /api or /v2 prefix
       // Strip any existing prefix for backwards compatibility
       if (path.startsWith('/api/v2/') || path === '/api/v2') {
