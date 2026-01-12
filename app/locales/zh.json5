@@ -496,7 +496,7 @@
       continue_twitch: '使用 Twitch 登录',
       continue_discord: '使用 Discord 登录',
       continue_google: '使用 Google 登录',
-      continue_github: '使用 Github 登录'
+      continue_github: '使用 Github 登录',
       privacy_policy: '隐私政策',
       terms_of_service: '服务条款',
     },
