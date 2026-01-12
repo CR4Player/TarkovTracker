@@ -248,7 +248,7 @@
         undouncomplete: '已撤销 {name} 的未完成标记',
         undofailed: '已撤销 {name} 的失败标记',
         undoresetfailed: '已恢复 {name} 的失败标记',
-        markfailedconfirm: "是否要将此任务标记为失败? 此操作仅用于解决数据问题，不建议使用并可能会导致任务线阻塞",
+        markfailedconfirm: '是否要将此任务标记为失败? 此操作仅用于解决数据问题，不建议使用并可能会导致任务线阻塞',
         failedbecause: '失败原因',
         failedbecauseunknown: '手动标记为失败或数据丢失',
         nonkappa: '非Kappa保险箱前置',
